@@ -1,0 +1,52 @@
+<view class="container">
+  <!-- 状态开关 -->
+  <view class="status-bar">
+    <view class="status-info">
+      <view class="status-dot {{status === 'online' ? 'online' : status === 'busy' ? 'busy' : ''}}"></view>
+      <text>{{status === 'offline' ? '已下线' : status === 'online' ? '等待接单' : '配送中'}}</text>
+    </view>
+    <switch checked="{{status !== 'offline'}}" bindchange="toggleStatus" color="#FF9800" />
+  </view>
+
+  <!-- 配送中的订单 -->
+  <view wx:if="{{myOrder}}" class="card current-order">
+    <text class="section-title">配送中</text>
+    <view class="order-info">
+      <text class="order-no">#{{myOrder.order_no}}</text>
+      <view class="addr-row">
+        <text class="addr-label">取餐:</text>
+        <text>{{myOrder.restaurant_name}}</text>
+      </view>
+      <view class="addr-row">
+        <text class="addr-label">送达:</text>
+        <text>{{myOrder.address_snapshot.detail}}</text>
+      </view>
+    </view>
+    <view class="order-actions">
+      <view class="btn-outline" bindtap="goToOrderDetail" data-id="{{myOrder.id}}">详情</view>
+      <view class="btn-primary btn-sm" bindtap="markDelivered">确认送达</view>
+    </view>
+  </view>
+
+  <!-- 可接订单池 -->
+  <view wx:if="{{status === 'online'}}">
+    <text class="pool-title">附近可接订单 ({{pendingOrders.length}})</text>
+    <view wx:if="{{pendingOrders.length === 0}}" class="empty-state">
+      <text>暂无待配送订单</text>
+    </view>
+    <view class="card pool-item" wx:for="{{pendingOrders}}" wx:key="id">
+      <view class="pool-header">
+        <text class="shop">{{item.restaurant_name}}</text>
+        <text class="price">{{item.total_price}}</text>
+      </view>
+      <view class="pool-addrs">
+        <text class="pool-addr">取: {{item.restaurant_name}}</text>
+        <text class="pool-addr">送: {{item.address_snapshot.detail}}</text>
+      </view>
+      <view class="pool-footer">
+        <text class="distance">配送费 ¥{{item.delivery_fee}}</text>
+        <view class="btn-primary btn-sm" bindtap="acceptOrder" data-order="{{item}}">接单</view>
+      </view>
+    </view>
+  </view>
+</view>

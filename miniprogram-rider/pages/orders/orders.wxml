@@ -1,0 +1,15 @@
+<view class="container">
+  <view wx:if="{{orders.length === 0}}" class="empty-state"><text>暂无配送记录</text></view>
+
+  <view class="card order-card" wx:for="{{orders}}" wx:key="id">
+    <view class="order-header">
+      <text class="shop">{{item.restaurant_name}}</text>
+      <text class="price">{{item.delivery_fee}}</text>
+    </view>
+    <text class="addr">{{item.address_snapshot.detail}}</text>
+    <view class="order-footer">
+      <text class="time">{{item.created_at}}</text>
+      <text class="tag tag-orange">{{item.status === 'completed' ? '已完成' : item.status === 'cancelled' ? '已取消' : '配送中'}}</text>
+    </view>
+  </view>
+</view>

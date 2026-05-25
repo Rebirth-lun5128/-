@@ -1,0 +1,23 @@
+<view class="container" wx:if="{{wallet}}">
+  <view class="balance-card">
+    <text class="balance-label">账户余额</text>
+    <text class="balance-num">¥{{wallet.balance}}</text>
+    <text class="balance-extra">累计配送 {{wallet.total_orders}} 单</text>
+  </view>
+
+  <view class="card">
+    <text class="section-title">收入统计</text>
+    <view class="stat-row">
+      <text>今日预计收入</text>
+      <text class="price">¥{{wallet.balance}}</text>
+    </view>
+    <view class="stat-row">
+      <text>总配送单数</text>
+      <text>{{wallet.total_orders}} 单</text>
+    </view>
+    <view class="stat-row">
+      <text>骑手评分</text>
+      <text>★ {{wallet.rating || '5.0'}}</text>
+    </view>
+  </view>
+</view>

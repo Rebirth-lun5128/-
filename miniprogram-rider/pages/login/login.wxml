@@ -1,0 +1,17 @@
+<view class="login-page">
+  <view class="login-header">
+    <text class="title">骑手登录</text>
+    <text class="subtitle">开启配送之旅</text>
+  </view>
+  <view class="form">
+    <view class="form-item">
+      <text class="label">手机号</text>
+      <input type="number" placeholder="请输入手机号" value="{{phone}}" bindinput="onPhoneInput" />
+    </view>
+    <view class="form-item">
+      <text class="label">密码</text>
+      <input type="password" placeholder="请输入密码" value="{{password}}" bindinput="onPwdInput" />
+    </view>
+  </view>
+  <button class="btn-primary" bindtap="doLogin">登录</button>
+</view>

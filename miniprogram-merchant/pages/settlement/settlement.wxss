@@ -1,0 +1,8 @@
+.total-card { text-align: center; padding: 60rpx 0; background: linear-gradient(135deg, #07C160, #05A050); color: #fff; }
+.total-label { font-size: 28rpx; display: block; opacity: 0.9; }
+.total-price { font-size: 72rpx; font-weight: bold; display: block; margin: 16rpx 0; }
+.total-sub { font-size: 26rpx; display: block; opacity: 0.8; }
+
+.section-title { font-size: 28rpx; font-weight: bold; display: block; margin-bottom: 16rpx; }
+.info-row { display: flex; justify-content: space-between; padding: 16rpx 0; font-size: 28rpx; border-bottom: 1rpx solid #f5f5f5; }
+.info-row:last-child { border-bottom: none; }

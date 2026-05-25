@@ -1,0 +1,101 @@
+<view class="page" wx:if="{{restaurant}}">
+  <!-- 餐厅头部 -->
+  <view class="restaurant-banner">
+    <image src="{{restaurant.banner || restaurant.logo || '/images/default-banner.png'}}" mode="aspectFill" />
+    <view class="restaurant-overlay">
+      <text class="restaurant-name">{{restaurant.name}}</text>
+      <view class="restaurant-meta">
+        <text>★ {{restaurant.rating}}</text>
+        <text>月售{{restaurant.monthly_sales}}</text>
+        <text>{{restaurant.delivery_time}}</text>
+      </view>
+      <view class="restaurant-tags">
+        <text class="tag">¥{{restaurant.min_price}}起送</text>
+        <text class="tag">配送¥{{restaurant.delivery_fee}}</text>
+      </view>
+      <view class="restaurant-notice" wx:if="{{restaurant.notice}}">{{restaurant.notice}}</view>
+    </view>
+  </view>
+
+  <!-- 分类导航 -->
+  <scroll-view class="category-nav" scroll-x>
+    <view
+      class="category-nav-item {{activeCategory === index ? 'active' : ''}}"
+      wx:for="{{categories}}"
+      wx:key="id"
+      bindtap="onCategoryTap"
+      data-index="{{index}}"
+    >{{item.name}}</view>
+  </scroll-view>
+
+  <!-- 菜单列表 -->
+  <scroll-view class="menu-scroll" scroll-y scroll-into-view="{{scrollToCategory}}" scroll-with-animation>
+    <view wx:for="{{categories}}" wx:key="id" wx:for-index="catIndex" id="category-{{catIndex}}">
+      <view class="category-title">{{item.name}}</view>
+      <view
+        class="menu-item"
+        wx:for="{{item.items}}"
+        wx:key="id"
+        wx:if="{{item.status === 1}}"
+      >
+        <image class="menu-item-img" src="{{item.image || '/images/default-food.png'}}" mode="aspectFill" />
+        <view class="menu-item-info">
+          <text class="menu-item-name">{{item.name}}</text>
+          <text class="menu-item-desc" wx:if="{{item.description}}">{{item.description}}</text>
+          <text class="menu-item-sales" wx:if="{{item.monthly_sales}}">月售{{item.monthly_sales}}</text>
+          <view class="menu-item-bottom">
+            <text class="price">{{item.price}}</text>
+            <text class="original-price" wx:if="{{item.original_price}}">¥{{item.original_price}}</text>
+          </view>
+        </view>
+        <view class="menu-item-actions">
+          <view class="add-btn" bindtap="addToCart" data-item="{{item}}">+</view>
+          <!-- 已加购物车的数量显示 -->
+          <block wx:for="{{cart}}" wx:key="menu_item_id" wx:for-item="cartItem">
+            <view wx:if="{{cartItem.menu_item_id === item.id}}" class="qty-control">
+              <view class="qty-btn" bindtap="reduceFromCart" data-item="{{item}}">-</view>
+              <text class="qty-num">{{cartItem.quantity}}</text>
+              <view class="qty-btn" bindtap="addToCart" data-item="{{item}}">+</view>
+            </view>
+          </block>
+        </view>
+      </view>
+    </view>
+    <view style="height: 120rpx;"></view>
+  </scroll-view>
+
+  <!-- 底部购物车栏 -->
+  <view class="cart-bar" wx:if="{{cartCount > 0}}">
+    <view class="cart-icon-wrap" bindtap="toggleCartPopup">
+      <view class="cart-icon">🛒</view>
+      <view class="cart-badge" wx:if="{{cartCount > 0}}">{{cartCount}}</view>
+    </view>
+    <view class="cart-info">
+      <text class="price">{{cartTotal}}</text>
+      <text class="delivery-fee">另需配送¥{{restaurant.delivery_fee}}</text>
+    </view>
+    <view class="btn-primary cart-submit" bindtap="goToConfirm">去结算</view>
+  </view>
+
+  <!-- 购物车弹窗 -->
+  <view class="cart-popup-mask" wx:if="{{showCartPopup}}" bindtap="toggleCartPopup"></view>
+  <view class="cart-popup {{showCartPopup ? 'show' : ''}}">
+    <view class="cart-popup-header">
+      <text>购物车</text>
+      <text class="clear-btn" bindtap="clearCart">清空</text>
+    </view>
+    <view class="cart-popup-list">
+      <view class="cart-popup-item" wx:for="{{cart}}" wx:key="menu_item_id">
+        <text class="cart-item-name">{{item.name}}</text>
+        <view class="cart-item-price">
+          <text class="price">{{item.price * item.quantity}}</text>
+          <view class="qty-control small">
+            <view class="qty-btn" bindtap="reduceFromCart" data-item="{{item}}">-</view>
+            <text class="qty-num">{{item.quantity}}</text>
+            <view class="qty-btn" bindtap="addToCart" data-item="{{item}}">+</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

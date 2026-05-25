@@ -1,0 +1,26 @@
+<view class="login-page">
+  <view class="login-header">
+    <image class="login-logo" src="/images/logo.png" mode="aspectFit" />
+    <text class="login-title">美味外卖</text>
+    <text class="login-subtitle">美食即刻送达</text>
+  </view>
+
+  <view class="login-buttons">
+    <!-- 开发阶段: 模拟登录按钮 -->
+    <button class="btn-primary login-btn" bindtap="mockLogin">
+      一键登录 (开发模式)
+    </button>
+
+    <!-- 正式环境: 微信手机号授权 -->
+    <button class="btn-primary login-btn wechat-btn" open-type="getPhoneNumber" bindgetphonenumber="getPhoneNumber">
+      <text>微信手机号一键登录</text>
+    </button>
+  </view>
+
+  <view class="login-tips">
+    <text>登录即表示同意</text>
+    <text class="link">《用户服务协议》</text>
+    <text>和</text>
+    <text class="link">《隐私政策》</text>
+  </view>
+</view>

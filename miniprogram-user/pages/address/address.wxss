@@ -1,0 +1,35 @@
+.address-card {
+  position: relative;
+}
+.address-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+.address-contact {
+  font-size: 30rpx;
+  font-weight: bold;
+  margin-right: 20rpx;
+}
+.address-detail {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.5;
+}
+.address-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16rpx;
+}
+.action-btn {
+  font-size: 26rpx;
+  color: #FF6B35;
+  margin-left: 30rpx;
+}
+.action-btn.delete {
+  color: #999;
+}
+
+.add-btn {
+  margin-top: 40rpx;
+}

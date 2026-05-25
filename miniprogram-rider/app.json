@@ -1,0 +1,42 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/order-detail/order-detail",
+    "pages/orders/orders",
+    "pages/wallet/wallet",
+    "pages/login/login"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#FF9800",
+    "navigationBarTitleText": "骑手中心",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f5f5f5"
+  },
+  "tabBar": {
+    "color": "#999",
+    "selectedColor": "#FF9800",
+    "backgroundColor": "#fff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "接单",
+        "iconPath": "images/tab-home.png",
+        "selectedIconPath": "images/tab-home-active.png"
+      },
+      {
+        "pagePath": "pages/orders/orders",
+        "text": "记录",
+        "iconPath": "images/tab-order.png",
+        "selectedIconPath": "images/tab-order-active.png"
+      },
+      {
+        "pagePath": "pages/wallet/wallet",
+        "text": "收入",
+        "iconPath": "images/tab-wallet.png",
+        "selectedIconPath": "images/tab-wallet-active.png"
+      }
+    ]
+  }
+}

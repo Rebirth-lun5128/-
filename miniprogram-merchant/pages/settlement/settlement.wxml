@@ -1,0 +1,15 @@
+<view class="container" wx:if="{{dashboard}}">
+  <view class="card total-card">
+    <text class="total-label">今日营收</text>
+    <text class="total-price">¥{{dashboard.today_revenue}}</text>
+    <text class="total-sub">今日订单: {{dashboard.today_orders}} 单</text>
+  </view>
+
+  <view class="card">
+    <text class="section-title">结算说明</text>
+    <view class="info-row"><text>月销量</text><text>{{dashboard.monthly_sales || 0}} 单</text></view>
+    <view class="info-row"><text>评分</text><text>★ {{dashboard.rating || '5.0'}}</text></view>
+    <view class="info-row"><text>结算周期</text><text>每周一自动结算</text></view>
+    <view class="info-row"><text>平台费率</text><text>15%</text></view>
+  </view>
+</view>

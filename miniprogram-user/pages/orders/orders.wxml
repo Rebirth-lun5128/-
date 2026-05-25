@@ -1,0 +1,31 @@
+<view class="container">
+  <!-- Tab -->
+  <view class="tabs">
+    <view
+      class="tab-item {{activeTab === index ? 'active' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="*this"
+      bindtap="onTabTap"
+      data-index="{{index}}"
+    >{{item}}</view>
+  </view>
+
+  <!-- 订单列表 -->
+  <view wx:if="{{orders.length === 0 && !loading}}" class="empty-state">
+    <text>暂无订单</text>
+  </view>
+
+  <view class="order-card card" wx:for="{{orders}}" wx:key="id" bindtap="onOrderTap" data-id="{{item.id}}">
+    <view class="order-header">
+      <text class="order-shop">{{item.restaurant_name}}</text>
+      <text class="order-status" style="color: {{item.statusColor}}">{{item.statusText}}</text>
+    </view>
+    <view class="order-items">
+      <text wx:for="{{item.items}}" wx:key="id">{{item.name}} x{{item.quantity}} </text>
+    </view>
+    <view class="order-footer">
+      <text class="order-time">{{item.created_at}}</text>
+      <text class="price">{{item.total_price}}</text>
+    </view>
+  </view>
+</view>

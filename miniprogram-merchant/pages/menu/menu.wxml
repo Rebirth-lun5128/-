@@ -1,0 +1,41 @@
+<view class="page">
+  <!-- 分类导航 -->
+  <scroll-view class="category-sidebar" scroll-y>
+    <view wx:if="{{categories.length === 0}}" class="empty-cat">
+      <text>请先添加分类</text>
+    </view>
+    <view class="cat-item {{activeCategory === index ? 'active' : ''}}"
+      wx:for="{{categories}}" wx:key="id" bindtap="onCategoryTap" data-index="{{index}}">
+      {{item.name}}
+    </view>
+    <view class="cat-item add-cat" bindtap="addCategory">+ 添加</view>
+  </scroll-view>
+
+  <!-- 菜品列表 -->
+  <scroll-view class="items-panel" scroll-y>
+    <view wx:for="{{categories}}" wx:key="id" wx:for-index="ci" wx:if="{{activeCategory === ci}}">
+      <view wx:for="{{allItems}}" wx:key="id" wx:for-item="item" wx:if="{{item.category_id === item.id}}">
+        <view class="menu-item">
+          <image src="{{item.image || '/images/default-food.png'}}" mode="aspectFill" />
+          <view class="item-info">
+            <text class="item-name">{{item.name}}</text>
+            <text class="item-desc" wx:if="{{item.description}}">{{item.description}}</text>
+            <view class="item-meta">
+              <text class="price">{{item.price}}</text>
+              <text class="tag {{item.status === 1 ? 'tag-green' : ''}}">
+                {{item.status === 1 ? '上架' : '下架'}}
+              </text>
+            </view>
+          </view>
+          <view class="item-actions">
+            <text bindtap="editItem" data-id="{{item.id}}">编辑</text>
+            <text bindtap="toggleStatus" data-id="{{item.id}}" data-status="{{item.status}}">
+              {{item.status === 1 ? '下架' : '上架'}}
+            </text>
+          </view>
+        </view>
+      </view>
+      <view class="add-item-btn" bindtap="addItem">+ 添加菜品</view>
+    </view>
+  </scroll-view>
+</view>

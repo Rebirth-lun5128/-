@@ -1,0 +1,133 @@
+.status-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 50rpx 0;
+  color: #fff;
+  border-radius: 0 0 30rpx 30rpx;
+  margin-bottom: 20rpx;
+}
+.status-icon {
+  font-size: 70rpx;
+  margin-bottom: 16rpx;
+}
+.status-text {
+  font-size: 36rpx;
+  font-weight: bold;
+}
+.status-desc {
+  font-size: 26rpx;
+  margin-top: 8rpx;
+  opacity: 0.9;
+}
+
+.address-line {
+  display: flex;
+}
+.addr-icon {
+  margin-right: 16rpx;
+  font-size: 36rpx;
+}
+.addr-contact {
+  display: block;
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.addr-detail {
+  display: block;
+  font-size: 26rpx;
+  color: #666;
+  margin-top: 6rpx;
+}
+
+.shop-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 16rpx;
+}
+.order-item {
+  display: flex;
+  align-items: center;
+  padding: 12rpx 0;
+}
+.item-name { flex: 1; font-size: 26rpx; }
+.item-qty { font-size: 24rpx; color: #999; margin-right: 20rpx; }
+
+.fee-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10rpx 0;
+  font-size: 28rpx;
+}
+.fee-row.total {
+  border-top: 1rpx solid #eee;
+  padding-top: 16rpx;
+  margin-top: 8rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10rpx 0;
+  font-size: 26rpx;
+  color: #666;
+}
+
+.timeline-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 20rpx;
+}
+.timeline-item {
+  display: flex;
+  padding-left: 10rpx;
+  position: relative;
+}
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 17rpx;
+  top: 28rpx;
+  width: 2rpx;
+  height: calc(100% - 28rpx);
+  background: #eee;
+}
+.timeline-item:last-child::before { display: none; }
+.dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: #FF6B35;
+  margin-right: 24rpx;
+  margin-top: 8rpx;
+  flex-shrink: 0;
+}
+.timeline-content { padding-bottom: 24rpx; }
+.timeline-content text {
+  display: block;
+  font-size: 26rpx;
+}
+.timeline-time {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 6rpx;
+}
+
+.pay-btn {
+  margin-top: 30rpx;
+  display: block;
+}
+
+.cancel-btn {
+  text-align: center;
+  padding: 24rpx;
+  color: #FF6B35;
+  font-size: 30rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  margin-top: 20rpx;
+}

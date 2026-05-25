@@ -1,0 +1,67 @@
+<view class="container">
+  <!-- 收货地址 -->
+  <view class="card address-card" bindtap="chooseAddress">
+    <view wx:if="{{address}}">
+      <view class="address-header">
+        <text class="address-contact">{{address.contact_name}} {{address.contact_phone}}</text>
+      </view>
+      <view class="address-detail">
+        <text wx:if="{{address.label}}" class="tag tag-orange">{{address.label}}</text>
+        <text>{{address.province}}{{address.city}}{{address.district}}{{address.detail}}</text>
+      </view>
+    </view>
+    <view wx:else class="no-address">
+      <text>请选择收货地址</text>
+      <text class="arrow">></text>
+    </view>
+  </view>
+
+  <!-- 餐厅信息 -->
+  <view class="card" wx:if="{{restaurant}}">
+    <view class="shop-info">
+      <image src="{{restaurant.logo || '/images/default-logo.png'}}" />
+      <text>{{restaurant.name}}</text>
+    </view>
+  </view>
+
+  <!-- 菜品列表 -->
+  <view class="card">
+    <view class="item-title">菜品清单</view>
+    <view class="order-item" wx:for="{{cartItems}}" wx:key="menu_item_id">
+      <image src="{{item.image || '/images/default-food.png'}}" mode="aspectFill" />
+      <text class="item-name">{{item.name}}</text>
+      <text class="item-qty">x{{item.quantity}}</text>
+      <text class="price">{{item.price * item.quantity}}</text>
+    </view>
+  </view>
+
+  <!-- 费用明细 -->
+  <view class="card">
+    <view class="fee-row">
+      <text>菜品小计</text>
+      <text class="price">{{itemsTotal}}</text>
+    </view>
+    <view class="fee-row">
+      <text>配送费</text>
+      <text class="price">{{deliveryFee}}</text>
+    </view>
+    <view class="fee-row total">
+      <text>合计</text>
+      <text class="price">{{totalPrice}}</text>
+    </view>
+  </view>
+
+  <!-- 备注 -->
+  <view class="card">
+    <input placeholder="订单备注 (选填)" value="{{remark}}" bindinput="onRemarkInput" />
+  </view>
+
+  <!-- 提交按钮 -->
+  <view class="submit-bar">
+    <view class="submit-info">
+      <text>合计: </text>
+      <text class="price">{{totalPrice}}</text>
+    </view>
+    <view class="btn-primary submit-btn" bindtap="submitOrder">提交订单</view>
+  </view>
+</view>

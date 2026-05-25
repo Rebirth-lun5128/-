@@ -1,0 +1,53 @@
+<view class="container">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <input placeholder="搜索餐厅或菜品" bindconfirm="onSearch" confirm-type="search" />
+    <text class="search-icon">🔍</text>
+  </view>
+
+  <!-- 分类筛选 -->
+  <scroll-view class="category-scroll" scroll-x>
+    <view
+      class="category-item {{activeCategory === item ? 'active' : ''}}"
+      wx:for="{{categories}}"
+      wx:key="*this"
+      bindtap="onCategoryTap"
+      data-category="{{item}}"
+    >{{item}}</view>
+  </scroll-view>
+
+  <!-- 餐厅列表 -->
+  <view wx:if="{{restaurants.length === 0 && !loading}}" class="empty-state">
+    <text>暂无餐厅</text>
+  </view>
+
+  <view class="restaurant-list">
+    <view
+      class="restaurant-card card"
+      wx:for="{{restaurants}}"
+      wx:key="id"
+      bindtap="onRestaurantTap"
+      data-id="{{item.id}}"
+    >
+      <view class="restaurant-header">
+        <image class="restaurant-logo" src="{{item.logo || '/images/default-logo.png'}}" mode="aspectFill" />
+        <view class="restaurant-info">
+          <view class="restaurant-name">{{item.name}}</view>
+          <view class="restaurant-meta">
+            <text class="rating">★ {{item.rating}}</text>
+            <text class="sales">月售{{item.monthly_sales}}</text>
+            <text class="time">{{item.delivery_time}}</text>
+          </view>
+          <view class="restaurant-meta">
+            <text class="tag tag-orange">¥{{item.min_price}}起送</text>
+            <text class="tag tag-orange">配送¥{{item.delivery_fee}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="restaurant-notice" wx:if="{{item.notice}}">{{item.notice}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+  <view wx:if="{{!hasMore && restaurants.length > 0}}" class="no-more">— 没有更多了 —</view>
+</view>

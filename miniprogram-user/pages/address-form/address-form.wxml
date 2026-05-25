@@ -1,0 +1,45 @@
+<view class="container">
+  <view class="card">
+    <view class="form-item">
+      <text class="label">联系人</text>
+      <input placeholder="请输入姓名" value="{{form.contact_name}}" bindinput="onInput" data-field="contact_name" />
+    </view>
+    <view class="form-item">
+      <text class="label">手机号</text>
+      <input type="number" placeholder="请输入手机号" value="{{form.contact_phone}}" bindinput="onInput" data-field="contact_phone" />
+    </view>
+    <view class="form-item">
+      <text class="label">称呼</text>
+      <radio-group bindchange="onGenderChange">
+        <label class="radio-label"><radio value="1" checked="{{form.gender === 1}}" />先生</label>
+        <label class="radio-label"><radio value="2" checked="{{form.gender === 2}}" />女士</label>
+      </radio-group>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="form-item">
+      <text class="label">省市区</text>
+      <input placeholder="省" style="margin-bottom:10rpx" value="{{form.province}}" bindinput="onInput" data-field="province" />
+      <input placeholder="市" style="margin-bottom:10rpx" value="{{form.city}}" bindinput="onInput" data-field="city" />
+      <input placeholder="区" value="{{form.district}}" bindinput="onInput" data-field="district" />
+    </view>
+    <view class="form-item">
+      <text class="label">详细地址</text>
+      <input placeholder="街道/小区/门牌号" value="{{form.detail}}" bindinput="onInput" data-field="detail" />
+    </view>
+    <view class="form-item">
+      <text class="label">标签</text>
+      <input placeholder="家/公司/学校" value="{{form.label}}" bindinput="onInput" data-field="label" />
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="form-item switch-item">
+      <text class="label">设为默认地址</text>
+      <switch checked="{{form.is_default === 1}}" bindchange="onInput" data-field="is_default" />
+    </view>
+  </view>
+
+  <view class="btn-primary" bindtap="onSubmit">保存</view>
+</view>

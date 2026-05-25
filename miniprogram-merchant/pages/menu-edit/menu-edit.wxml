@@ -1,0 +1,31 @@
+<view class="container">
+  <view class="card">
+    <view class="form-item">
+      <text class="label">分类</text>
+      <picker range="{{categories}}" range-key="name" bindchange="onCategoryChange">
+        <text>{{categories[0] ? categories[0].name : '请选择'}}</text>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text class="label">菜品名称 *</text>
+      <input placeholder="请输入名称" value="{{form.name}}" bindinput="onInput" data-field="name" />
+    </view>
+    <view class="form-item">
+      <text class="label">图片</text>
+      <input placeholder="图片URL" value="{{form.image}}" bindinput="onInput" data-field="image" />
+    </view>
+    <view class="form-item">
+      <text class="label">价格 *</text>
+      <input type="digit" placeholder="0.00" value="{{form.price}}" bindinput="onInput" data-field="price" />
+    </view>
+    <view class="form-item">
+      <text class="label">原价</text>
+      <input type="digit" placeholder="0.00" value="{{form.original_price}}" bindinput="onInput" data-field="original_price" />
+    </view>
+    <view class="form-item">
+      <text class="label">描述</text>
+      <input placeholder="菜品描述" value="{{form.description}}" bindinput="onInput" data-field="description" />
+    </view>
+  </view>
+  <view class="btn-primary" bindtap="onSubmit">保存</view>
+</view>

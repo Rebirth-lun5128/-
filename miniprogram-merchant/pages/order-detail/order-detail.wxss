@@ -1,0 +1,21 @@
+.order-no { font-size: 26rpx; color: #999; }
+.order-status { font-size: 36rpx; font-weight: bold; margin-top: 10rpx; }
+.section-title { font-size: 28rpx; font-weight: bold; display: block; margin-bottom: 16rpx; }
+.addr { display: block; font-size: 26rpx; color: #666; margin-top: 8rpx; }
+
+.item { display: flex; justify-content: space-between; padding: 12rpx 0; }
+.total-row { display: flex; justify-content: space-between; padding-top: 16rpx; border-top: 1rpx solid #eee; margin-top: 8rpx; font-weight: bold; }
+
+.timeline-item { display: flex; padding-left: 10rpx; }
+.timeline-item:not(:last-child)::before {
+  content: ''; position: absolute; left: 17rpx; top: 28rpx; width: 2rpx; height: 100%; background: #eee;
+}
+.timeline-item:last-child .dot { background: #07C160; }
+.dot { width: 16rpx; height: 16rpx; border-radius: 50%; background: #ccc; margin-right: 24rpx; margin-top: 8rpx; flex-shrink: 0; position: relative; }
+.timeline-content { padding-bottom: 20rpx; }
+.timeline-content text { display: block; font-size: 26rpx; }
+.time { font-size: 22rpx; color: #999; margin-top: 4rpx; }
+
+.actions { display: flex; gap: 20rpx; margin-top: 30rpx; }
+.actions > view { flex: 1; text-align: center; padding: 24rpx; border-radius: 44rpx; font-size: 30rpx; }
+.btn-outline { border: 2rpx solid #ccc; color: #666; background: #fff; }

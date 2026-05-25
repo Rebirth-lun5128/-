@@ -1,0 +1,82 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./server
+    container_name: food-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./food_delivery.db}
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production-please}
+      - WECHAT_APPID=${WECHAT_APPID:-}
+      - WECHAT_SECRET=${WECHAT_SECRET:-}
+      - UPLOAD_DIR=/app/uploads
+      - REDIS_URL=${REDIS_URL:-}
+    volumes:
+      - sqlite_data:/app
+      - uploads_data:/app/uploads
+    restart: unless-stopped
+    networks:
+      - food-net
+
+  admin-web:
+    build:
+      context: ./admin-web
+    container_name: food-admin-web
+    ports:
+      - "${ADMIN_PORT:-80}:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - food-net
+
+  mysql:
+    image: mysql:8.0
+    container_name: food-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: food_delivery
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - food-net
+    profiles:
+      - mysql
+
+  redis:
+    image: redis:7-alpine
+    container_name: food-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - food-net
+    profiles:
+      - redis
+      - full
+
+volumes:
+  mysql_data:
+  redis_data:
+  sqlite_data:
+  uploads_data:
+
+networks:
+  food-net:
+    driver: bridge

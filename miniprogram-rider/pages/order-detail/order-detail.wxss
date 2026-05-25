@@ -1,0 +1,7 @@
+.order-no { font-size: 26rpx; color: #999; display: block; }
+.status { font-size: 36rpx; font-weight: bold; color: #FF9800; display: block; margin-top: 10rpx; }
+.section-title { font-size: 28rpx; font-weight: bold; display: block; margin-bottom: 16rpx; }
+.shop-name { font-size: 30rpx; font-weight: bold; }
+.addr { display: block; font-size: 26rpx; color: #666; margin-top: 8rpx; }
+.item { display: flex; justify-content: space-between; padding: 10rpx 0; }
+.fee-row { display: flex; justify-content: space-between; padding-top: 16rpx; border-top: 1rpx solid #eee; margin-top: 8rpx; }

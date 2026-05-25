@@ -1,0 +1,51 @@
+<view class="container" wx:if="{{dashboard}}">
+  <!-- 营业状态 -->
+  <view class="status-bar">
+    <text class="status-dot {{dashboard.status === 'open' ? 'online' : ''}}"></text>
+    <text>店铺状态: {{dashboard.status === 'open' ? '营业中' : '已休息'}}</text>
+    <text class="go-shop" bindtap="goToShop">管理</text>
+  </view>
+
+  <!-- 数据卡片 -->
+  <view class="stats-grid">
+    <view class="stat-card" bindtap="goToOrders">
+      <text class="stat-num">{{dashboard.today_orders}}</text>
+      <text class="stat-label">今日订单</text>
+    </view>
+    <view class="stat-card" bindtap="goToOrders" data-status="pending_accept">
+      <text class="stat-num warn">{{dashboard.pending_orders}}</text>
+      <text class="stat-label">待处理</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-num price">{{dashboard.today_revenue}}</text>
+      <text class="stat-label">今日营收</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-num">{{dashboard.monthly_sales || 0}}</text>
+      <text class="stat-label">月销量</text>
+    </view>
+  </view>
+
+  <!-- 快捷操作 -->
+  <view class="card">
+    <text class="section-title">快捷操作</text>
+    <view class="quick-actions">
+      <view class="quick-item" bindtap="goToOrders" data-status="pending_accept">
+        <text class="quick-icon">📋</text>
+        <text>新订单</text>
+      </view>
+      <view class="quick-item" bindtap="goToMenu">
+        <text class="quick-icon">📝</text>
+        <text>菜单管理</text>
+      </view>
+      <view class="quick-item" bindtap="goToShop">
+        <text class="quick-icon">🏪</text>
+        <text>店铺设置</text>
+      </view>
+      <view class="quick-item" bindtap="goToOrders">
+        <text class="quick-icon">📊</text>
+        <text>全部订单</text>
+      </view>
+    </view>
+  </view>
+</view>
