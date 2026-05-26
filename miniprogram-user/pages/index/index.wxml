@@ -1,53 +1,142 @@
-<view class="container">
+<view class="home">
+  <!-- 顶部定位栏 -->
+  <view class="location-bar">
+    <text class="loc-icon">📍</text>
+    <text class="loc-text">{{districtNotice || '正在定位...'}}</text>
+  </view>
+
   <!-- 搜索栏 -->
   <view class="search-bar">
-    <input placeholder="搜索餐厅或菜品" bindconfirm="onSearch" confirm-type="search" />
     <text class="search-icon">🔍</text>
+    <input class="search-input" placeholder="搜索店铺或菜品" bindconfirm="onSearch" confirm-type="search" />
   </view>
 
-  <!-- 分类筛选 -->
-  <scroll-view class="category-scroll" scroll-x>
-    <view
-      class="category-item {{activeCategory === item ? 'active' : ''}}"
-      wx:for="{{categories}}"
-      wx:key="*this"
-      bindtap="onCategoryTap"
-      data-category="{{item}}"
-    >{{item}}</view>
-  </scroll-view>
-
-  <!-- 餐厅列表 -->
-  <view wx:if="{{restaurants.length === 0 && !loading}}" class="empty-state">
-    <text>暂无餐厅</text>
-  </view>
-
-  <view class="restaurant-list">
-    <view
-      class="restaurant-card card"
-      wx:for="{{restaurants}}"
-      wx:key="id"
-      bindtap="onRestaurantTap"
-      data-id="{{item.id}}"
-    >
-      <view class="restaurant-header">
-        <image class="restaurant-logo" src="{{item.logo || '/images/default-logo.png'}}" mode="aspectFill" />
-        <view class="restaurant-info">
-          <view class="restaurant-name">{{item.name}}</view>
-          <view class="restaurant-meta">
-            <text class="rating">★ {{item.rating}}</text>
-            <text class="sales">月售{{item.monthly_sales}}</text>
-            <text class="time">{{item.delivery_time}}</text>
+  <!-- Hero 轮播广告区 -->
+  <view class="hero-section">
+    <swiper class="hero-swiper" indicator-dots autoplay interval="4000" circular>
+      <swiper-item>
+        <view class="hero-slide slide1">
+          <view class="hero-content">
+            <text class="hero-tag">新人专享</text>
+            <text class="hero-title">首单立减 ¥3</text>
+            <text class="hero-sub">全平台商家通用</text>
           </view>
-          <view class="restaurant-meta">
-            <text class="tag tag-orange">¥{{item.min_price}}起送</text>
-            <text class="tag tag-orange">配送¥{{item.delivery_fee}}</text>
-          </view>
+          <text class="hero-emoji">🎉</text>
         </view>
+      </swiper-item>
+      <swiper-item>
+        <view class="hero-slide slide2">
+          <view class="hero-content">
+            <text class="hero-tag">限时特惠</text>
+            <text class="hero-title">夜宵全场 9 折</text>
+            <text class="hero-sub">每晚 20:00-23:00</text>
+          </view>
+          <text class="hero-emoji">🌙</text>
+        </view>
+      </swiper-item>
+      <swiper-item>
+        <view class="hero-slide slide3">
+          <view class="hero-content">
+            <text class="hero-tag">邀请有礼</text>
+            <text class="hero-title">推荐好友得优惠券</text>
+            <text class="hero-sub">每人最高得 ¥5</text>
+          </view>
+          <text class="hero-emoji">🎁</text>
+        </view>
+      </swiper-item>
+    </swiper>
+  </view>
+
+  <!-- 品类图标区 -->
+  <view class="category-section">
+    <view class="category-grid">
+      <view class="category-item" wx:for="{{categories}}" wx:key="name" bindtap="onCategoryTap" data-keyword="{{item.keyword}}">
+        <view class="cate-icon" style="background: {{item.bg}}">{{item.icon}}</view>
+        <text class="cate-name">{{item.name}}</text>
       </view>
-      <view class="restaurant-notice" wx:if="{{item.notice}}">{{item.notice}}</view>
     </view>
   </view>
 
-  <view wx:if="{{loading}}" class="loading">加载中...</view>
-  <view wx:if="{{!hasMore && restaurants.length > 0}}" class="no-more">— 没有更多了 —</view>
+  <!-- 热销推荐区（横向滚动） -->
+  <view class="featured-section" wx:if="{{featuredStores.length > 0}}">
+    <view class="section-header">
+      <text class="section-title">🔥 热销推荐</text>
+      <text class="section-more" bindtap="goToAll">全部 →</text>
+    </view>
+    <scroll-view class="featured-scroll" scroll-x>
+      <view class="featured-item" wx:for="{{featuredStores}}" wx:key="id" bindtap="onStoreTap" data-id="{{item.id}}">
+        <image class="feat-img" src="{{item.logo || '/images/default-logo.png'}}" mode="aspectFill" />
+        <text class="feat-name">{{item.name}}</text>
+        <view class="feat-meta">
+          <text class="feat-rating">★ {{item.rating}}</text>
+          <text class="feat-sales">月售{{item.monthly_sales}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 店铺类型筛选 -->
+  <scroll-view class="type-scroll" scroll-x>
+    <view
+      class="type-item {{activeType === item.value ? 'active' : ''}}"
+      wx:for="{{storeTypes}}"
+      wx:key="value"
+      bindtap="onTypeTap"
+      data-value="{{item.value}}"
+    >{{item.label}}</view>
+  </scroll-view>
+
+  <!-- 商家列表 -->
+  <view class="section-header-list">
+    <text class="section-title">🏪 {{activeType === '' ? '全部商家' : storeTypes[0].label === activeType ? '全部商家' : ''}}</text>
+    <text class="section-count" wx:if="{{total > 0}}">共 {{total}} 家</text>
+  </view>
+
+  <view wx:if="{{stores.length === 0 && !loading}}" class="empty-state">
+    <text class="empty-icon">🍳</text>
+    <text>暂无营业店铺</text>
+  </view>
+
+  <view class="store-list">
+    <view class="store-card" wx:for="{{stores}}" wx:key="id" bindtap="onStoreTap" data-id="{{item.id}}">
+      <image class="store-logo-img" src="{{item.logo || '/images/default-logo.png'}}" mode="aspectFill" />
+      <view class="store-body">
+        <view class="store-top-row">
+          <text class="store-name-text">{{item.name}}</text>
+          <text class="store-type-tag tag-{{item.store_type}}">{{item.store_type === 'stall' ? '夜市摊位' : item.store_type === 'home_kitchen' ? '家庭厨房' : '平台自营'}}</text>
+        </view>
+        <view class="store-meta-row">
+          <text class="store-rating">★ {{item.rating}}</text>
+          <text>月售 {{item.monthly_sales}}</text>
+          <text>{{item.delivery_time}}</text>
+        </view>
+        <view class="store-tags-row">
+          <text class="min-price-tag">¥{{item.min_price}} 起送</text>
+          <text class="delivery-tag" wx:if="{{item.delivery_fee > 0}}">配送 ¥{{item.delivery_fee}}</text>
+          <text class="delivery-tag free" wx:else>免配送费</text>
+        </view>
+        <view class="store-notice-text" wx:if="{{item.notice}}">{{item.notice}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading-text">加载中...</view>
+  <view wx:if="{{!hasMore && stores.length > 0}}" class="no-more-text">— 已经到底了 —</view>
+
+  <!-- 底部广告留白 -->
+  <view class="ad-placeholder">
+    <view class="ad-inner">
+      <text class="ad-icon">📢</text>
+      <view class="ad-info">
+        <text class="ad-title">广告位招商</text>
+        <text class="ad-desc">您的品牌将展示在这里</text>
+      </view>
+      <text class="ad-arrow">→</text>
+    </view>
+  </view>
+
+  <!-- 优惠券悬浮入口 -->
+  <view class="coupon-fab" bindtap="goToCoupons">
+    <text class="fab-icon">🎫</text>
+  </view>
 </view>

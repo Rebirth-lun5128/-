@@ -1,0 +1,71 @@
+<view class="container">
+  <!-- Tab 筛选 -->
+  <view class="tabs">
+    <view
+      class="tab-item {{activeTab === index ? 'active' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="*this"
+      bindtap="onTabTap"
+      data-index="{{index}}"
+    >{{item}}</view>
+  </view>
+
+  <!-- 骑手数量概览 -->
+  <view class="rider-summary" wx:if="{{riders.length > 0}}">
+    <text class="summary-text">共 <text class="sum-num">{{riders.length}}</text> 位骑手</text>
+  </view>
+
+  <view wx:if="{{riders.length === 0 && !loading}}" class="empty-state">
+    <text class="empty-icon">🏍️</text>
+    <text>暂无骑手数据</text>
+  </view>
+
+  <!-- 骑手卡片 -->
+  <view class="rider-card card" wx:for="{{riders}}" wx:key="id">
+    <view class="rc-top">
+      <view class="rc-avatar">
+        <text>{{item.real_name[0] || '骑'}}</text>
+      </view>
+      <view class="rc-info">
+        <view class="rc-name-row">
+          <text class="rc-name">{{item.real_name}}</text>
+          <text class="rc-status-dot {{item.status === 'online' ? 'on' : item.status === 'busy' ? 'busy' : 'off'}}"></text>
+          <text class="rc-status-text">{{item.status === 'online' ? '在线' : item.status === 'busy' ? '配送中' : '离线'}}</text>
+        </view>
+        <text class="rc-phone">{{item.phone}}</text>
+      </view>
+      <view class="rc-audit-tag {{item.audit_status === 'approved' ? 'tag-green' : item.audit_status === 'rejected' ? 'tag-red' : 'tag-orange'}}">
+        {{item.audit_status === 'pending' ? '待审核' : item.audit_status === 'approved' ? '已通过' : '已拒绝'}}
+      </view>
+    </view>
+
+    <view class="rc-divider"></view>
+
+    <view class="rc-stats">
+      <view class="rc-stat-item">
+        <text class="rc-stat-val">{{item.total_orders}}</text>
+        <text class="rc-stat-label">累计配送</text>
+      </view>
+      <view class="rc-stat-item">
+        <text class="rc-stat-val price">¥{{item.balance}}</text>
+        <text class="rc-stat-label">余额</text>
+      </view>
+      <view class="rc-stat-item">
+        <text class="rc-stat-val star">★ {{item.rating}}</text>
+        <text class="rc-stat-label">评分</text>
+      </view>
+      <view class="rc-stat-item">
+        <text class="rc-stat-val">{{item.created_at.slice(0, 10)}}</text>
+        <text class="rc-stat-label">注册时间</text>
+      </view>
+    </view>
+
+    <!-- 审核按钮 -->
+    <view class="rc-actions" wx:if="{{item.audit_status === 'pending'}}">
+      <view class="btn-success" bindtap="doAudit" data-id="{{item.id}}" data-status="approved">✓ 审核通过</view>
+      <view class="btn-danger" bindtap="doAudit" data-id="{{item.id}}" data-status="rejected">✗ 拒绝</view>
+    </view>
+  </view>
+
+  <view class="end-hint" wx:if="{{riders.length > 0}}">— 已加载全部 —</view>
+</view>

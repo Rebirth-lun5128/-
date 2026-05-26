@@ -1,11 +1,12 @@
 const api = require('../../utils/api')
+const ws = require('../../utils/websocket')
 const app = getApp()
 
 Page({
   data: {
-    status: 'offline', // offline/online/busy
+    status: 'offline',
     pendingOrders: [],
-    myOrder: null, // 当前配送中的订单
+    myOrder: null,
   },
 
   onShow() {
@@ -13,15 +14,28 @@ Page({
     this.loadStatus()
     this.loadPendingOrders()
     this.loadMyOrder()
+    this.connectWS()
+  },
+
+  onHide() {
+    ws.close()
   },
 
   onPullDownRefresh() {
     Promise.all([this.loadPendingOrders(), this.loadMyOrder()]).then(() => wx.stopPullDownRefresh())
   },
 
+  connectWS() {
+    ws.connect()
+    ws.on('new_delivery', (data) => {
+      this.loadPendingOrders()
+      const storeCount = data.store_count || 1
+      wx.showToast({ title: `新合单: ${storeCount}店`, icon: 'none' })
+    })
+  },
+
   async loadStatus() {
     try {
-      // 从钱包接口获取骑手状态
       const wallet = await api.get('/api/rider/orders/wallet')
       this.setData({ status: wallet.status || 'offline' })
     } catch (e) { }
@@ -38,7 +52,6 @@ Page({
   async loadMyOrder() {
     try {
       const res = await api.get('/api/rider/orders/my', { page: 1, page_size: 1 })
-      // 找配送中的订单
       const active = (res.items || []).find(o => o.status === 'delivering')
       this.setData({ myOrder: active || null })
     } catch (e) { }

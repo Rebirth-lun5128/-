@@ -1,23 +1,56 @@
-<view class="container" wx:if="{{wallet}}">
+<view class="page" wx:if="{{wallet}}">
+  <!-- 余额卡片 -->
   <view class="balance-card">
-    <text class="balance-label">账户余额</text>
+    <text class="balance-label">可提现余额</text>
     <text class="balance-num">¥{{wallet.balance}}</text>
-    <text class="balance-extra">累计配送 {{wallet.total_orders}} 单</text>
+    <view class="balance-stats">
+      <text>今日收入 ¥{{wallet.today_income || 0}}</text>
+      <text class="sep">|</text>
+      <text>累计 {{wallet.total_orders}} 单</text>
+    </view>
   </view>
 
+  <!-- 提现按钮 -->
+  <view class="withdraw-section">
+    <button class="btn-withdraw" bindtap="doWithdraw" loading="{{withdrawing}}" disabled="{{wallet.balance <= 0}}">
+      {{wallet.balance > 0 ? '提现到微信零钱' : '暂无余额可提'}}
+    </button>
+    <text class="withdraw-tip">提现到微信零钱，实时到账</text>
+  </view>
+
+  <!-- 收入统计 -->
   <view class="card">
     <text class="section-title">收入统计</text>
     <view class="stat-row">
-      <text>今日预计收入</text>
-      <text class="price">¥{{wallet.balance}}</text>
+      <text class="stat-name">⭐ 骑手评分</text>
+      <text class="stat-val">{{wallet.rating || '5.0'}} 分</text>
     </view>
     <view class="stat-row">
-      <text>总配送单数</text>
-      <text>{{wallet.total_orders}} 单</text>
+      <text class="stat-name">🛵 累计配送</text>
+      <text class="stat-val">{{wallet.total_orders}} 单</text>
     </view>
     <view class="stat-row">
-      <text>骑手评分</text>
-      <text>★ {{wallet.rating || '5.0'}}</text>
+      <text class="stat-name">📅 今日收入</text>
+      <text class="stat-val price">¥{{wallet.today_income || 0}}</text>
+    </view>
+    <view class="stat-row">
+      <text class="stat-name">💰 账户余额</text>
+      <text class="stat-val price">¥{{wallet.balance}}</text>
+    </view>
+  </view>
+
+  <!-- 最近收入 -->
+  <view class="card" wx:if="{{wallet.recent_orders && wallet.recent_orders.length > 0}}">
+    <text class="section-title">最近收入</text>
+    <view class="income-item" wx:for="{{wallet.recent_orders}}" wx:key="id">
+      <view class="income-left">
+        <text class="income-store">{{item.store_name}}</text>
+        <text class="income-no">#{{item.order_no}}</text>
+      </view>
+      <view class="income-right">
+        <text class="income-amount">+¥5</text>
+        <text class="income-time">{{item.completed_at}}</text>
+      </view>
     </view>
   </view>
 </view>

@@ -1,17 +1,35 @@
 <view class="container">
   <view class="card">
     <text class="section-title">{{isRegister ? '入驻信息' : '店铺信息'}}</text>
+
+    <view class="form-item" wx:if="{{isRegister}}">
+      <text class="label">店铺类型 *</text>
+      <picker range="{{storeTypes}}" bindchange="onStoreTypeChange" value="{{storeTypeIndex}}">
+        <text>{{storeTypes[storeTypeIndex]}}</text>
+      </picker>
+    </view>
+
     <view class="form-item">
       <text class="label">店铺名称 *</text>
       <input placeholder="请输入店铺名称" value="{{form.name}}" bindinput="onInput" data-field="name" />
     </view>
     <view class="form-item">
-      <text class="label">Logo URL</text>
-      <input placeholder="店铺Logo图片地址" value="{{form.logo}}" bindinput="onInput" data-field="logo" />
+      <text class="label">店铺Logo</text>
+      <view class="upload-row">
+        <image class="upload-preview" src="{{form.logo}}" mode="aspectFill" wx:if="{{form.logo}}" bindtap="onChooseImage" data-field="logo"></image>
+        <view class="upload-btn" bindtap="onChooseImage" data-field="logo">
+          <text>{{form.logo ? '更换' : '+ 上传'}}</text>
+        </view>
+      </view>
     </view>
     <view class="form-item">
-      <text class="label">Banner URL</text>
-      <input placeholder="顶部横幅图片地址" value="{{form.banner}}" bindinput="onInput" data-field="banner" />
+      <text class="label">顶部横幅</text>
+      <view class="upload-row">
+        <image class="upload-preview banner-preview" src="{{form.banner}}" mode="aspectFill" wx:if="{{form.banner}}" bindtap="onChooseImage" data-field="banner"></image>
+        <view class="upload-btn" bindtap="onChooseImage" data-field="banner">
+          <text>{{form.banner ? '更换' : '+ 上传'}}</text>
+        </view>
+      </view>
     </view>
     <view class="form-item">
       <text class="label">联系电话</text>
@@ -26,19 +44,29 @@
       <input placeholder="夜市小吃/烧烤/粉面等" value="{{form.category}}" bindinput="onInput" data-field="category" />
     </view>
     <view class="form-item">
-      <text class="label">夜市摊位位置 *</text>
+      <text class="label">摊位位置</text>
       <input placeholder="如: XX夜市A区10号摊位" value="{{form.stall_location}}" bindinput="onInput" data-field="stall_location" />
     </view>
     <view class="form-item">
-      <text class="label">摊位照片 (选填)</text>
-      <input placeholder="摊位照片URL，用于平台核验" value="{{form.stall_photo}}" bindinput="onInput" data-field="stall_photo" />
+      <text class="label">摊位照片</text>
+      <view class="upload-row">
+        <image class="upload-preview" src="{{form.stall_photo}}" mode="aspectFill" wx:if="{{form.stall_photo}}" bindtap="onChooseImage" data-field="stall_photo"></image>
+        <view class="upload-btn" bindtap="onChooseImage" data-field="stall_photo">
+          <text>{{form.stall_photo ? '更换' : '+ 上传'}}</text>
+        </view>
+      </view>
     </view>
     <view class="form-item">
-      <text class="label">身份证照片 (选填)</text>
-      <input placeholder="身份证照片URL，用于身份核实" value="{{form.id_card_photo}}" bindinput="onInput" data-field="id_card_photo" />
+      <text class="label">身份证照片</text>
+      <view class="upload-row">
+        <image class="upload-preview" src="{{form.id_card_photo}}" mode="aspectFill" wx:if="{{form.id_card_photo}}" bindtap="onChooseImage" data-field="id_card_photo"></image>
+        <view class="upload-btn" bindtap="onChooseImage" data-field="id_card_photo">
+          <text>{{form.id_card_photo ? '更换' : '+ 上传'}}</text>
+        </view>
+      </view>
     </view>
     <view class="tips" wx:if="{{isRegister}}">
-      <text>⚠️ 提交后将由平台进行人工核验（现场核验或视频核验），无需营业执照。核验通过后即可营业。</text>
+      <text>⚠️ 提交后将由分区管理员进行人工核验（现场核验或视频核验），无需营业执照。</text>
     </view>
   </view>
 
@@ -64,10 +92,20 @@
 
   <view class="card" wx:if="{{!isRegister}}">
     <text class="section-title">营业状态</text>
-    <radio-group bindchange="onStatusChange">
-      <label class="radio-label"><radio value="open" checked="{{form.status === 'open'}}" />营业中</label>
-      <label class="radio-label"><radio value="closed" checked="{{form.status === 'closed'}}" />已打烊</label>
-    </radio-group>
+    <view class="status-options">
+      <view class="status-option {{form.status === 'open' ? 'active' : ''}}" bindtap="setStatus" data-status="open">
+        <text class="status-icon">🟢</text>
+        <text>营业中</text>
+      </view>
+      <view class="status-option {{form.status === 'resting' ? 'active' : ''}}" bindtap="setStatus" data-status="resting">
+        <text class="status-icon">🟡</text>
+        <text>休息中</text>
+      </view>
+      <view class="status-option {{form.status === 'closed' ? 'active' : ''}}" bindtap="setStatus" data-status="closed">
+        <text class="status-icon">⚫</text>
+        <text>已收摊</text>
+      </view>
+    </view>
   </view>
 
   <view class="btn-primary" bindtap="onSubmit">{{isRegister ? '提交入驻' : '保存设置'}}</view>

@@ -1,0 +1,89 @@
+.search-box {
+  margin-bottom: 16rpx;
+}
+.search-input {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 22rpx 28rpx;
+  font-size: 28rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.03);
+}
+
+.user-summary {
+  padding: 0 4rpx 16rpx;
+  font-size: 26rpx;
+  color: #999;
+}
+.sum-num {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.empty-icon {
+  font-size: 60rpx;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+/* 用户卡片 */
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  margin-bottom: 16rpx;
+}
+.uc-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(135deg, #6C5CE7, #a29bfe);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.uc-avatar-img {
+  width: 100%;
+  height: 100%;
+}
+.uc-avatar-text {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #fff;
+}
+.uc-info {
+  flex: 1;
+  min-width: 0;
+}
+.uc-name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4rpx;
+}
+.uc-phone {
+  font-size: 24rpx;
+  color: #999;
+}
+.uc-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+.uc-time {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+}
+.uc-label {
+  font-size: 20rpx;
+  color: #ccc;
+}
+
+.end-hint {
+  text-align: center;
+  color: #ddd;
+  font-size: 24rpx;
+  padding: 20rpx 0;
+}

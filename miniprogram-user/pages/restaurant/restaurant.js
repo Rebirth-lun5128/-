@@ -22,7 +22,7 @@ Page({
 
   async loadRestaurant(id) {
     try {
-      const res = await api.get(`/api/user/restaurants/${id}`)
+      const res = await api.get(`/api/user/stores/${id}`)
       this.setData({
         restaurant: res,
         categories: res.categories || [],
@@ -32,7 +32,7 @@ Page({
 
   loadCart() {
     const allCarts = app.globalData.cart
-    const restaurantCart = allCarts[this.data.restaurantId] || { items: [], restaurant_name: '' }
+    const restaurantCart = allCarts[this.data.restaurantId] || { items: [], store_name: '' }
     const cart = restaurantCart.items || []
     const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
     const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
@@ -50,16 +50,16 @@ Page({
     if (!allCarts[this.data.restaurantId]) {
       allCarts[this.data.restaurantId] = {
         items: [],
-        restaurant_name: this.data.restaurant ? this.data.restaurant.name : '',
+        store_name: this.data.restaurant ? this.data.restaurant.name : '',
       }
     }
     const cart = allCarts[this.data.restaurantId].items
-    const existing = cart.find(c => c.menu_item_id === item.id)
+    const existing = cart.find(c => c.product_id === item.id)
     if (existing) {
       existing.quantity += 1
     } else {
       cart.push({
-        menu_item_id: item.id,
+        product_id: item.id,
         name: item.name,
         image: item.image,
         price: item.price,
@@ -73,7 +73,7 @@ Page({
     const item = e.currentTarget.dataset.item
     const allCarts = app.globalData.cart
     const cart = allCarts[this.data.restaurantId]?.items || []
-    const idx = cart.findIndex(c => c.menu_item_id === item.id)
+    const idx = cart.findIndex(c => c.product_id === item.id)
     if (idx >= 0) {
       cart[idx].quantity -= 1
       if (cart[idx].quantity <= 0) cart.splice(idx, 1)
@@ -107,6 +107,6 @@ Page({
       wx.showToast({ title: '请先添加菜品', icon: 'none' })
       return
     }
-    wx.navigateTo({ url: `/pages/order-confirm/order-confirm?restaurant_id=${this.data.restaurantId}` })
+    wx.navigateTo({ url: `/pages/order-confirm/order-confirm?store_id=${this.data.restaurantId}` })
   },
 })

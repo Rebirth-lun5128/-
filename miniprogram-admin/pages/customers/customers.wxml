@@ -1,0 +1,40 @@
+<view class="container">
+  <!-- 搜索 -->
+  <view class="search-box">
+    <input
+      class="search-input"
+      placeholder="🔍 搜索用户昵称或手机号..."
+      value="{{keyword}}"
+      bindinput="onSearchInput"
+      confirm-type="search"
+    />
+  </view>
+
+  <!-- 统计 -->
+  <view class="user-summary" wx:if="{{users.length > 0}}">
+    <text>共 <text class="sum-num">{{total}}</text> 位注册用户</text>
+  </view>
+
+  <view class="empty-state" wx:if="{{users.length === 0 && !loading}}">
+    <text class="empty-icon">👤</text>
+    <text>暂无用户数据</text>
+  </view>
+
+  <!-- 用户卡片 -->
+  <view class="user-card card" wx:for="{{users}}" wx:key="id">
+    <view class="uc-avatar">
+      <image wx:if="{{item.avatar}}" src="{{item.avatar}}" mode="aspectFill" class="uc-avatar-img"></image>
+      <text wx:else class="uc-avatar-text">{{item.nickname ? item.nickname[0] : '用'}}</text>
+    </view>
+    <view class="uc-info">
+      <text class="uc-name">{{item.nickname || '未设置昵称'}}</text>
+      <text class="uc-phone">{{item.phone || '未绑定手机'}}</text>
+    </view>
+    <view class="uc-right">
+      <text class="uc-time">{{item.created_at.slice(0, 10)}}</text>
+      <text class="uc-label">注册</text>
+    </view>
+  </view>
+
+  <view class="end-hint" wx:if="{{users.length > 0}}">— 已加载全部 —</view>
+</view>

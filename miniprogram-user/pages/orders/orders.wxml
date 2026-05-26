@@ -17,15 +17,29 @@
 
   <view class="order-card card" wx:for="{{orders}}" wx:key="id" bindtap="onOrderTap" data-id="{{item.id}}">
     <view class="order-header">
-      <text class="order-shop">{{item.restaurant_name}}</text>
+      <view class="order-shops">
+        <text wx:if="{{item.sub_orders && item.sub_orders.length > 0}}" class="order-shop">
+          {{item.sub_orders[0].store_name}}
+          <text wx:if="{{item.sub_orders.length > 1}}" class="store-count">+{{item.sub_orders.length - 1}}店</text>
+        </text>
+        <text wx:else class="order-shop">{{item.store_name || item.order_no}}</text>
+      </view>
       <text class="order-status" style="color: {{item.statusColor}}">{{item.statusText}}</text>
     </view>
     <view class="order-items">
-      <text wx:for="{{item.items}}" wx:key="id">{{item.name}} x{{item.quantity}} </text>
+      <block wx:if="{{item.sub_orders && item.sub_orders.length > 0}}">
+        <text wx:for="{{item.sub_orders}}" wx:key="id" wx:for-item="sub">
+          {{sub.store_name || sub.store_name_snapshot}}
+          <text wx:if="{{index < item.sub_orders.length - 1}}"> + </text>
+        </text>
+      </block>
+      <block wx:else>
+        <text wx:for="{{item.items}}" wx:key="id">{{item.name}} x{{item.quantity}} </text>
+      </block>
     </view>
     <view class="order-footer">
       <text class="order-time">{{item.created_at}}</text>
-      <text class="price">{{item.total_price}}</text>
+      <text class="price">¥{{item.total_price}}</text>
     </view>
   </view>
 </view>

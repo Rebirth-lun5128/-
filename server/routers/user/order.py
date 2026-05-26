@@ -1,6 +1,7 @@
 import math
 import random
 from datetime import datetime
+from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -8,11 +9,17 @@ from sqlalchemy.orm import Session
 from auth import require_user
 from database import get_db
 from models.user import User, UserAddress
-from models.restaurant import Restaurant, MenuItem
+from models.store import Store, Product
 from models.rider import Rider
-from models.order import Order, OrderItem, OrderTimeline
-from schemas.order import OrderCreate, OrderOut, OrderDetailOut, OrderListOut
-from schemas.payment import PayParamsOut, RefundIn
+from models.district import District
+from models.order import CombinedOrder, SubOrder, SubOrderItem, SubOrderTimeline, OrderReview, OrderModification
+from models.coupon import Coupon, UserCoupon
+from schemas.order import (
+    CombinedOrderCreate, CombinedOrderOut, CombinedOrderDetailOut, CombinedOrderListOut,
+    SubOrderOut, SubOrderDetailOut, SubOrderItemOut, SubOrderTimelineOut,
+    ReviewCreate, ReviewOut, ModificationCreate, ModificationOut,
+)
+from schemas.payment import PayParamsOut
 from payment import create_jsapi_order, apply_refund
 from websocket import manager
 
@@ -24,35 +31,99 @@ def _generate_order_no() -> str:
     return now.strftime("%Y%m%d%H%M%S") + str(random.randint(1000, 9999))
 
 
-def _add_timeline(order_id: int, status: str, description: str, db: Session):
-    db.add(OrderTimeline(order_id=order_id, status=status, description=description))
+def _add_sub_timeline(sub_order_id: int, status: str, description: str, db: Session):
+    db.add(SubOrderTimeline(sub_order_id=sub_order_id, status=status, description=description))
 
 
-def _order_summary(order, restaurant_name: str = "", rider_name: str = "") -> dict:
+def _derive_combined_status(sub_orders: list) -> str:
+    """根据子单状态推导总单聚合状态"""
+    statuses = [s.status for s in sub_orders]
+    if all(s == "cancelled" for s in statuses):
+        return "cancelled"
+    if any(s == "delivering" for s in statuses):
+        return "delivering"
+    if all(s in ("completed", "cancelled") for s in statuses):
+        return "completed" if all(s == "completed" for s in statuses) else "partial"
+    if all(s in ("pending_accept", "preparing", "ready") for s in statuses):
+        return "pending"
+    return "pending"
+
+
+def _combined_order_out(order, rider_name: str = "") -> dict:
+    """组装 CombinedOrderOut 数据（不含 sub_orders）"""
     return {
         "id": order.id, "order_no": order.order_no, "status": order.status,
-        "user_id": order.user_id, "restaurant_id": order.restaurant_id,
-        "rider_id": order.rider_id, "total_price": float(order.total_price),
-        "restaurant_name": restaurant_name, "rider_name": rider_name,
+        "user_id": order.user_id, "rider_id": order.rider_id,
+        "items_total": float(order.items_total),
+        "delivery_fee_original": float(order.delivery_fee_original),
+        "delivery_fee_discount": float(order.delivery_fee_discount),
+        "delivery_fee": float(order.delivery_fee),
+        "package_fee": float(order.package_fee),
+        "coupon_discount": float(order.coupon_discount),
+        "total_price": float(order.total_price),
+        "rider_name": rider_name,
     }
 
 
-@router.post("", response_model=OrderOut)
+def _sub_order_out(sub) -> dict:
+    return {
+        "id": sub.id, "combined_order_id": sub.combined_order_id,
+        "store_id": sub.store_id, "store_name_snapshot": sub.store_name_snapshot or "",
+        "items_total": float(sub.items_total),
+        "commission_rate": float(sub.commission_rate),
+        "status": sub.status,
+        "cancel_reason": sub.cancel_reason or "",
+        "cancel_by": sub.cancel_by or "",
+        "accepted_at": sub.accepted_at,
+        "ready_at": sub.ready_at,
+        "created_at": sub.created_at,
+        "items": [SubOrderItemOut.model_validate(i).model_dump() for i in (sub.items or [])],
+        "store_name": sub.store.name if sub.store else "",
+    }
+
+
+def _calculate_delivery_fee(district, store_surcharges: List[float], items_total: float) -> dict:
+    """计算配送费，返回 {original, discount, final}"""
+    now = datetime.now()
+    is_peak = False
+    base_fee_fen = district.delivery_fee or 0
+    if district.peak_delivery_fee and district.peak_delivery_fee > 0:
+        peak_start = district.peak_start_hour
+        peak_end = district.peak_end_hour
+        if peak_start is not None and peak_end is not None:
+            is_peak = peak_start <= now.hour < peak_end
+            if is_peak:
+                base_fee_fen = district.peak_delivery_fee
+
+    base_fee = base_fee_fen / 100.0
+    max_surcharge = max(store_surcharges) if store_surcharges else 0
+    original = round(base_fee + float(max_surcharge), 2)
+
+    # 满减配送费规则匹配
+    discount = 0
+    rules = district.delivery_fee_rules or []
+    for rule in rules:
+        threshold = float(rule.get("threshold", 0))
+        if items_total >= threshold:
+            rule_type = rule.get("type", "")
+            if rule_type == "free":
+                discount = original
+            elif rule_type == "reduce":
+                discount = float(rule.get("reduce", 0))
+            break  # 规则按优惠最大排序，命中第一条即停止
+
+    discount = min(discount, original)
+    final = round(max(0, original - discount), 2)
+    return {"original": original, "discount": round(discount, 2), "final": final}
+
+
+# ---- 创建总单 ----
+@router.post("", response_model=CombinedOrderOut)
 def create_order(
-    body: OrderCreate,
+    body: CombinedOrderCreate,
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    # 验证餐厅
-    restaurant = db.query(Restaurant).filter(
-        Restaurant.id == body.restaurant_id,
-        Restaurant.status == "open",
-        Restaurant.verify_status == "verified",
-    ).first()
-    if not restaurant:
-        raise HTTPException(status_code=400, detail="餐厅不可用")
-
-    # 验证地址
     address = db.query(UserAddress).filter(
         UserAddress.id == body.address_id,
         UserAddress.user_id == user.id,
@@ -60,38 +131,89 @@ def create_order(
     if not address:
         raise HTTPException(status_code=400, detail="地址不存在")
 
-    # 计算价格
+    # 获取分区（从第一个店铺所属分区）
+    first_store = db.query(Store).filter(Store.id == body.sub_orders[0].store_id).first()
+    if not first_store:
+        raise HTTPException(status_code=400, detail="店铺不存在")
+    district = db.query(District).filter(District.id == first_store.district_id).first()
+    if not district:
+        raise HTTPException(status_code=400, detail="分区不存在")
+
+    # 校验所有子单
+    sub_data = []
     items_total = 0
-    order_items = []
-    for item_in in body.items:
-        menu_item = db.query(MenuItem).filter(
-            MenuItem.id == item_in.menu_item_id,
-            MenuItem.status == 1,
+    store_surcharges = []
+    for sub_in in body.sub_orders:
+        store = db.query(Store).filter(
+            Store.id == sub_in.store_id,
+            Store.status == "open",
+            Store.verify_status == "verified",
         ).first()
-        if not menu_item:
-            raise HTTPException(status_code=400, detail=f"菜品 {item_in.name} 已下架")
-        price = float(menu_item.price)
-        items_total += price * item_in.quantity
-        order_items.append(OrderItem(
-            menu_item_id=menu_item.id,
-            name=menu_item.name,
-            image=menu_item.image,
-            price=price,
-            quantity=item_in.quantity,
-        ))
+        if not store:
+            raise HTTPException(status_code=400, detail=f"店铺(ID={sub_in.store_id})不可用")
+        if store.district_id != district.id:
+            raise HTTPException(status_code=400, detail=f"店铺'{store.name}'不在同一分区，无法合单")
 
-    delivery_fee = float(restaurant.delivery_fee)
-    package_fee = 1.0  # 包装费
-    total_price = items_total + delivery_fee + package_fee
+        sub_items_total = 0
+        sub_items = []
+        for item_in in sub_in.items:
+            product = db.query(Product).filter(
+                Product.id == item_in.product_id,
+                Product.store_id == store.id,
+                Product.status == 1,
+            ).first()
+            if not product:
+                raise HTTPException(status_code=400, detail=f"商品'{item_in.name}'已下架")
+            if product.limit_per_order > 0 and item_in.quantity > product.limit_per_order:
+                raise HTTPException(status_code=400, detail=f"{product.name} 每单限购 {product.limit_per_order} 件")
+            if product.stock >= 0 and item_in.quantity > product.stock:
+                raise HTTPException(status_code=400, detail=f"{product.name} 库存不足")
+            price = float(product.price)
+            sub_items_total += price * item_in.quantity
+            sub_items.append(SubOrderItem(
+                product_id=product.id, name=product.name, image=product.image or "",
+                price=price, quantity=item_in.quantity,
+            ))
+            if product.stock >= 0:
+                product.stock -= item_in.quantity
 
-    if items_total < float(restaurant.min_price):
-        raise HTTPException(status_code=400, detail=f"未达到起送价 ¥{float(restaurant.min_price)}")
+        if sub_items_total < float(store.min_price):
+            raise HTTPException(status_code=400, detail=f"店铺'{store.name}'未达到起送价 ¥{float(store.min_price)}")
 
-    # 创建订单 — 状态: pending_pay 待支付
-    order = Order(
+        sub_data.append({
+            "store": store, "items_total": sub_items_total, "items": sub_items,
+        })
+        items_total += sub_items_total
+        store_surcharges.append(float(store.delivery_surcharge or 0))
+
+    # 计算配送费
+    fee = _calculate_delivery_fee(district, store_surcharges, items_total)
+
+    # 优惠券
+    coupon_discount = 0
+    if body.user_coupon_id:
+        uc = db.query(UserCoupon).filter(
+            UserCoupon.id == body.user_coupon_id,
+            UserCoupon.user_id == user.id,
+            UserCoupon.status == "unused",
+        ).first()
+        if uc:
+            coupon = db.query(Coupon).filter(Coupon.id == uc.coupon_id).first()
+            if coupon:
+                if coupon.coupon_type == "full_reduction" and items_total >= float(coupon.condition_amount or 0):
+                    coupon_discount = float(coupon.discount_amount)
+                elif coupon.coupon_type in ("direct_discount", "new_user"):
+                    coupon_discount = float(coupon.discount_amount)
+                uc.status = "used"
+                uc.used_at = datetime.now()
+                coupon.used_count = (coupon.used_count or 0) + 1
+
+    total_price = round(max(0, items_total + fee["final"] - coupon_discount), 2)
+
+    # 创建总单
+    order = CombinedOrder(
         order_no=_generate_order_no(),
         user_id=user.id,
-        restaurant_id=restaurant.id,
         address_snapshot={
             "contact_name": address.contact_name,
             "contact_phone": address.contact_phone,
@@ -104,107 +226,83 @@ def create_order(
             "lng": float(address.lng) if address.lng else None,
         },
         items_total=items_total,
-        delivery_fee=delivery_fee,
-        package_fee=package_fee,
+        delivery_fee_original=fee["original"],
+        delivery_fee_discount=fee["discount"],
+        delivery_fee=fee["final"],
+        coupon_discount=coupon_discount,
         total_price=total_price,
         status="pending_pay",
+        district_id=district.id,
         remark=body.remark,
-        region_id=restaurant.region_id,
+        user_coupon_id=body.user_coupon_id,
     )
-    order.items = order_items
     db.add(order)
     db.flush()
 
-    _add_timeline(order.id, "pending_pay", "订单已创建，等待支付", db)
+    # 创建子单
+    sub_orders = []
+    for sd in sub_data:
+        sub = SubOrder(
+            combined_order_id=order.id,
+            store_id=sd["store"].id,
+            store_name_snapshot=sd["store"].name,
+            items_total=sd["items_total"],
+            commission_rate=float(sd["store"].commission_rate or 0.12),
+            status="pending_accept",
+        )
+        sub.items = sd["items"]
+        db.add(sub)
+        db.flush()
+        _add_sub_timeline(sub.id, "pending_accept", "子单已创建，等待商家接单", db)
+        sub_orders.append(sub)
+
     db.commit()
     db.refresh(order)
 
-    result = OrderOut.model_validate(order)
-    result.restaurant_name = restaurant.name
+    result = CombinedOrderOut.model_validate(order)
+    result.sub_orders = [SubOrderOut.model_validate(s) for s in sub_orders]
+    for so in result.sub_orders:
+        so.store_name = next((sd["store"].name for sd in sub_data if sd["store"].id == so.store_id), "")
     return result
 
 
+# ---- 支付 ----
 @router.post("/{order_id}/pay", response_model=PayParamsOut)
 def pay_order(
     order_id: int,
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """
-    发起微信支付 — 返回 wx.requestPayment 所需参数
-    未配置微信支付时返回模拟数据
-    """
-    order = db.query(Order).filter(
-        Order.id == order_id,
-        Order.user_id == user.id,
+    order = db.query(CombinedOrder).filter(
+        CombinedOrder.id == order_id,
+        CombinedOrder.user_id == user.id,
     ).first()
     if not order:
         raise HTTPException(status_code=404, detail="订单不存在")
     if order.status != "pending_pay":
         raise HTTPException(status_code=400, detail="订单状态不正确")
 
-    total_fen = math.floor(float(order.total_price) * 100)  # 元 → 分
-    description = f"外卖订单 {order.order_no}"
+    total_fen = math.floor(float(order.total_price) * 100)
+    description = f"夜市外卖 {order.order_no}"
     result = create_jsapi_order(order.order_no, total_fen, description, user.openid)
 
-    # 模拟模式下直接标记支付成功 (无回调)
     if result.get("isMock"):
-        order.status = "pending_accept"
+        order.status = "pending"
         order.paid_at = datetime.now()
-        _add_timeline(order.id, "pending_accept", "支付成功(模拟)，等待商家接单", db)
+        for sub in order.sub_orders:
+            _add_sub_timeline(sub.id, "pending_accept", "已支付，等待商家接单", db)
         db.commit()
         db.refresh(order)
-        # 推送新订单通知给商家
-        merchant_uid = order.restaurant.user_id if order.restaurant else None
-        manager.push_order_event_sync(
-            "order_paid", _order_summary(order, order.restaurant.name if order.restaurant else ""),
-            merchant_user_id=merchant_uid)
+        merchant_ids = {sub.store.user_id for sub in order.sub_orders if sub.store}
+        summary = _combined_order_out(order)
+        for mid in merchant_ids:
+            manager.push_order_event_sync("order_paid", summary, merchant_user_id=mid)
 
     return result
 
 
-@router.post("/{order_id}/refund", response_model=OrderOut)
-def refund_order(
-    order_id: int,
-    reason: str = Query(default=""),
-    user: User = Depends(require_user),
-    db: Session = Depends(get_db),
-):
-    """
-    申请退款 — 调用微信支付退款接口
-    未配置微信支付时直接标记退款
-    """
-    order = db.query(Order).filter(
-        Order.id == order_id,
-        Order.user_id == user.id,
-    ).first()
-    if not order:
-        raise HTTPException(status_code=404, detail="订单不存在")
-    if order.status not in ("pending_accept",):
-        raise HTTPException(status_code=400, detail="当前状态不可退款")
-
-    refund_amount = math.floor(float(order.total_price) * 100)
-    total_amount = math.floor(float(order.total_price) * 100)
-    apply_refund(order.order_no, refund_amount, total_amount, reason)
-
-    order.status = "cancelled"
-    order.cancel_reason = reason or "用户申请退款"
-    order.cancel_by = "user"
-    _add_timeline(order.id, "cancelled", f"用户申请退款: {reason or '无理由'}", db)
-    db.commit()
-    db.refresh(order)
-    # 推送退款通知
-    merchant_uid = order.restaurant.user_id if order.restaurant else None
-    manager.push_order_event_sync(
-        "order_refunded", _order_summary(order, order.restaurant.name if order.restaurant else ""),
-        merchant_user_id=merchant_uid)
-
-    result = OrderOut.model_validate(order)
-    result.restaurant_name = order.restaurant.name if order.restaurant else ""
-    return result
-
-
-@router.get("", response_model=OrderListOut)
+# ---- 订单列表 ----
+@router.get("", response_model=CombinedOrderListOut)
 def list_orders(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=50),
@@ -212,55 +310,66 @@ def list_orders(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    query = db.query(Order).filter(Order.user_id == user.id)
+    query = db.query(CombinedOrder).filter(CombinedOrder.user_id == user.id)
     if status:
-        query = query.filter(Order.status == status)
+        query = query.filter(CombinedOrder.status == status)
 
     total = query.count()
-    items = query.order_by(Order.created_at.desc()).offset(
+    items = query.order_by(CombinedOrder.created_at.desc()).offset(
         (page - 1) * page_size
     ).limit(page_size).all()
 
     result_items = []
     for order in items:
-        o = OrderOut.model_validate(order)
-        o.restaurant_name = order.restaurant.name if order.restaurant else ""
+        o = CombinedOrderOut.model_validate(order)
         o.rider_name = order.rider.real_name if order.rider else ""
+        o.sub_orders = [SubOrderOut.model_validate(s) for s in (order.sub_orders or [])]
+        for so in o.sub_orders:
+            so.store_name = so.store_name_snapshot
         result_items.append(o)
 
-    return OrderListOut(total=total, items=result_items)
+    return CombinedOrderListOut(total=total, items=result_items)
 
 
-@router.get("/{order_id}", response_model=OrderDetailOut)
+# ---- 订单详情 ----
+@router.get("/{order_id}", response_model=CombinedOrderDetailOut)
 def get_order(
     order_id: int,
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    order = db.query(Order).filter(
-        Order.id == order_id,
-        Order.user_id == user.id,
+    order = db.query(CombinedOrder).filter(
+        CombinedOrder.id == order_id,
+        CombinedOrder.user_id == user.id,
     ).first()
     if not order:
         raise HTTPException(status_code=404, detail="订单不存在")
 
-    result = OrderDetailOut.model_validate(order)
-    result.restaurant_name = order.restaurant.name if order.restaurant else ""
+    result = CombinedOrderDetailOut.model_validate(order)
     result.rider_name = order.rider.real_name if order.rider else ""
-    result.timeline = order.timeline.all()
+    result.sub_orders = []
+    for sub in (order.sub_orders or []):
+        sd = SubOrderDetailOut.model_validate(sub)
+        sd.store_name = sub.store.name if sub.store else sub.store_name_snapshot
+        sd.items = [SubOrderItemOut.model_validate(i) for i in (sub.items or [])]
+        sd.timeline = [
+            SubOrderTimelineOut.model_validate(t)
+            for t in (sub.timeline.order_by(SubOrderTimeline.created_at.asc()).all() if sub.timeline else [])
+        ]
+        result.sub_orders.append(sd)
     return result
 
 
+# ---- 获取骑手位置 ----
 @router.get("/{order_id}/rider-location")
 def get_rider_location(
     order_id: int,
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """查询订单骑手实时位置 (配送中时可用)"""
-    order = db.query(Order).filter(
-        Order.id == order_id,
-        Order.user_id == user.id,
+    order = db.query(CombinedOrder).filter(
+        CombinedOrder.id == order_id,
+        CombinedOrder.user_id == user.id,
     ).first()
     if not order:
         raise HTTPException(status_code=404, detail="订单不存在")
@@ -281,34 +390,240 @@ def get_rider_location(
     }
 
 
-@router.put("/{order_id}/cancel", response_model=OrderOut)
+# ---- 取消总单 ----
+@router.put("/{order_id}/cancel", response_model=CombinedOrderOut)
 def cancel_order(
     order_id: int,
     reason: str = Query(default=""),
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    order = db.query(Order).filter(
-        Order.id == order_id,
-        Order.user_id == user.id,
+    order = db.query(CombinedOrder).filter(
+        CombinedOrder.id == order_id,
+        CombinedOrder.user_id == user.id,
     ).first()
     if not order:
         raise HTTPException(status_code=404, detail="订单不存在")
-    if order.status not in ("pending_pay", "pending_accept"):
+    if order.status not in ("pending_pay",):
         raise HTTPException(status_code=400, detail="当前状态不可取消")
 
     order.status = "cancelled"
-    order.cancel_reason = reason or "用户取消"
-    order.cancel_by = "user"
-    _add_timeline(order.id, "cancelled", f"用户取消订单: {reason or '无理由'}", db)
+    for sub in order.sub_orders:
+        sub.status = "cancelled"
+        sub.cancel_reason = reason or "用户取消"
+        sub.cancel_by = "user"
+        _add_sub_timeline(sub.id, "cancelled", f"用户取消: {reason or '无理由'}", db)
     db.commit()
     db.refresh(order)
-    # 推送取消通知
-    merchant_uid = order.restaurant.user_id if order.restaurant else None
-    manager.push_order_event_sync(
-        "order_cancelled", _order_summary(order, order.restaurant.name if order.restaurant else ""),
-        merchant_user_id=merchant_uid)
 
-    result = OrderOut.model_validate(order)
-    result.restaurant_name = order.restaurant.name if order.restaurant else ""
+    merchant_ids = {sub.store.user_id for sub in order.sub_orders if sub.store}
+    summary = _combined_order_out(order)
+    for mid in merchant_ids:
+        manager.push_order_event_sync("order_cancelled", summary, merchant_user_id=mid)
+
+    result = CombinedOrderOut.model_validate(order)
+    result.sub_orders = [SubOrderOut.model_validate(s) for s in (order.sub_orders or [])]
+    for so in result.sub_orders:
+        so.store_name = so.store_name_snapshot
     return result
+
+
+# ---- 取消单个子单 ----
+@router.put("/sub/{sub_id}/cancel", response_model=SubOrderOut)
+def cancel_sub_order(
+    sub_id: int,
+    reason: str = Query(default=""),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    sub = db.query(SubOrder).filter(SubOrder.id == sub_id).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="子单不存在")
+    if sub.combined_order.user_id != user.id:
+        raise HTTPException(status_code=404, detail="子单不存在")
+    if sub.status not in ("pending_accept",):
+        raise HTTPException(status_code=400, detail="当前状态不可退款")
+
+    sub.status = "cancelled"
+    sub.cancel_reason = reason or "用户申请退款"
+    sub.cancel_by = "user"
+    _add_sub_timeline(sub.id, "cancelled", f"用户退款子单: {reason or '无理由'}", db)
+
+    order = sub.combined_order
+    order.status = _derive_combined_status(order.sub_orders)
+    db.commit()
+    db.refresh(sub)
+
+    if sub.store:
+        manager.push_order_event_sync("sub_order_cancelled", {"sub_order_id": sub.id}, merchant_user_id=sub.store.user_id)
+
+    result = SubOrderOut.model_validate(sub)
+    result.store_name = sub.store.name if sub.store else ""
+    return result
+
+
+# ---- 子单评价 ----
+@router.post("/sub/{sub_id}/review", response_model=ReviewOut)
+def create_review(
+    sub_id: int,
+    body: ReviewCreate,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    sub = db.query(SubOrder).filter(SubOrder.id == sub_id).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="子单不存在")
+    if sub.combined_order.user_id != user.id:
+        raise HTTPException(status_code=404, detail="子单不存在")
+    if sub.status != "completed":
+        raise HTTPException(status_code=400, detail="子单未完成，无法评价")
+
+    existing = db.query(OrderReview).filter(OrderReview.sub_order_id == sub_id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="已评价过该子单")
+
+    review = OrderReview(
+        sub_order_id=sub_id,
+        user_id=user.id,
+        score=body.score,
+        content=body.content,
+        tags=body.tags,
+    )
+    db.add(review)
+    db.commit()
+    db.refresh(review)
+    return review
+
+
+# ---- 订单修改申请 ----
+@router.post("/sub/{sub_id}/request-modification", response_model=ModificationOut)
+def request_sub_modification(
+    sub_id: int,
+    body: ModificationCreate,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """用户申请修改子单（退单/退款等），需要商家审核"""
+    sub = db.query(SubOrder).filter(SubOrder.id == sub_id).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="子单不存在")
+    order = sub.combined_order
+    if not order or order.user_id != user.id:
+        raise HTTPException(status_code=404, detail="子单不存在")
+    if sub.status in ("cancelled", "completed"):
+        raise HTTPException(status_code=400, detail="当前状态不可申请修改")
+
+    # 检查是否已有待审核的申请
+    existing = db.query(OrderModification).filter(
+        OrderModification.sub_order_id == sub_id,
+        OrderModification.status == "pending_review",
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="已有待审核的申请，请耐心等待")
+
+    mod = OrderModification(
+        combined_order_id=order.id,
+        sub_order_id=sub_id,
+        type=body.type,
+        reason=body.reason,
+        status="pending_review",
+    )
+    db.add(mod)
+    _add_sub_timeline(sub_id, "mod_requested", f"用户申请{body.type}: {body.reason}", db)
+    db.commit()
+    db.refresh(mod)
+
+    # 通知商家
+    if sub.store:
+        manager.push_order_event_sync(
+            "modification_requested",
+            {"modification_id": mod.id, "sub_order_id": sub_id, "type": body.type},
+            merchant_user_id=sub.store.user_id,
+        )
+
+    result = ModificationOut.model_validate(mod)
+    result.order_no = order.order_no
+    result.store_name = sub.store.name if sub.store else ""
+    result.user_name = user.nickname or ""
+    return result
+
+
+@router.post("/{order_id}/request-modification", response_model=ModificationOut)
+def request_order_modification(
+    order_id: int,
+    body: ModificationCreate,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """用户申请修改总单（改地址等），需要商家审核"""
+    order = db.query(CombinedOrder).filter(
+        CombinedOrder.id == order_id,
+        CombinedOrder.user_id == user.id,
+    ).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    if order.status in ("cancelled", "completed"):
+        raise HTTPException(status_code=400, detail="当前状态不可申请修改")
+
+    # 检查是否已有待审核的申请
+    existing = db.query(OrderModification).filter(
+        OrderModification.combined_order_id == order_id,
+        OrderModification.sub_order_id.is_(None),
+        OrderModification.status == "pending_review",
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="已有待审核的申请，请耐心等待")
+
+    mod = OrderModification(
+        combined_order_id=order.id,
+        type=body.type,
+        reason=body.reason,
+        new_address=body.new_address,
+        status="pending_review",
+    )
+    db.add(mod)
+    db.commit()
+    db.refresh(mod)
+
+    # 通知所有子单的商家
+    merchant_ids = {sub.store.user_id for sub in order.sub_orders if sub.store}
+    for mid in merchant_ids:
+        manager.push_order_event_sync(
+            "modification_requested",
+            {"modification_id": mod.id, "order_id": order_id, "type": body.type},
+            merchant_user_id=mid,
+        )
+
+    result = ModificationOut.model_validate(mod)
+    result.order_no = order.order_no
+    result.user_name = user.nickname or ""
+    return result
+
+
+@router.get("/{order_id}/modifications", response_model=List[ModificationOut])
+def list_order_modifications(
+    order_id: int,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """查看订单的修改申请记录"""
+    order = db.query(CombinedOrder).filter(
+        CombinedOrder.id == order_id,
+        CombinedOrder.user_id == user.id,
+    ).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="订单不存在")
+
+    mods = db.query(OrderModification).filter(
+        OrderModification.combined_order_id == order_id,
+    ).order_by(OrderModification.created_at.desc()).all()
+
+    results = []
+    for m in mods:
+        r = ModificationOut.model_validate(m)
+        r.order_no = order.order_no
+        if m.sub_order_id:
+            sub = next((s for s in order.sub_orders if s.id == m.sub_order_id), None)
+            r.store_name = sub.store.name if sub and sub.store else ""
+        results.append(r)
+    return results

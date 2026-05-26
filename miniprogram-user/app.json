@@ -9,7 +9,9 @@
     "pages/address/address",
     "pages/address-form/address-form",
     "pages/login/login",
-    "pages/profile/profile"
+    "pages/profile/profile",
+    "pages/coupons/coupons",
+    "pages/profile-edit/profile-edit"
   ],
   "window": {
     "backgroundTextStyle": "light",

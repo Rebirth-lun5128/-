@@ -31,6 +31,7 @@ Page({
         try {
           const result = await api.post('/api/common/auth/wechat', { code: res.code })
           wx.setStorageSync('token', result.token)
+          wx.setStorageSync('userInfo', result.user)
           app.globalData.token = result.token
           app.globalData.userInfo = result.user
           wx.showToast({ title: '登录成功', icon: 'success' })
@@ -47,12 +48,17 @@ Page({
     const mockCode = 'dev_code_' + Date.now()
     api.post('/api/common/auth/wechat', { code: mockCode }).then(result => {
       wx.setStorageSync('token', result.token)
+      wx.setStorageSync('userInfo', result.user)
       app.globalData.token = result.token
       app.globalData.userInfo = result.user
       wx.showToast({ title: '登录成功', icon: 'success' })
       setTimeout(() => wx.switchTab({ url: '/pages/index/index' }), 500)
     }).catch(() => {
-      wx.showToast({ title: '请先启动后端服务', icon: 'none' })
+      wx.showModal({
+        title: '无法连接后端',
+        content: '请双击 server\\启动后端.bat 启动服务后重试',
+        showCancel: false,
+      })
     })
   },
 })

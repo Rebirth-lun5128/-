@@ -5,37 +5,55 @@
       <text>请先添加分类</text>
     </view>
     <view class="cat-item {{activeCategory === index ? 'active' : ''}}"
-      wx:for="{{categories}}" wx:key="id" bindtap="onCategoryTap" data-index="{{index}}">
-      {{item.name}}
+      wx:for="{{categories}}" wx:key="id"
+      bindtap="onCategoryTap"
+      data-index="{{index}}">
+      <text>{{item.name}}</text>
+      <text class="cat-more" catchtap="onCategoryMore" data-index="{{index}}">⋮</text>
     </view>
     <view class="cat-item add-cat" bindtap="addCategory">+ 添加</view>
   </scroll-view>
 
   <!-- 菜品列表 -->
   <scroll-view class="items-panel" scroll-y>
-    <view wx:for="{{categories}}" wx:key="id" wx:for-index="ci" wx:if="{{activeCategory === ci}}">
-      <view wx:for="{{allItems}}" wx:key="id" wx:for-item="item" wx:if="{{item.category_id === item.id}}">
-        <view class="menu-item">
-          <image src="{{item.image || '/images/default-food.png'}}" mode="aspectFill" />
-          <view class="item-info">
-            <text class="item-name">{{item.name}}</text>
-            <text class="item-desc" wx:if="{{item.description}}">{{item.description}}</text>
-            <view class="item-meta">
-              <text class="price">{{item.price}}</text>
-              <text class="tag {{item.status === 1 ? 'tag-green' : ''}}">
-                {{item.status === 1 ? '上架' : '下架'}}
-              </text>
-            </view>
-          </view>
-          <view class="item-actions">
-            <text bindtap="editItem" data-id="{{item.id}}">编辑</text>
-            <text bindtap="toggleStatus" data-id="{{item.id}}" data-status="{{item.status}}">
-              {{item.status === 1 ? '下架' : '上架'}}
-            </text>
-          </view>
+    <view wx:if="{{filteredItems.length === 0}}" class="empty-items">
+      <text>该分类暂无商品</text>
+    </view>
+    <view class="menu-item {{item.status === 0 ? 'disabled' : ''}}"
+      wx:for="{{filteredItems}}" wx:key="id">
+      <image src="{{item.image || '/images/default-food.png'}}" mode="aspectFill" />
+      <view class="item-info">
+        <text class="item-name">{{item.name}}</text>
+        <text class="item-desc" wx:if="{{item.description}}">{{item.description}}</text>
+        <view class="item-meta">
+          <text class="price">¥{{item.price}}</text>
+          <text class="tag {{item.status === 1 ? 'tag-green' : 'tag-gray'}}">
+            {{item.status === 1 ? '上架' : '下架' }}
+          </text>
+          <text class="stock-info" wx:if="{{item.stock >= 0}}">库存:{{item.stock}}</text>
+          <text class="stock-info" wx:elif="{{item.stock === -1}}">不限库存</text>
+          <text class="limit-info" wx:if="{{item.limit_per_order > 0}}">限购{{item.limit_per_order}}</text>
         </view>
       </view>
-      <view class="add-item-btn" bindtap="addItem">+ 添加菜品</view>
+      <view class="item-actions">
+        <text bindtap="editItem" data-id="{{item.id}}">编辑</text>
+        <text bindtap="toggleStatus" data-id="{{item.id}}" data-status="{{item.status}}">
+          {{item.status === 1 ? '下架' : '上架'}}
+        </text>
+      </view>
     </view>
+    <view class="add-item-btn" bindtap="addItem">+ 添加商品</view>
   </scroll-view>
+
+  <!-- 编辑/添加分类弹窗 -->
+  <view class="edit-modal-mask" wx:if="{{showEditModal}}" catchtap="onEditModalCancel">
+    <view class="edit-modal-box" catchtap="">
+      <text class="edit-modal-title">{{editModalTitle}}</text>
+      <input class="edit-modal-input" value="{{editModalValue}}" placeholder="请输入分类名称" bindinput="onEditModalInput" focus />
+      <view class="edit-modal-btns">
+        <button class="edit-modal-btn cancel" bindtap="onEditModalCancel">取消</button>
+        <button class="edit-modal-btn confirm" bindtap="onEditModalConfirm">确定</button>
+      </view>
+    </view>
+  </view>
 </view>

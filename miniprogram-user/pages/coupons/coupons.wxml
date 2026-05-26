@@ -1,0 +1,51 @@
+<view class="container">
+  <!-- 标签切换 -->
+  <view class="tabs">
+    <view class="tab {{activeTab === 'available' ? 'active' : ''}}" bindtap="switchTab" data-tab="available">可领取</view>
+    <view class="tab {{activeTab === 'my' ? 'active' : ''}}" bindtap="switchTab" data-tab="my">我的优惠券</view>
+  </view>
+
+  <!-- 可领取列表 -->
+  <view wx:if="{{activeTab === 'available'}}">
+    <view class="coupon-card card" wx:for="{{availableList}}" wx:key="id">
+      <view class="coupon-left">
+        <text class="coupon-amount">¥{{item.discount_amount}}</text>
+        <text class="coupon-condition" wx:if="{{item.coupon_type === 'full_reduction'}}">满{{item.condition_amount}}可用</text>
+        <text class="coupon-condition" wx:else>无门槛</text>
+      </view>
+      <view class="coupon-right">
+        <text class="coupon-name">{{item.name}}</text>
+        <text class="coupon-type-tag">{{item.coupon_type === 'full_reduction' ? '满减券' : item.coupon_type === 'direct_discount' ? '立减券' : '新用户券'}}</text>
+        <text class="coupon-time" wx:if="{{item.end_time}}">有效期至 {{item.end_time.slice(0,10)}}</text>
+        <text class="coupon-time" wx:else>长期有效</text>
+      </view>
+      <view class="coupon-action" bindtap="claimCoupon" data-id="{{item.id}}" wx:if="{{!item.claimed}}">
+        <text class="claim-btn">立即领取</text>
+      </view>
+      <view class="coupon-action" wx:else>
+        <text class="claimed-text">已领取</text>
+      </view>
+    </view>
+    <view wx:if="{{availableList.length === 0}}" class="empty-state">暂无可领取的优惠券</view>
+  </view>
+
+  <!-- 我的优惠券 -->
+  <view wx:if="{{activeTab === 'my'}}">
+    <view class="coupon-card card" wx:for="{{myList}}" wx:key="id">
+      <view class="coupon-left">
+        <text class="coupon-amount">¥{{item.discount_amount}}</text>
+        <text class="coupon-condition" wx:if="{{item.coupon_type === 'full_reduction'}}">满{{item.condition_amount}}可用</text>
+        <text class="coupon-condition" wx:else>无门槛</text>
+      </view>
+      <view class="coupon-right">
+        <text class="coupon-name">{{item.name}}</text>
+        <text class="coupon-type-tag">{{item.coupon_type === 'full_reduction' ? '满减券' : item.coupon_type === 'direct_discount' ? '立减券' : '新用户券'}}</text>
+        <text class="coupon-time">领取于 {{item.created_at.slice(0,10)}}</text>
+      </view>
+      <view class="coupon-status-tag {{item.status}}">
+        <text>{{item.status === 'unused' ? '未使用' : item.status === 'used' ? '已使用' : '已过期'}}</text>
+      </view>
+    </view>
+    <view wx:if="{{myList.length === 0}}" class="empty-state">还没有优惠券，去领取吧</view>
+  </view>
+</view>

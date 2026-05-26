@@ -1,16 +1,20 @@
-from datetime import date
+"""管理后台 API"""
+from datetime import date, timedelta
+import json
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from auth import require_any_admin, require_super_admin, hash_password
 from database import get_db
 from models.user import User
-from models.restaurant import Restaurant
+from models.store import Store
 from models.rider import Rider
-from models.order import Order
-from models.region import Region, SystemConfig
+from models.order import Order, CombinedOrder, SubOrder, SubOrderItem, OrderModification, SubOrderTimeline
+from models.district import District
+from models.region import SystemConfig
+from models.coupon import Coupon, UserCoupon
 from websocket import manager
 
 router = APIRouter(prefix="/api/admin", tags=["管理后台"])
@@ -18,140 +22,145 @@ router = APIRouter(prefix="/api/admin", tags=["管理后台"])
 
 @router.get("/dashboard")
 def dashboard(user: User = Depends(require_any_admin), db: Session = Depends(get_db)):
-    """数据大盘 — 平台端核心数据"""
     today = date.today()
 
-    region_id = user.region_id if user.role == "region_admin" else None
-    region_filter = [Order.region_id == region_id] if region_id else []
+    district_id = user.district_id if user.role == "district_admin" else None
+    district_filter = [Order.district_id == district_id] if district_id else []
 
     total_users = db.query(func.count(User.id)).filter(User.role == "user").scalar() or 0
-    total_merchants = db.query(func.count(Restaurant.id)).scalar() or 0
-    verified_merchants = db.query(func.count(Restaurant.id)).filter(
-        Restaurant.verify_status == "verified"
-    ).scalar() or 0
+    total_stores = db.query(func.count(Store.id)).scalar() or 0
+    verified_stores = db.query(func.count(Store.id)).filter(Store.verify_status == "verified").scalar() or 0
     total_riders = db.query(func.count(Rider.id)).scalar() or 0
 
     today_orders = db.query(func.count(Order.id)).filter(
         func.date(Order.created_at) == today,
-        *region_filter,
+        *district_filter,
     ).scalar() or 0
 
     today_revenue = db.query(func.coalesce(func.sum(Order.total_price), 0)).filter(
         func.date(Order.created_at) == today,
         Order.status.in_(["completed", "delivered"]),
-        *region_filter,
+        *district_filter,
     ).scalar() or 0
 
-    # 平台抽成 (默认15%)
     config = db.query(SystemConfig).filter(SystemConfig.config_key == "platform_fee_rate").first()
     fee_rate = float(config.config_value) if config else 0.15
     today_fee = float(today_revenue) * fee_rate
 
-    # 待处理
-    pending_verify = db.query(func.count(Restaurant.id)).filter(
-        Restaurant.verify_status == "unverified"
+    pending_verify = db.query(func.count(Store.id)).filter(
+        Store.verify_status == "unverified"
     ).scalar() or 0
     pending_orders = db.query(func.count(Order.id)).filter(
         Order.status.in_(["pending_accept", "preparing", "ready", "delivering"]),
-        *region_filter,
+        *district_filter,
     ).scalar() or 0
+
+    pending_modifications = db.query(func.count(OrderModification.id)).filter(
+        OrderModification.status == "pending_review",
+    ).scalar() or 0
+
+    today_key = f"visit:{today}"
+    visit_config = db.query(SystemConfig).filter(SystemConfig.config_key == today_key).first()
+    today_visits = int(visit_config.config_value) if visit_config else 0
 
     return {
         "total_users": total_users,
-        "total_merchants": total_merchants,
-        "verified_merchants": verified_merchants,
+        "total_merchants": total_stores,
+        "total_stores": total_stores,  # 兼容旧字段
+        "verified_merchants": verified_stores,
+        "verified_stores": verified_stores,  # 兼容旧字段
         "total_riders": total_riders,
         "today_orders": today_orders,
         "today_revenue": float(today_revenue),
         "today_platform_fee": round(today_fee, 2),
         "fee_rate": fee_rate,
         "pending_verify_merchants": pending_verify,
+        "pending_verify_stores": pending_verify,  # 兼容旧字段
         "pending_orders": pending_orders,
+        "pending_modifications": pending_modifications,
+        "today_visits": today_visits,
     }
 
 
-# ---- 商家管理 (适配夜市) ----
-@router.get("/restaurants")
-def list_restaurants(
+# ---- 店铺管理 ----
+@router.get("/stores")
+def list_stores(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=50),
     verify_status: str = Query(default=""),
+    store_type: str = Query(default=""),
+    keyword: str = Query(default=""),
     user: User = Depends(require_any_admin),
     db: Session = Depends(get_db),
 ):
-    query = db.query(Restaurant)
+    query = db.query(Store)
     if verify_status:
-        query = query.filter(Restaurant.verify_status == verify_status)
-    if user.role == "region_admin" and user.region_id:
-        query = query.filter(Restaurant.region_id == user.region_id)
+        query = query.filter(Store.verify_status == verify_status)
+    if store_type:
+        query = query.filter(Store.store_type == store_type)
+    if keyword:
+        query = query.filter(Store.name.contains(keyword))
+    if user.role == "district_admin" and user.district_id:
+        query = query.filter(Store.district_id == user.district_id)
 
     total = query.count()
-    items = query.order_by(Restaurant.created_at.desc()).offset(
+    items = query.order_by(Store.created_at.desc()).offset(
         (page - 1) * page_size
     ).limit(page_size).all()
     return {
         "total": total,
         "items": [
             {
-                "id": r.id,
-                "name": r.name,
-                "phone": r.phone,
-                "address": r.address,
-                "stall_location": r.stall_location,
-                "category": r.category,
-                "rating": float(r.rating),
-                "status": r.status,
-                "verify_status": r.verify_status,
-                "verify_method": r.verify_method,
-                "verify_note": r.verify_note,
-                "created_at": str(r.created_at),
+                "id": r.id, "name": r.name, "phone": r.phone,
+                "store_type": r.store_type, "address": r.address,
+                "stall_location": r.stall_location, "category": r.category,
+                "rating": float(r.rating), "status": r.status,
+                "verify_status": r.verify_status, "verify_method": r.verify_method,
+                "verify_note": r.verify_note, "created_at": str(r.created_at),
+                "commission_rate": float(r.commission_rate or 0.12),
+                "delivery_surcharge": float(r.delivery_surcharge or 0),
             }
             for r in items
         ],
     }
 
 
-@router.put("/restaurants/{restaurant_id}/verify")
-def verify_restaurant(
-    restaurant_id: int,
+@router.put("/stores/{store_id}/verify")
+def verify_store(
+    store_id: int,
     verify_status: str = Query(..., description="verified | rejected"),
     verify_method: str = Query(default="现场核验"),
     verify_note: str = Query(default=""),
     user: User = Depends(require_any_admin),
     db: Session = Depends(get_db),
 ):
-    """
-    平台人工核验商家 — 夜市摊主无需营业执照
-    核验方式: 现场核验 / 视频核验 / 身份证核验
-    """
     if verify_status not in ("verified", "rejected"):
         raise HTTPException(status_code=400, detail="无效核验状态")
 
-    restaurant = db.query(Restaurant).filter(Restaurant.id == restaurant_id).first()
-    if not restaurant:
-        raise HTTPException(status_code=404, detail="餐厅不存在")
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="店铺不存在")
 
-    restaurant.verify_status = verify_status
-    restaurant.verify_method = verify_method
-    restaurant.verify_note = verify_note
+    store.verify_status = verify_status
+    store.verify_method = verify_method
+    store.verify_note = verify_note
     if verify_status == "verified":
-        restaurant.status = "open"  # 核验通过自动开业
+        store.status = "open"
     db.commit()
     return {"message": f"核验{verify_status}", "method": verify_method}
 
 
-@router.put("/restaurants/{restaurant_id}/toggle-status")
-def toggle_restaurant_status(
-    restaurant_id: int,
+@router.put("/stores/{store_id}/toggle-status")
+def toggle_store_status(
+    store_id: int,
     status: str = Query(..., description="open | closed"),
     user: User = Depends(require_any_admin),
     db: Session = Depends(get_db),
 ):
-    """平台强制开关店"""
-    restaurant = db.query(Restaurant).filter(Restaurant.id == restaurant_id).first()
-    if not restaurant:
-        raise HTTPException(status_code=404, detail="餐厅不存在")
-    restaurant.status = status
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="店铺不存在")
+    store.status = status
     db.commit()
     return {"message": f"店铺已{status}"}
 
@@ -168,8 +177,8 @@ def list_riders(
     query = db.query(Rider)
     if audit_status:
         query = query.filter(Rider.audit_status == audit_status)
-    if user.role == "region_admin" and user.region_id:
-        query = query.filter(Rider.region_id == user.region_id)
+    if user.role == "district_admin" and user.district_id:
+        query = query.filter(Rider.district_id == user.district_id)
 
     total = query.count()
     items = query.order_by(Rider.created_at.desc()).offset(
@@ -179,15 +188,10 @@ def list_riders(
         "total": total,
         "items": [
             {
-                "id": r.id,
-                "real_name": r.real_name,
-                "phone": r.phone,
-                "status": r.status,
-                "balance": float(r.balance),
-                "total_orders": r.total_orders,
-                "rating": float(r.rating),
-                "audit_status": r.audit_status,
-                "created_at": str(r.created_at),
+                "id": r.id, "real_name": r.real_name, "phone": r.phone,
+                "status": r.status, "balance": float(r.balance),
+                "total_orders": r.total_orders, "rating": float(r.rating),
+                "audit_status": r.audit_status, "created_at": str(r.created_at),
             }
             for r in items
         ],
@@ -217,36 +221,94 @@ def list_all_orders(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=50),
     status: str = Query(default=""),
+    keyword: str = Query(default=""),
     user: User = Depends(require_any_admin),
     db: Session = Depends(get_db),
 ):
-    query = db.query(Order)
+    query = db.query(CombinedOrder)
     if status:
-        query = query.filter(Order.status == status)
-    if user.role == "region_admin" and user.region_id:
-        query = query.filter(Order.region_id == user.region_id)
+        query = query.filter(CombinedOrder.status == status)
+    if keyword:
+        query = query.filter(CombinedOrder.order_no.contains(keyword))
+    if user.role == "district_admin" and user.district_id:
+        query = query.filter(CombinedOrder.district_id == user.district_id)
 
     total = query.count()
-    items = query.order_by(Order.created_at.desc()).offset(
+    orders = query.order_by(CombinedOrder.created_at.desc()).offset(
         (page - 1) * page_size
     ).limit(page_size).all()
+
+    items = []
+    for o in orders:
+        sub_orders = db.query(SubOrder).filter(SubOrder.combined_order_id == o.id).all()
+        store_names = [s.store_name_snapshot for s in sub_orders if s.store_name_snapshot]
+        rider_name = o.rider.real_name if o.rider else ""
+        items.append({
+            "id": o.id, "order_no": o.order_no, "status": o.status,
+            "total_price": float(o.total_price),
+            "delivery_fee": float(o.delivery_fee),
+            "items_total": float(o.items_total),
+            "store_names": store_names,
+            "store_count": len(sub_orders),
+            "rider_name": rider_name,
+            "created_at": str(o.created_at),
+        })
+
+    return {"total": total, "items": items}
+
+
+@router.get("/orders/{order_id}/detail")
+def get_order_detail(
+    order_id: int,
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    co = db.query(CombinedOrder).filter(CombinedOrder.id == order_id).first()
+    if not co:
+        raise HTTPException(status_code=404, detail="订单不存在")
+
+    sub_orders = db.query(SubOrder).filter(SubOrder.combined_order_id == co.id).all()
+    sub_list = []
+    for sub in sub_orders:
+        items = db.query(SubOrderItem).filter(SubOrderItem.sub_order_id == sub.id).all()
+        timeline = db.query(SubOrderTimeline).filter(
+            SubOrderTimeline.sub_order_id == sub.id
+        ).order_by(SubOrderTimeline.created_at).all()
+        sub_list.append({
+            "id": sub.id,
+            "store_id": sub.store_id,
+            "store_name": sub.store_name_snapshot or "",
+            "items_total": float(sub.items_total),
+            "commission_rate": float(sub.commission_rate or 0.12),
+            "status": sub.status,
+            "cancel_reason": sub.cancel_reason,
+            "cancel_by": sub.cancel_by,
+            "items": [{
+                "id": it.id, "name": it.name, "price": float(it.price),
+                "quantity": it.quantity, "image": it.image or "",
+            } for it in items],
+            "timeline": [{
+                "status": t.status, "description": t.description,
+                "created_at": str(t.created_at),
+            } for t in timeline],
+        })
+
     return {
-        "total": total,
-        "items": [
-            {
-                "id": o.id,
-                "order_no": o.order_no,
-                "status": o.status,
-                "total_price": float(o.total_price),
-                "delivery_fee": float(o.delivery_fee),
-                "restaurant_name": o.restaurant.name if o.restaurant else "",
-                "rider_name": o.rider.real_name if o.rider else "",
-                "cancel_reason": o.cancel_reason,
-                "cancel_by": o.cancel_by,
-                "created_at": str(o.created_at),
-            }
-            for o in items
-        ],
+        "id": co.id,
+        "order_no": co.order_no,
+        "status": co.status,
+        "items_total": float(co.items_total),
+        "delivery_fee": float(co.delivery_fee),
+        "delivery_fee_original": float(co.delivery_fee_original or 0),
+        "delivery_fee_discount": float(co.delivery_fee_discount or 0),
+        "total_price": float(co.total_price),
+        "address_snapshot": co.address_snapshot or {},
+        "rider_name": co.rider.real_name if co.rider else "",
+        "rider_phone": co.rider.phone if co.rider else "",
+        "created_at": str(co.created_at),
+        "paid_at": str(co.paid_at) if co.paid_at else None,
+        "delivered_at": str(co.delivered_at) if co.delivered_at else None,
+        "sub_orders": sub_list,
     }
 
 
@@ -257,24 +319,42 @@ def force_cancel_order(
     user: User = Depends(require_any_admin),
     db: Session = Depends(get_db),
 ):
-    """平台强制取消订单 (纠纷仲裁)"""
-    from models.order import OrderTimeline
+    from models.order import CombinedOrder, SubOrder, SubOrderTimeline
+    co = db.query(CombinedOrder).filter(CombinedOrder.id == order_id).first()
+    if co:
+        co.status = "cancelled"
+        sub_orders = db.query(SubOrder).filter(SubOrder.combined_order_id == co.id).all()
+        for sub in sub_orders:
+            if sub.status != "cancelled":
+                sub.status = "cancelled"
+                sub.cancel_reason = reason
+                sub.cancel_by = "admin"
+                db.add(SubOrderTimeline(sub_order_id=sub.id, status="cancelled", description=f"平台介入: {reason}"))
+        db.commit()
+        summary = {
+            "id": co.id, "order_no": co.order_no, "status": co.status,
+            "user_id": co.user_id, "total_price": float(co.total_price),
+            "cancel_reason": reason,
+        }
+        manager.push_order_event_sync("order_force_cancelled", summary, user_id=co.user_id)
+        return {"message": "订单已取消"}
+
+    # 兼容旧 Order 模型
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="订单不存在")
-
+    from models.order import OrderTimeline
     order.status = "cancelled"
     order.cancel_reason = reason
     order.cancel_by = "admin"
     db.add(OrderTimeline(order_id=order.id, status="cancelled", description=f"平台介入: {reason}"))
     db.commit()
-    # 推送通知给用户和商家
-    merchant_uid = order.restaurant.user_id if order.restaurant else None
+    merchant_uid = order.store.user_id if order.store else None
     summary = {
         "id": order.id, "order_no": order.order_no, "status": order.status,
-        "user_id": order.user_id, "restaurant_id": order.restaurant_id,
+        "user_id": order.user_id, "store_id": order.store_id,
         "rider_id": order.rider_id, "total_price": float(order.total_price),
-        "restaurant_name": order.restaurant.name if order.restaurant else "",
+        "store_name": order.store.name if order.store else "",
         "cancel_reason": reason,
     }
     manager.push_order_event_sync("order_force_cancelled", summary, user_id=order.user_id, merchant_user_id=merchant_uid)
@@ -287,34 +367,30 @@ def finance_overview(
     user: User = Depends(require_any_admin),
     db: Session = Depends(get_db),
 ):
-    """平台财务总览 — 流水、抽成、待结算"""
     today = date.today()
 
-    region_id = user.region_id if user.role == "region_admin" else None
-    region_filter = [Order.region_id == region_id] if region_id else []
+    district_id = user.district_id if user.role == "district_admin" else None
+    district_filter = [Order.district_id == district_id] if district_id else []
 
-    # 今日
     today_total = db.query(func.coalesce(func.sum(Order.total_price), 0)).filter(
         func.date(Order.created_at) == today,
         Order.status.in_(["completed", "delivered"]),
-        *region_filter,
+        *district_filter,
     ).scalar() or 0
 
     today_count = db.query(func.count(Order.id)).filter(
         func.date(Order.created_at) == today,
         Order.status.in_(["completed", "delivered"]),
-        *region_filter,
+        *district_filter,
     ).scalar() or 0
 
-    # 本月
     month_start = date.today().replace(day=1)
     month_total = db.query(func.coalesce(func.sum(Order.total_price), 0)).filter(
         func.date(Order.created_at) >= month_start,
         Order.status.in_(["completed", "delivered"]),
-        *region_filter,
+        *district_filter,
     ).scalar() or 0
 
-    # 平台抽成
     config = db.query(SystemConfig).filter(SystemConfig.config_key == "platform_fee_rate").first()
     fee_rate = float(config.config_value) if config else 0.15
 
@@ -328,14 +404,77 @@ def finance_overview(
     }
 
 
-# ---- 区域管理 ----
-@router.get("/regions")
-def list_regions(user: User = Depends(require_any_admin), db: Session = Depends(get_db)):
-    regions = db.query(Region).filter(Region.status == 1).order_by(Region.sort_order).all()
+# ---- 分区管理 ----
+@router.get("/districts")
+def list_districts(user: User = Depends(require_any_admin), db: Session = Depends(get_db)):
+    districts = db.query(District).filter(District.status == 1).order_by(District.id).all()
     return [
-        {"id": r.id, "name": r.name, "parent_id": r.parent_id, "manager_id": r.manager_id}
-        for r in regions
+        {"id": d.id, "name": d.name, "admin_id": d.admin_id,
+         "coverage": d.coverage, "delivery_fee": d.delivery_fee,
+         "peak_delivery_fee": d.peak_delivery_fee,
+         "peak_start_hour": d.peak_start_hour,
+         "peak_end_hour": d.peak_end_hour,
+         "delivery_fee_rules": d.delivery_fee_rules or [],
+         "delivery_range": d.delivery_range, "notice": d.notice}
+        for d in districts
     ]
+
+
+@router.post("/districts")
+def create_district(
+    name: str = Query(...),
+    coverage: str = Query(default="[]"),
+    delivery_fee: int = Query(default=0),
+    delivery_range: int = Query(default=3),
+    notice: str = Query(default=""),
+    user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    district = District(
+        name=name,
+        coverage=json.loads(coverage) if coverage else [],
+        delivery_fee=delivery_fee,
+        delivery_range=delivery_range,
+        notice=notice,
+    )
+    db.add(district)
+    db.commit()
+    db.refresh(district)
+    return {"message": "分区已创建", "id": district.id}
+
+
+@router.put("/districts/{district_id}")
+def update_district(
+    district_id: int,
+    name: str = Query(default=None),
+    coverage: str = Query(default=None),
+    delivery_fee: int = Query(default=None),
+    delivery_range: int = Query(default=None),
+    notice: str = Query(default=None),
+    admin_id: int = Query(default=None),
+    status: int = Query(default=None),
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    district = db.query(District).filter(District.id == district_id).first()
+    if not district:
+        raise HTTPException(status_code=404, detail="分区不存在")
+    if name is not None:
+        district.name = name
+    if coverage is not None:
+        district.coverage = json.loads(coverage) if coverage else []
+    if delivery_fee is not None:
+        district.delivery_fee = delivery_fee
+    if delivery_range is not None:
+        district.delivery_range = delivery_range
+    if notice is not None:
+        district.notice = notice
+    if admin_id is not None:
+        district.admin_id = admin_id
+    if status is not None:
+        district.status = status
+    db.commit()
+    return {"message": "分区已更新"}
 
 
 # ---- 系统配置 ----
@@ -367,11 +506,11 @@ def update_config(
 @router.get("/admins")
 def list_admins(user: User = Depends(require_super_admin), db: Session = Depends(get_db)):
     admins = db.query(User).filter(
-        User.role.in_(["super_admin", "region_admin"])
+        User.role.in_(["super_admin", "district_admin"])
     ).order_by(User.created_at.desc()).all()
     return [
         {"id": a.id, "nickname": a.nickname, "phone": a.phone,
-         "role": a.role, "region_id": a.region_id, "status": a.status,
+         "role": a.role, "district_id": a.district_id, "status": a.status,
          "created_at": str(a.created_at)}
         for a in admins
     ]
@@ -382,12 +521,12 @@ def create_admin(
     phone: str = Query(...),
     password: str = Query(...),
     nickname: str = Query(default="管理员"),
-    role: str = Query(default="region_admin"),
-    region_id: int = Query(default=None),
+    role: str = Query(default="district_admin"),
+    district_id: int = Query(default=None),
     user: User = Depends(require_super_admin),
     db: Session = Depends(get_db),
 ):
-    if role not in ("region_admin", "super_admin"):
+    if role not in ("district_admin", "super_admin"):
         raise HTTPException(status_code=400, detail="无效角色")
     existing = db.query(User).filter(User.phone == phone).first()
     if existing:
@@ -397,7 +536,7 @@ def create_admin(
         nickname=nickname,
         phone=phone,
         role=role,
-        region_id=region_id,
+        district_id=district_id,
         hashed_password=hash_password(password),
     )
     db.add(admin)
@@ -412,52 +551,12 @@ def toggle_admin_status(
     user: User = Depends(require_super_admin),
     db: Session = Depends(get_db),
 ):
-    admin = db.query(User).filter(User.id == user_id, User.role.in_(["super_admin", "region_admin"])).first()
+    admin = db.query(User).filter(User.id == user_id, User.role.in_(["super_admin", "district_admin"])).first()
     if not admin:
         raise HTTPException(status_code=404, detail="管理员不存在")
     admin.status = 0 if admin.status == 1 else 1
     db.commit()
     return {"message": f"已{'启用' if admin.status == 1 else '禁用'}"}
-
-
-# ---- 区域管理 (增改) ----
-@router.post("/regions")
-def create_region(
-    name: str = Query(...),
-    parent_id: int = Query(default=None),
-    user: User = Depends(require_super_admin),
-    db: Session = Depends(get_db),
-):
-    region = Region(name=name, parent_id=parent_id, sort_order=99, status=1)
-    db.add(region)
-    db.commit()
-    db.refresh(region)
-    return {"message": "区域已创建", "id": region.id}
-
-
-@router.put("/regions/{region_id}")
-def update_region(
-    region_id: int,
-    name: str = Query(default=None),
-    parent_id: int = Query(default=None),
-    sort_order: int = Query(default=None),
-    status: int = Query(default=None),
-    user: User = Depends(require_super_admin),
-    db: Session = Depends(get_db),
-):
-    region = db.query(Region).filter(Region.id == region_id).first()
-    if not region:
-        raise HTTPException(status_code=404, detail="区域不存在")
-    if name is not None:
-        region.name = name
-    if parent_id is not None:
-        region.parent_id = parent_id
-    if sort_order is not None:
-        region.sort_order = sort_order
-    if status is not None:
-        region.status = status
-    db.commit()
-    return {"message": "区域已更新"}
 
 
 # ---- 订单统计 ----
@@ -467,21 +566,399 @@ def order_stats(
     user: User = Depends(require_any_admin),
     db: Session = Depends(get_db),
 ):
-    """近 N 天每日订单数与营收"""
-    from datetime import date, timedelta
     result = []
     for i in range(days - 1, -1, -1):
         d = date.today() - timedelta(days=i)
-        region_filter = [Order.region_id == user.region_id] if user.role == "region_admin" and user.region_id else []
+        district_filter = [Order.district_id == user.district_id] if user.role == "district_admin" and user.district_id else []
         count = db.query(func.count(Order.id)).filter(
             func.date(Order.created_at) == d,
             Order.status.in_(["completed", "delivered"]),
-            *region_filter,
+            *district_filter,
         ).scalar() or 0
         revenue = db.query(func.coalesce(func.sum(Order.total_price), 0)).filter(
             func.date(Order.created_at) == d,
             Order.status.in_(["completed", "delivered"]),
-            *region_filter,
+            *district_filter,
         ).scalar() or 0
         result.append({"date": str(d), "count": count, "revenue": round(float(revenue), 2)})
     return result
+
+
+# ---- 商家抽成 & 附加费管理 ----
+@router.put("/stores/{store_id}/commission-rate")
+def set_store_commission_rate(
+    store_id: int,
+    rate: float = Query(..., ge=0, le=1, description="抽成比例 0~1"),
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="店铺不存在")
+    store.commission_rate = rate
+    db.commit()
+    return {"message": f"抽成比例已设为 {rate}", "commission_rate": rate}
+
+
+@router.put("/stores/{store_id}/delivery-surcharge")
+def set_store_delivery_surcharge(
+    store_id: int,
+    surcharge: float = Query(..., ge=0, description="配送附加费(元)"),
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="店铺不存在")
+    store.delivery_surcharge = surcharge
+    db.commit()
+    return {"message": f"配送附加费已设为 ¥{surcharge}", "delivery_surcharge": surcharge}
+
+
+# ---- 分区配送费高级设置 ----
+@router.put("/districts/{district_id}/delivery-fee-settings")
+def set_district_delivery_fee(
+    district_id: int,
+    base_fee: int = Query(default=None, description="基础配送费(分)"),
+    peak_fee: int = Query(default=None, description="高峰期配送费(分)"),
+    peak_start_hour: int = Query(default=None, description="高峰期开始小时"),
+    peak_end_hour: int = Query(default=None, description="高峰期结束小时"),
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    district = db.query(District).filter(District.id == district_id).first()
+    if not district:
+        raise HTTPException(status_code=404, detail="分区不存在")
+    if base_fee is not None:
+        district.delivery_fee = base_fee
+    if peak_fee is not None:
+        district.peak_delivery_fee = peak_fee
+    if peak_start_hour is not None:
+        district.peak_start_hour = peak_start_hour
+    if peak_end_hour is not None:
+        district.peak_end_hour = peak_end_hour
+    db.commit()
+    return {
+        "message": "配送费设置已更新",
+        "delivery_fee": district.delivery_fee,
+        "peak_delivery_fee": district.peak_delivery_fee,
+        "peak_start_hour": district.peak_start_hour,
+        "peak_end_hour": district.peak_end_hour,
+    }
+
+
+@router.put("/districts/{district_id}/delivery-rules")
+def set_district_delivery_rules(
+    district_id: int,
+    rules: list = Body(..., description="满减配送费规则列表"),
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    district = db.query(District).filter(District.id == district_id).first()
+    if not district:
+        raise HTTPException(status_code=404, detail="分区不存在")
+    district.delivery_fee_rules = rules
+    db.commit()
+    return {"message": "满减配送费规则已更新", "delivery_fee_rules": rules}
+
+
+# ---- 优惠券管理 ----
+@router.get("/coupons")
+def list_coupons(
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    coupons = db.query(Coupon).order_by(Coupon.created_at.desc()).all()
+    return [
+        {
+            "id": c.id, "name": c.name, "coupon_type": c.coupon_type,
+            "condition_amount": float(c.condition_amount), "discount_amount": float(c.discount_amount),
+            "total_count": c.total_count, "used_count": c.used_count,
+            "district_id": c.district_id, "store_id": c.store_id,
+            "start_time": str(c.start_time) if c.start_time else None,
+            "end_time": str(c.end_time) if c.end_time else None,
+            "status": c.status, "created_at": str(c.created_at),
+        }
+        for c in coupons
+    ]
+
+
+@router.post("/coupons")
+def create_coupon(
+    name: str = Query(...),
+    coupon_type: str = Query(...),
+    discount_amount: float = Query(...),
+    condition_amount: float = Query(default=0),
+    total_count: int = Query(default=0),
+    district_id: int = Query(default=None),
+    store_id: int = Query(default=None),
+    start_time: str = Query(default=None),
+    end_time: str = Query(default=None),
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    if coupon_type not in ("new_user", "full_reduction", "direct_discount"):
+        raise HTTPException(status_code=400, detail="无效的优惠券类型")
+    coupon = Coupon(
+        name=name, coupon_type=coupon_type,
+        condition_amount=condition_amount, discount_amount=discount_amount,
+        total_count=total_count, district_id=district_id, store_id=store_id,
+        start_time=start_time, end_time=end_time,
+    )
+    db.add(coupon)
+    db.commit()
+    db.refresh(coupon)
+    return {"message": "优惠券已创建", "id": coupon.id}
+
+
+@router.put("/coupons/{coupon_id}")
+def update_coupon(
+    coupon_id: int,
+    name: str = Query(default=None),
+    condition_amount: float = Query(default=None),
+    discount_amount: float = Query(default=None),
+    total_count: int = Query(default=None),
+    start_time: str = Query(default=None),
+    end_time: str = Query(default=None),
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    coupon = db.query(Coupon).filter(Coupon.id == coupon_id).first()
+    if not coupon:
+        raise HTTPException(status_code=404, detail="优惠券不存在")
+    if name is not None: coupon.name = name
+    if condition_amount is not None: coupon.condition_amount = condition_amount
+    if discount_amount is not None: coupon.discount_amount = discount_amount
+    if total_count is not None: coupon.total_count = total_count
+    if start_time is not None: coupon.start_time = start_time
+    if end_time is not None: coupon.end_time = end_time
+    db.commit()
+    return {"message": "已更新"}
+
+
+@router.put("/coupons/{coupon_id}/toggle")
+def toggle_coupon(
+    coupon_id: int,
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    coupon = db.query(Coupon).filter(Coupon.id == coupon_id).first()
+    if not coupon:
+        raise HTTPException(status_code=404, detail="优惠券不存在")
+    coupon.status = 0 if coupon.status == 1 else 1
+    db.commit()
+    return {"message": "已启用" if coupon.status == 1 else "已停用", "status": coupon.status}
+
+
+# ---- 订单修改审核（管理端） ----
+@router.get("/orders/modifications")
+def admin_list_modifications(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=50),
+    status: str = Query(default=""),
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    """管理端查看所有修改申请"""
+    query = db.query(OrderModification)
+    if status:
+        query = query.filter(OrderModification.status == status)
+
+    total = query.count()
+    items = query.order_by(OrderModification.created_at.desc()).offset(
+        (page - 1) * page_size
+    ).limit(page_size).all()
+
+    results = []
+    for m in items:
+        order = db.query(CombinedOrder).filter(CombinedOrder.id == m.combined_order_id).first()
+        store_name = ""
+        if m.sub_order_id:
+            sub = db.query(SubOrder).filter(SubOrder.id == m.sub_order_id).first()
+            store_name = sub.store.name if sub and sub.store else ""
+        user_name = order.user.nickname if order and order.user else ""
+        results.append({
+            "id": m.id, "combined_order_id": m.combined_order_id,
+            "sub_order_id": m.sub_order_id, "type": m.type,
+            "reason": m.reason, "new_address": m.new_address,
+            "status": m.status, "reviewed_by": m.reviewed_by,
+            "review_comment": m.review_comment,
+            "reviewed_at": str(m.reviewed_at) if m.reviewed_at else None,
+            "created_at": str(m.created_at),
+            "order_no": order.order_no if order else "",
+            "store_name": store_name,
+            "user_name": user_name,
+            "items_total": float(sub.items_total) if m.sub_order_id and (sub := db.query(SubOrder).filter(SubOrder.id == m.sub_order_id).first()) else 0,
+        })
+
+    return {"total": total, "items": results}
+
+
+@router.put("/orders/modifications/{mod_id}/approve")
+def admin_approve_modification(
+    mod_id: int,
+    comment: str = Query(default="平台审核通过"),
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    """管理端同意修改申请"""
+    mod = db.query(OrderModification).filter(OrderModification.id == mod_id).first()
+    if not mod:
+        raise HTTPException(status_code=404, detail="申请不存在")
+    if mod.status != "pending_review":
+        raise HTTPException(status_code=400, detail="申请已处理")
+
+    from datetime import datetime as dt
+
+    mod.status = "approved"
+    mod.reviewed_by = user.id
+    mod.review_comment = comment
+    mod.reviewed_at = dt.now()
+
+    if mod.type in ("cancel", "refund") and mod.sub_order_id:
+        sub = db.query(SubOrder).filter(SubOrder.id == mod.sub_order_id).first()
+        if sub:
+            sub.status = "cancelled"
+            sub.cancel_reason = mod.reason or "用户申请退单(管理员同意)"
+            sub.cancel_by = "user"
+            db.add(SubOrderTimeline(sub_order_id=sub.id, status="cancelled", description=f"管理员同意退单: {mod.reason}"))
+            order = sub.combined_order
+            if order:
+                statuses = [s.status for s in order.sub_orders]
+                if all(s == "cancelled" for s in statuses):
+                    order.status = "cancelled"
+                elif all(s in ("completed", "cancelled") for s in statuses):
+                    order.status = "completed" if all(s == "completed" for s in statuses) else "partial"
+    elif mod.type == "address_change":
+        order = db.query(CombinedOrder).filter(CombinedOrder.id == mod.combined_order_id).first()
+        if order and mod.new_address:
+            order.address_snapshot = mod.new_address
+
+    db.commit()
+    db.refresh(mod)
+
+    order = db.query(CombinedOrder).filter(CombinedOrder.id == mod.combined_order_id).first()
+    if order:
+        manager.push_order_event_sync(
+            "modification_approved",
+            {"modification_id": mod.id, "type": mod.type, "status": "approved"},
+            user_id=order.user_id,
+        )
+
+    return {"message": "已同意修改申请", "modification_id": mod.id}
+
+
+@router.put("/orders/modifications/{mod_id}/reject")
+def admin_reject_modification(
+    mod_id: int,
+    comment: str = Query(default="平台审核不通过"),
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    """管理端拒绝修改申请"""
+    mod = db.query(OrderModification).filter(OrderModification.id == mod_id).first()
+    if not mod:
+        raise HTTPException(status_code=404, detail="申请不存在")
+    if mod.status != "pending_review":
+        raise HTTPException(status_code=400, detail="申请已处理")
+
+    from datetime import datetime as dt
+
+    mod.status = "rejected"
+    mod.reviewed_by = user.id
+    mod.review_comment = comment
+    mod.reviewed_at = dt.now()
+
+    if mod.sub_order_id:
+        db.add(SubOrderTimeline(sub_order_id=mod.sub_order_id, status="mod_rejected", description=f"管理员拒绝申请: {comment}"))
+
+    db.commit()
+    db.refresh(mod)
+
+    order = db.query(CombinedOrder).filter(CombinedOrder.id == mod.combined_order_id).first()
+    if order:
+        manager.push_order_event_sync(
+            "modification_rejected",
+            {"modification_id": mod.id, "type": mod.type, "status": "rejected"},
+            user_id=order.user_id,
+        )
+
+    return {"message": "已拒绝修改申请", "modification_id": mod.id}
+
+
+# ---- 访问统计 ----
+@router.post("/visits/track")
+def track_visit(
+    page: str = Query(default=""),
+    db: Session = Depends(get_db),
+):
+    """记录一次管理后台页面访问"""
+    today_key = f"visit:{date.today()}"
+    config = db.query(SystemConfig).filter(SystemConfig.config_key == today_key).first()
+    if config:
+        config.config_value = str(int(config.config_value) + 1)
+    else:
+        config = SystemConfig(config_key=today_key, config_value="1", description="每日访问量")
+        db.add(config)
+    db.commit()
+    return {"message": "ok"}
+
+
+@router.get("/visits/stats")
+def visit_stats(days: int = Query(default=7, le=30), db: Session = Depends(get_db)):
+    """获取近期访问量统计"""
+    result = []
+    total = 0
+    for i in range(days - 1, -1, -1):
+        d = date.today() - timedelta(days=i)
+        key = f"visit:{d}"
+        config = db.query(SystemConfig).filter(SystemConfig.config_key == key).first()
+        count = int(config.config_value) if config else 0
+        total += count
+        result.append({"date": str(d), "count": count})
+
+    today_key = f"visit:{date.today()}"
+    today_config = db.query(SystemConfig).filter(SystemConfig.config_key == today_key).first()
+    today_count = int(today_config.config_value) if today_config else 0
+
+    yesterday = date.today() - timedelta(days=1)
+    yesterday_key = f"visit:{yesterday}"
+    yesterday_config = db.query(SystemConfig).filter(SystemConfig.config_key == yesterday_key).first()
+    yesterday_count = int(yesterday_config.config_value) if yesterday_config else 0
+
+    return {
+        "today": today_count,
+        "yesterday": yesterday_count,
+        "total": total,
+        "daily": result,
+    }
+
+
+# ---- 用户列表 ----
+@router.get("/customers")
+def list_customers(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=50),
+    keyword: str = Query(default=""),
+    db: Session = Depends(get_db),
+):
+    """列出平台注册用户"""
+    query = db.query(User).filter(User.role == "user")
+    if keyword:
+        query = query.filter(
+            User.nickname.contains(keyword) | User.phone.contains(keyword)
+        )
+    total = query.count()
+    items = query.order_by(User.created_at.desc()).offset(
+        (page - 1) * page_size
+    ).limit(page_size).all()
+    return {
+        "total": total,
+        "items": [{
+            "id": u.id,
+            "nickname": u.nickname or "",
+            "avatar": u.avatar or "",
+            "phone": u.phone or "",
+            "created_at": str(u.created_at),
+        } for u in items],
+    }

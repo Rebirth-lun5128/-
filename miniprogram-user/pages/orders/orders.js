@@ -4,9 +4,9 @@ const app = getApp()
 
 Page({
   data: {
-    tabs: ['全部', '待接单', '配送中', '已完成'],
+    tabs: ['全部', '待付款', '处理中', '配送中', '已完成'],
     activeTab: 0,
-    statusMap: ['', 'pending_accept', 'delivering', 'completed'],
+    statusMap: ['', 'pending_pay', 'pending', 'delivering', 'completed'],
     orders: [],
     page: 1,
     hasMore: true,
@@ -17,6 +17,15 @@ Page({
     if (!app.globalData.token) {
       wx.navigateTo({ url: '/pages/login/login' })
       return
+    }
+    // 支持从个人页跳转时指定状态筛选
+    const filter = app.globalData.orderFilter
+    if (filter) {
+      app.globalData.orderFilter = ''
+      const idx = this.data.statusMap.indexOf(filter)
+      if (idx >= 0) {
+        this.setData({ activeTab: idx })
+      }
     }
     this.setData({ page: 1, orders: [], hasMore: true })
     this.loadOrders()

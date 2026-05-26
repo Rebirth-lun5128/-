@@ -56,8 +56,9 @@ from routers.common.pay import router as pay_router
 from routers.common.ws import router as ws_router
 from routers.common.upload import router as upload_router
 from routers.user.address import router as user_address_router
-from routers.user.restaurant import router as user_restaurant_router
+from routers.user.store import router as user_store_router
 from routers.user.order import router as user_order_router
+from routers.user.coupon import router as user_coupon_router
 from routers.merchant.shop import router as merchant_shop_router
 from routers.merchant.menu import router as merchant_menu_router
 from routers.merchant.order import router as merchant_order_router
@@ -69,8 +70,9 @@ app.include_router(pay_router)
 app.include_router(ws_router)
 app.include_router(upload_router)
 app.include_router(user_address_router)
-app.include_router(user_restaurant_router)
+app.include_router(user_store_router)
 app.include_router(user_order_router)
+app.include_router(user_coupon_router)
 app.include_router(merchant_shop_router)
 app.include_router(merchant_menu_router)
 app.include_router(merchant_order_router)

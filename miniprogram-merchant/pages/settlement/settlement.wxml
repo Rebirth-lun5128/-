@@ -1,15 +1,69 @@
-<view class="container" wx:if="{{dashboard}}">
+<view class="container" wx:if="{{settlement}}">
+  <!-- 今日营收卡片 -->
   <view class="card total-card">
     <text class="total-label">今日营收</text>
     <text class="total-price">¥{{dashboard.today_revenue}}</text>
     <text class="total-sub">今日订单: {{dashboard.today_orders}} 单</text>
   </view>
 
+  <!-- 结算总览 -->
+  <view class="card">
+    <text class="section-title">结算总览</text>
+    <view class="info-row"><text>累计流水</text><text class="price-text">¥{{settlement.total_revenue}}</text></view>
+    <view class="info-row"><text>累计订单</text><text>{{settlement.total_orders}} 单</text></view>
+    <view class="info-row"><text>平台费率</text><text>{{commissionRateText}}%</text></view>
+    <view class="info-row"><text>平台服务费</text><text class="price-text">-¥{{settlement.platform_fee}}</text></view>
+    <view class="divider"></view>
+    <view class="info-row highlight"><text>净收入</text><text class="price-text green">¥{{settlement.net_revenue}}</text></view>
+    <view class="info-row"><text>已提现金额</text><text class="price-text">¥{{settlement.settled_amount}}</text></view>
+    <view class="info-row highlight"><text>可提现金额</text><text class="price-text orange">¥{{settlement.pending_settlement}}</text></view>
+  </view>
+
+  <!-- 提现按钮 -->
+  <view class="withdraw-section">
+    <button class="withdraw-btn" bindtap="onWithdrawTap" disabled="{{settlement.pending_settlement < 1}}">
+      提现到微信零钱
+    </button>
+    <text class="withdraw-tip" wx:if="{{settlement.pending_settlement < 1}}">可提现金额需 ≥ ¥1.00</text>
+  </view>
+
+  <!-- 提现记录 -->
+  <view class="card" wx:if="{{settlement.records.length > 0}}">
+    <text class="section-title">提现记录</text>
+    <view class="record-item" wx:for="{{settlement.records}}" wx:key="id">
+      <view class="record-left">
+        <text class="record-amount">¥{{item.net_amount}}</text>
+        <text class="record-period">{{item.period}} · {{item.created_at.slice(0, 10)}}</text>
+      </view>
+      <view class="record-right">
+        <text class="record-status {{item.status}}">{{item.status === 'paid' ? '已到账' : item.status}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 结算说明 -->
   <view class="card">
     <text class="section-title">结算说明</text>
-    <view class="info-row"><text>月销量</text><text>{{dashboard.monthly_sales || 0}} 单</text></view>
     <view class="info-row"><text>评分</text><text>★ {{dashboard.rating || '5.0'}}</text></view>
+    <view class="info-row"><text>月销量</text><text>{{dashboard.monthly_sales || 0}} 单</text></view>
     <view class="info-row"><text>结算周期</text><text>每周一自动结算</text></view>
-    <view class="info-row"><text>平台费率</text><text>15%</text></view>
   </view>
+</view>
+
+<!-- 提现弹窗 -->
+<view class="modal-mask" wx:if="{{showWithdraw}}" bindtap="onWithdrawCancel">
+  <view class="modal-box" catchtap="">
+    <text class="modal-title">提现到微信零钱</text>
+    <text class="modal-sub">可提现: ¥{{settlement.pending_settlement}}</text>
+    <input class="modal-input" type="digit" placeholder="请输入提现金额" value="{{withdrawAmount}}" bindinput="onAmountInput" focus />
+    <view class="modal-btns">
+      <button class="modal-btn cancel" bindtap="onWithdrawCancel">取消</button>
+      <button class="modal-btn confirm" bindtap="onWithdrawConfirm">确认提现</button>
+    </view>
+  </view>
+</view>
+
+<!-- 未加载时的空状态 -->
+<view class="empty-state" wx:else>
+  <text>加载中...</text>
 </view>

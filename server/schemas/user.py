@@ -59,7 +59,7 @@ class UserOut(BaseModel):
     avatar: str
     phone: str
     role: str
-    region_id: Optional[int]
+    district_id: Optional[int]
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -79,6 +79,7 @@ class WechatLoginIn(BaseModel):
 class PhoneLoginIn(BaseModel):
     phone: str
     password: str
+    role: str = "merchant"  # "merchant" or "rider"
 
 
 class LoginOut(BaseModel):

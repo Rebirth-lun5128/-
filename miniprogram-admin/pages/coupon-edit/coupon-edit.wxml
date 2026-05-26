@@ -1,0 +1,80 @@
+<view class="container">
+  <!-- 表单卡片 -->
+  <view class="card form-card">
+    <view class="form-head">
+      <text class="form-head-icon">{{isEdit ? '✏️' : '🎫'}}</text>
+      <text class="form-head-title">{{isEdit ? '编辑优惠券' : '创建优惠券'}}</text>
+    </view>
+
+    <!-- 类型选择 -->
+    <view class="form-item">
+      <text class="fi-label">优惠券类型 <text class="required">*</text></text>
+      <picker range="{{types}}" bindchange="onTypeChange" value="{{typeIndex}}">
+        <view class="fi-picker">
+          <text>{{types[typeIndex]}}</text>
+          <text class="picker-arrow">▼</text>
+        </view>
+      </picker>
+    </view>
+
+    <view class="form-item">
+      <text class="fi-label">优惠券名称 <text class="required">*</text></text>
+      <input class="fi-input" placeholder="如: 新用户专享券" value="{{form.name}}" bindinput="onInput" data-field="name" />
+    </view>
+
+    <view class="form-row">
+      <view class="form-item half">
+        <text class="fi-label">减免金额 <text class="required">*</text></text>
+        <view class="fi-input-wrap">
+          <text class="fi-prefix">¥</text>
+          <input class="fi-input has-prefix" type="digit" placeholder="3" value="{{form.discount_amount}}" bindinput="onInput" data-field="discount_amount" />
+        </view>
+      </view>
+      <view class="form-item half" wx:if="{{typeIndex === 0}}">
+        <text class="fi-label">满减门槛</text>
+        <view class="fi-input-wrap">
+          <text class="fi-prefix">¥</text>
+          <input class="fi-input has-prefix" type="digit" placeholder="20" value="{{form.condition_amount}}" bindinput="onInput" data-field="condition_amount" />
+        </view>
+      </view>
+    </view>
+
+    <view class="form-item">
+      <text class="fi-label">发放总量</text>
+      <input class="fi-input" type="number" placeholder="0 表示不限量" value="{{form.total_count}}" bindinput="onInput" data-field="total_count" />
+    </view>
+
+    <view class="form-row">
+      <view class="form-item half">
+        <text class="fi-label">开始日期</text>
+        <input class="fi-input" placeholder="YYYY-MM-DD" value="{{form.start_time}}" bindinput="onInput" data-field="start_time" />
+      </view>
+      <view class="form-item half">
+        <text class="fi-label">结束日期</text>
+        <input class="fi-input" placeholder="YYYY-MM-DD" value="{{form.end_time}}" bindinput="onInput" data-field="end_time" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 预览卡片 -->
+  <view class="preview-card" wx:if="{{form.name || form.discount_amount}}">
+    <text class="preview-label">优惠券预览</text>
+    <view class="preview-inner">
+      <view class="pv-left">
+        <view class="pv-amount">
+          <text class="pv-symbol">¥</text>
+          <text class="pv-num">{{form.discount_amount || '0'}}</text>
+        </view>
+        <text class="pv-type">{{types[typeIndex]}}</text>
+      </view>
+      <view class="pv-divider"></view>
+      <view class="pv-right">
+        <text class="pv-name">{{form.name || '优惠券名称'}}</text>
+        <text class="pv-cond" wx:if="{{typeIndex === 0 && form.condition_amount}}">满{{form.condition_amount}}元可用</text>
+        <text class="pv-cond" wx:else>无门槛</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="btn-primary btn-submit" bindtap="onSubmit">{{isEdit ? '保存修改' : '创建优惠券'}}</view>
+</view>

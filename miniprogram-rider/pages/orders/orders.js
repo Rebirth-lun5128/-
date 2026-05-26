@@ -12,7 +12,12 @@ Page({
   async loadOrders() {
     try {
       const res = await api.get('/api/rider/orders/my', { page: 1, page_size: 50 })
-      this.setData({ orders: res.items || [] })
+      const orders = (res.items || []).map(o => ({
+        ...o,
+        storeNames: (o.sub_orders || []).map(s => s.store_name || s.store_name_snapshot).join('、'),
+        storeCount: (o.sub_orders || []).length,
+      }))
+      this.setData({ orders })
     } catch (e) { }
   },
 })

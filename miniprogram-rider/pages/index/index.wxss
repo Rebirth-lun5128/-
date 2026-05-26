@@ -21,3 +21,8 @@
 .pool-addr { display: block; font-size: 26rpx; color: #666; margin: 8rpx 0; }
 .pool-footer { display: flex; justify-content: space-between; align-items: center; padding: 16rpx 24rpx; border-top: 1rpx solid #f5f5f5; }
 .distance { font-size: 26rpx; color: #999; }
+
+.store-list { font-size: 26rpx; color: #333; margin: 8rpx 0; }
+.store-count-tag { display: inline-block; background: #FFF3E0; color: #FF9800; font-size: 22rpx; padding: 4rpx 12rpx; border-radius: 8rpx; margin-left: 8rpx; }
+.shop-list { display: flex; flex-wrap: wrap; gap: 8rpx; flex: 1; }
+.shop-list .shop-name { font-size: 26rpx; color: #333; }

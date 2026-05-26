@@ -7,6 +7,7 @@
     "pages/menu-edit/menu-edit",
     "pages/shop/shop",
     "pages/settlement/settlement",
+    "pages/modifications/modifications",
     "pages/login/login"
   ],
   "window": {

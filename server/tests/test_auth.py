@@ -110,9 +110,9 @@ class TestGetCurrentUser:
         assert "role" in data
 
     def test_get_me_no_token(self, client):
-        """No token should return 401."""
+        """No token should return 403."""
         resp = client.get("/api/common/auth/me")
-        assert resp.status_code == 401
+        assert resp.status_code == 403
 
     def test_get_me_invalid_token(self, client):
         """Invalid token should return 401."""

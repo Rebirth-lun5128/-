@@ -85,8 +85,8 @@ def client(db_session):
 # ---- Seed data fixtures ----
 @pytest.fixture
 def region(db_session):
-    from models.region import Region
-    r = Region(id=1, name="测试区域", sort_order=1, status=1)
+    from models.district import District
+    r = District(id=1, name="测试区域", status=1)
     db_session.add(r)
     db_session.flush()
     return r
@@ -96,7 +96,7 @@ def region(db_session):
 def system_configs(db_session):
     from models.region import SystemConfig
     configs = [
-        SystemConfig(config_key="platform_fee_rate", config_value="0.15", description="平台抽成比例"),
+        SystemConfig(config_key="platform_fee_rate", config_value="0.12", description="平台抽成比例"),
         SystemConfig(config_key="delivery_fee_default", config_value="5", description="默认配送费"),
         SystemConfig(config_key="rider_per_order", config_value="5", description="骑手每单收入"),
         SystemConfig(config_key="auto_cancel_minutes", config_value="15", description="自动取消时间"),
@@ -142,9 +142,9 @@ def test_user_admin(db_session):
 
 
 @pytest.fixture
-def test_user_region_admin(db_session, region):
-    return _create_user(db_session, openid="test_region_admin", nickname="区域管理员", role="region_admin",
-                        region_id=1, phone="13800000001", hashed_password=hash_password("admin123"))
+def test_user_district_admin(db_session, region):
+    return _create_user(db_session, openid="test_district_admin", nickname="区域管理员", role="district_admin",
+                        district_id=1, phone="13800000001", hashed_password=hash_password("admin123"))
 
 
 # ---- Token helpers ----
@@ -182,7 +182,7 @@ def auth_header_admin(client, test_user_admin):
 
 
 @pytest.fixture
-def auth_header_region_admin(client, test_user_region_admin):
+def auth_header_district_admin(client, test_user_district_admin):
     token = _get_token(client, "13800000001", "admin123")
     return {"Authorization": f"Bearer {token}"}
 
@@ -190,8 +190,8 @@ def auth_header_region_admin(client, test_user_region_admin):
 # ---- Restaurant & Menu fixtures ----
 @pytest.fixture
 def restaurant(db_session, test_user_merchant, region):
-    from models.restaurant import Restaurant
-    r = Restaurant(
+    from models.store import Store
+    r = Store(
         user_id=test_user_merchant.id,
         name="测试餐厅",
         phone="13900000001",
@@ -200,7 +200,7 @@ def restaurant(db_session, test_user_merchant, region):
         category="烧烤",
         status="open",
         verify_status="verified",
-        region_id=region.id,
+        district_id=region.id,
         delivery_fee=5,
         min_price=20,
         business_hours={"open": "17:00", "close": "02:00"},
@@ -212,8 +212,8 @@ def restaurant(db_session, test_user_merchant, region):
 
 @pytest.fixture
 def restaurant_unverified(db_session, test_user_merchant, region):
-    from models.restaurant import Restaurant
-    r = Restaurant(
+    from models.store import Store
+    r = Store(
         user_id=test_user_merchant.id,
         name="待审核餐厅",
         phone="13900000001",
@@ -222,7 +222,7 @@ def restaurant_unverified(db_session, test_user_merchant, region):
         category="小吃",
         status="closed",
         verify_status="unverified",
-        region_id=region.id,
+        district_id=region.id,
     )
     db_session.add(r)
     db_session.flush()
@@ -231,8 +231,8 @@ def restaurant_unverified(db_session, test_user_merchant, region):
 
 @pytest.fixture
 def menu_category(db_session, restaurant):
-    from models.restaurant import MenuCategory
-    c = MenuCategory(restaurant_id=restaurant.id, name="招牌菜", sort_order=1)
+    from models.store import StoreCategory
+    c = StoreCategory(store_id=restaurant.id, name="招牌菜", sort_order=1)
     db_session.add(c)
     db_session.flush()
     return c
@@ -240,11 +240,11 @@ def menu_category(db_session, restaurant):
 
 @pytest.fixture
 def menu_items(db_session, restaurant, menu_category):
-    from models.restaurant import MenuItem
+    from models.store import Product
     items = [
-        MenuItem(restaurant_id=restaurant.id, category_id=menu_category.id, name="羊肉串", price=5, status=1, sort_order=1),
-        MenuItem(restaurant_id=restaurant.id, category_id=menu_category.id, name="牛肉串", price=6, original_price=8, status=1, sort_order=2),
-        MenuItem(restaurant_id=restaurant.id, category_id=menu_category.id, name="已下架菜品", price=10, status=0, sort_order=3),
+        Product(store_id=restaurant.id, category_id=menu_category.id, name="羊肉串", price=5, status=1, sort_order=1),
+        Product(store_id=restaurant.id, category_id=menu_category.id, name="牛肉串", price=6, original_price=8, status=1, sort_order=2),
+        Product(store_id=restaurant.id, category_id=menu_category.id, name="已下架菜品", price=10, status=0, sort_order=3),
     ]
     for item in items:
         db_session.add(item)
@@ -282,7 +282,7 @@ def rider(db_session, test_user_rider, region):
         phone="13900000002",
         status="online",
         audit_status="approved",
-        region_id=region.id,
+        district_id=region.id,
         balance=100,
         total_orders=50,
     )
@@ -291,14 +291,73 @@ def rider(db_session, test_user_rider, region):
     return r
 
 
-# ---- Order fixture ----
+# ---- Combined Order fixtures ----
+@pytest.fixture
+def combined_order(db_session, test_user_normal, restaurant, restaurant_unverified, address, region):
+    """创建一个包含两个子单的合并订单"""
+    from models.order import CombinedOrder, SubOrder, SubOrderItem, SubOrderTimeline
+    order = CombinedOrder(
+        order_no="COMBINED20240101001",
+        user_id=test_user_normal.id,
+        address_snapshot={
+            "contact_name": address.contact_name,
+            "contact_phone": address.contact_phone,
+            "detail": address.detail,
+        },
+        items_total=27,
+        delivery_fee_original=5,
+        delivery_fee_discount=0,
+        delivery_fee=5,
+        total_price=32,
+        status="pending",
+        district_id=region.id if region else 1,
+    )
+    db_session.add(order)
+    db_session.flush()
+
+    # 子单1 - 已到ready状态
+    sub1 = SubOrder(
+        combined_order_id=order.id,
+        store_id=restaurant.id,
+        store_name_snapshot=restaurant.name,
+        items_total=11,
+        commission_rate=0.12,
+        status="ready",
+    )
+    db_session.add(sub1)
+    db_session.flush()
+    db_session.add(SubOrderItem(sub_order_id=sub1.id, product_id=1, name="羊肉串", price=5, quantity=2))
+    db_session.add(SubOrderItem(sub_order_id=sub1.id, product_id=2, name="牛肉串", price=6, quantity=1))
+    db_session.add(SubOrderTimeline(sub_order_id=sub1.id, status="pending_accept", description="已支付"))
+    db_session.add(SubOrderTimeline(sub_order_id=sub1.id, status="ready", description="已出餐"))
+
+    # 子单2 - 也已ready
+    sub2 = SubOrder(
+        combined_order_id=order.id,
+        store_id=restaurant_unverified.id,
+        store_name_snapshot=restaurant_unverified.name,
+        items_total=16,
+        commission_rate=0.15,
+        status="ready",
+    )
+    db_session.add(sub2)
+    db_session.flush()
+    db_session.add(SubOrderItem(sub_order_id=sub2.id, product_id=3, name="烤鸡翅", price=8, quantity=2))
+    db_session.add(SubOrderTimeline(sub_order_id=sub2.id, status="pending_accept", description="已支付"))
+    db_session.add(SubOrderTimeline(sub_order_id=sub2.id, status="ready", description="已出餐"))
+
+    db_session.flush()
+    return order
+
+
+# ---- Order fixture (deprecated but retained for existing tests) ----
 @pytest.fixture
 def order(db_session, test_user_normal, restaurant, address):
     from models.order import Order, OrderItem
     order = Order(
         order_no="TEST20240101000001",
         user_id=test_user_normal.id,
-        restaurant_id=restaurant.id,
+        store_id=restaurant.id,
         address_snapshot={
             "contact_name": address.contact_name,
             "contact_phone": address.contact_phone,
@@ -308,13 +367,55 @@ def order(db_session, test_user_normal, restaurant, address):
         delivery_fee=5,
         total_price=16,
         status="pending_pay",
-        region_id=1,
+        district_id=1,
     )
     db_session.add(order)
     db_session.flush()
-    item = OrderItem(order_id=order.id, menu_item_id=1, name="羊肉串", price=5, quantity=2)
+    item = OrderItem(order_id=order.id, product_id=1, name="羊肉串", price=5, quantity=2)
     db_session.add(item)
-    item2 = OrderItem(order_id=order.id, menu_item_id=2, name="牛肉串", price=6, quantity=1)
+    item2 = OrderItem(order_id=order.id, product_id=2, name="牛肉串", price=6, quantity=1)
     db_session.add(item2)
     db_session.flush()
     return order
+
+
+# ---- SubOrder fixture (for merchant tests) ----
+@pytest.fixture
+def sub_order(db_session, test_user_normal, restaurant, address, region):
+    """创建一个属于restaurant的子单，CombinedOrder为pending_pay"""
+    from models.order import CombinedOrder, SubOrder, SubOrderItem, SubOrderTimeline
+    co = CombinedOrder(
+        order_no="SUBORDER20240101001",
+        user_id=test_user_normal.id,
+        address_snapshot={
+            "contact_name": address.contact_name,
+            "contact_phone": address.contact_phone,
+            "detail": address.detail,
+        },
+        items_total=11,
+        delivery_fee_original=5,
+        delivery_fee_discount=0,
+        delivery_fee=5,
+        total_price=16,
+        status="pending",
+        district_id=region.id,
+    )
+    db_session.add(co)
+    db_session.flush()
+
+    sub = SubOrder(
+        combined_order_id=co.id,
+        store_id=restaurant.id,
+        store_name_snapshot=restaurant.name,
+        items_total=11,
+        commission_rate=0.12,
+        status="pending_accept",
+    )
+    db_session.add(sub)
+    db_session.flush()
+
+    db_session.add(SubOrderItem(sub_order_id=sub.id, product_id=1, name="羊肉串", price=5, quantity=2))
+    db_session.add(SubOrderItem(sub_order_id=sub.id, product_id=2, name="牛肉串", price=6, quantity=1))
+    db_session.add(SubOrderTimeline(sub_order_id=sub.id, status="pending_accept", description="子单已创建，等待商家接单"))
+    db_session.flush()
+    return sub

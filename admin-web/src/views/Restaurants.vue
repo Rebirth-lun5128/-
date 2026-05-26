@@ -1,57 +1,142 @@
 <template>
-  <div>
+  <div class="stores-page">
     <el-card shadow="never">
       <template #header>
-        <div class="card-header">
-          <span>商家管理 (夜市摊位)</span>
-          <el-select v-model="filterStatus" placeholder="核验状态" clearable style="width:150px" @change="loadData">
-            <el-option label="待核验" value="unverified" />
-            <el-option label="已核验" value="verified" />
-            <el-option label="已拒绝" value="rejected" />
-          </el-select>
+        <div class="card-hdr">
+          <span class="card-hdr-title">🏪 商家管理（夜市摊位）</span>
+          <div class="hdr-controls">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索摊位名称..."
+              clearable
+              style="width:220px"
+              @input="onSearch"
+            >
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+            <el-select
+              v-model="filterStatus"
+              placeholder="核验状态"
+              clearable
+              style="width:140px"
+              @change="loadData"
+            >
+              <el-option label="全部" value="" />
+              <el-option label="待核验" value="unverified" />
+              <el-option label="已核验" value="verified" />
+              <el-option label="已拒绝" value="rejected" />
+            </el-select>
+          </div>
         </div>
       </template>
+
       <el-table :data="items" stripe v-loading="loading">
-        <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column prop="name" label="摊位名称" />
-        <el-table-column prop="phone" label="电话" width="130" />
-        <el-table-column prop="stall_location" label="摊位位置" />
-        <el-table-column prop="category" label="分类" width="80" />
-        <el-table-column prop="verify_status" label="核验状态" width="100">
+        <el-table-column prop="id" label="ID" width="60" align="center" />
+        <el-table-column prop="name" label="摊位名称" min-width="140">
           <template #default="{ row }">
-            <el-tag :type="row.verify_status === 'verified' ? 'success' : row.verify_status === 'rejected' ? 'danger' : 'warning'">
+            <span class="store-name">{{ row.name }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="phone" label="电话" width="130" />
+        <el-table-column prop="stall_location" label="摊位位置" min-width="110" />
+        <el-table-column prop="category" label="分类" width="90" align="center" />
+
+        <!-- 抽成比例 - 显式可点击 -->
+        <el-table-column label="抽成比例" width="150" align="center">
+          <template #default="{ row }">
+            <div v-if="editRateId !== row.id" class="clickable-cell" @click="startEditRate(row)">
+              <el-icon class="click-icon"><EditPen /></el-icon>
+              <span class="click-value">{{ (row.commission_rate * 100).toFixed(1) }}%</span>
+              <span class="click-hint">点击修改</span>
+            </div>
+            <div v-else class="inline-edit">
+              <el-input-number
+                v-model="editRateVal"
+                :min="0" :max="100" :step="0.5"
+                size="small" controls-position="right"
+                style="width:90px"
+                ref="rateInputRef"
+              />
+              <el-button size="small" type="primary" @click="saveRate(row)" round>保存</el-button>
+              <el-button size="small" @click="editRateId = null" round>取消</el-button>
+            </div>
+          </template>
+        </el-table-column>
+
+        <!-- 配送附加费 -->
+        <el-table-column label="配送附加费" width="150" align="center">
+          <template #default="{ row }">
+            <div v-if="editSurchargeId !== row.id" class="clickable-cell" @click="startEditSurcharge(row)">
+              <el-icon class="click-icon"><EditPen /></el-icon>
+              <span class="click-value">¥{{ row.delivery_surcharge || 0 }}</span>
+              <span class="click-hint">点击修改</span>
+            </div>
+            <div v-else class="inline-edit">
+              <el-input-number
+                v-model="editSurchargeVal"
+                :min="0" :max="50" :step="0.5"
+                size="small" controls-position="right"
+                style="width:90px"
+              />
+              <el-button size="small" type="primary" @click="saveSurcharge(row)" round>保存</el-button>
+              <el-button size="small" @click="editSurchargeId = null" round>取消</el-button>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="verify_status" label="核验状态" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag
+              :type="row.verify_status === 'verified' ? 'success' : row.verify_status === 'rejected' ? 'danger' : 'warning'"
+              effect="plain" round size="small"
+            >
               {{ row.verify_status === 'verified' ? '已核验' : row.verify_status === 'rejected' ? '已拒绝' : '待核验' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="verify_method" label="核验方式" width="100" />
-        <el-table-column label="操作" min-width="200" fixed="right">
+
+        <el-table-column label="操作" min-width="240" fixed="right">
           <template #default="{ row }">
-            <div v-if="row.verify_status === 'unverified'" style="display:flex;gap:6px;flex-wrap:wrap">
-              <el-button size="small" type="success" @click="verify(row.id, 'verified', '现场核验')">通过-现场</el-button>
-              <el-button size="small" type="primary" @click="verify(row.id, 'verified', '视频核验')">通过-视频</el-button>
-              <el-button size="small" type="danger" @click="verify(row.id, 'rejected', '')">拒绝</el-button>
+            <div v-if="row.verify_status === 'unverified'" class="action-group">
+              <el-button size="small" type="success" @click="verify(row.id, 'verified', '现场核验')" round>
+                <el-icon><Check /></el-icon> 通过-现场
+              </el-button>
+              <el-button size="small" type="primary" @click="verify(row.id, 'verified', '视频核验')" round>
+                <el-icon><VideoCamera /></el-icon> 通过-视频
+              </el-button>
+              <el-button size="small" type="danger" @click="verify(row.id, 'rejected', '')" round>
+                <el-icon><Close /></el-icon> 拒绝
+              </el-button>
             </div>
-            <el-button v-else size="small" @click="toggleStatus(row.id, row.status === 'open' ? 'closed' : 'open')">
+            <el-button
+              v-else size="small"
+              :type="row.status === 'open' ? 'danger' : 'success'"
+              @click="toggleStatus(row.id, row.status === 'open' ? 'closed' : 'open')"
+              round
+            >
               {{ row.status === 'open' ? '强制关店' : '恢复营业' }}
             </el-button>
           </template>
         </el-table-column>
       </el-table>
-      <el-pagination
-        style="margin-top:20px;justify-content:flex-end"
-        v-model:current-page="page"
-        :total="total"
-        :page-size="10"
-        layout="total, prev, pager, next"
-        @current-change="loadData"
-      />
+
+      <div class="table-footer">
+        <span class="total-hint">共 {{ total }} 条记录</span>
+        <el-pagination
+          v-model:current-page="page"
+          :total="total"
+          :page-size="10"
+          layout="prev, pager, next"
+          background
+          @current-change="loadData"
+        />
+      </div>
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import http from '../api'
 
@@ -59,40 +144,165 @@ const items = ref([])
 const total = ref(0)
 const page = ref(1)
 const loading = ref(false)
-const filterStatus = ref('unverified')
+const filterStatus = ref('')
+const searchKeyword = ref('')
+let searchTimer = null
+
+// 抽成比例编辑
+const editRateId = ref(null)
+const editRateVal = ref(12)
+const rateInputRef = ref(null)
+
+async function startEditRate(row) {
+  editRateId.value = row.id
+  editRateVal.value = (row.commission_rate || 0.12) * 100
+  await nextTick()
+  // 聚焦到 input
+  const el = document.querySelector('.inline-edit .el-input-number input')
+  el?.focus()
+}
+
+async function saveRate(row) {
+  try {
+    const rate = editRateVal.value / 100
+    await http.put(`/admin/stores/${row.id}/commission-rate`, null, { params: { rate } })
+    row.commission_rate = rate
+    editRateId.value = null
+    ElMessage.success('抽成比例已更新')
+  } catch (e) { /* ignore */ }
+}
+
+// 配送附加费编辑
+const editSurchargeId = ref(null)
+const editSurchargeVal = ref(0)
+
+async function startEditSurcharge(row) {
+  editSurchargeId.value = row.id
+  editSurchargeVal.value = row.delivery_surcharge || 0
+  await nextTick()
+  const el = document.querySelector('.inline-edit .el-input-number input')
+  el?.focus()
+}
+
+async function saveSurcharge(row) {
+  try {
+    await http.put(`/admin/stores/${row.id}/delivery-surcharge`, null, {
+      params: { surcharge: editSurchargeVal.value }
+    })
+    row.delivery_surcharge = editSurchargeVal.value
+    editSurchargeId.value = null
+    ElMessage.success('配送附加费已更新')
+  } catch (e) { /* ignore */ }
+}
+
+function onSearch() {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => { page.value = 1; loadData() }, 300)
+}
 
 async function loadData() {
   loading.value = true
   try {
-    const res = await http.get('/admin/restaurants', {
-      params: { page: page.value, page_size: 10, verify_status: filterStatus.value }
-    })
+    const params = { page: page.value, page_size: 10 }
+    if (filterStatus.value) params.verify_status = filterStatus.value
+    if (searchKeyword.value) params.keyword = searchKeyword.value
+    const res = await http.get('/admin/stores', { params })
     items.value = res.items
     total.value = res.total
-  } catch (e) { } finally { loading.value = false }
+  } catch (e) { /* ignore */ } finally { loading.value = false }
 }
 
 async function verify(id, status, method) {
   try {
-    await http.put(`/admin/restaurants/${id}/verify`, null, {
+    await http.put(`/admin/stores/${id}/verify`, null, {
       params: { verify_status: status, verify_method: method, verify_note: method }
     })
     ElMessage.success(status === 'verified' ? '核验通过' : '已拒绝')
     loadData()
-  } catch (e) { }
+  } catch (e) { /* ignore */ }
 }
 
 async function toggleStatus(id, status) {
   try {
-    await http.put(`/admin/restaurants/${id}/toggle-status?status=${status}`)
+    await http.put(`/admin/stores/${id}/toggle-status?status=${status}`)
     ElMessage.success('已更新')
     loadData()
-  } catch (e) { }
+  } catch (e) { /* ignore */ }
 }
 
 loadData()
 </script>
 
 <style scoped>
-.card-header { display: flex; justify-content: space-between; align-items: center; }
+.stores-page { animation: fadeIn 0.35s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.card-hdr { display: flex; justify-content: space-between; align-items: center; }
+.card-hdr-title { font-size: 15px; font-weight: 600; color: #333; }
+.hdr-controls { display: flex; gap: 12px; align-items: center; }
+
+.store-name { font-weight: 600; color: #333; }
+
+/* -------- 可点击单元格 -------- */
+.clickable-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: #f5f3ff;
+  border: 1.5px dashed #c4b5fd;
+  color: #6C5CE7;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+.clickable-cell:hover {
+  background: #ede7ff;
+  border-color: #6C5CE7;
+  border-style: solid;
+  transform: scale(1.04);
+  box-shadow: 0 2px 12px rgba(108,92,231,0.18);
+}
+.click-icon { font-size: 13px; flex-shrink: 0; }
+.click-value { letter-spacing: 0.3px; }
+.click-hint {
+  font-size: 10px; font-weight: 400;
+  color: #b4a5e0;
+  margin-left: 2px;
+}
+
+/* -------- 内联编辑 -------- */
+.inline-edit {
+  display: flex; gap: 6px; align-items: center; justify-content: center;
+}
+
+/* -------- 操作按钮组 -------- */
+.action-group { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* -------- 表脚 -------- */
+.table-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 20px;
+}
+.total-hint { font-size: 13px; color: #999; }
+
+@media (max-width: 767px) {
+  .card-hdr { flex-wrap: wrap; gap: 10px; }
+  .card-hdr-title { font-size: 14px; }
+  .hdr-controls { flex-wrap: wrap; width: 100%; }
+  .hdr-controls .el-input { width: 100% !important; }
+  .hdr-controls .el-select { width: 100% !important; }
+  .clickable-cell { padding: 4px 9px; font-size: 12px; border-radius: 16px; }
+  .click-hint { display: none; }
+  .click-value { font-size: 12px; }
+  .inline-edit { flex-wrap: wrap; }
+  .action-group { flex-wrap: wrap; }
+  .action-group .el-button { font-size: 11px; padding: 5px 10px; }
+  .table-footer { flex-direction: column; gap: 12px; align-items: stretch; }
+  .el-pagination { justify-content: center; }
+}
 </style>

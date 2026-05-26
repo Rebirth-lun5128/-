@@ -16,7 +16,10 @@ Page({
     try {
       const order = await api.get(`/api/merchant/orders/${id}`)
       this.setData({
-        order: { ...order, statusText: util.getOrderStatusText(order.status) },
+        order: {
+          ...order,
+          statusText: util.getOrderStatusText(order.status),
+        },
         timeline: order.timeline || [],
       })
     } catch (e) { }

@@ -18,8 +18,8 @@ const routes = [
         meta: { title: '数据大盘' },
       },
       {
-        path: 'restaurants',
-        name: 'Restaurants',
+        path: 'stores',
+        name: 'Stores',
         component: () => import('../views/Restaurants.vue'),
         meta: { title: '商家管理' },
       },
@@ -36,10 +36,10 @@ const routes = [
         meta: { title: '订单监控' },
       },
       {
-        path: 'regions',
-        name: 'Regions',
+        path: 'districts',
+        name: 'Districts',
         component: () => import('../views/Regions.vue'),
-        meta: { title: '区域管理' },
+        meta: { title: '分区管理' },
       },
       {
         path: 'system',

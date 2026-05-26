@@ -4,10 +4,25 @@
     <text class="status-icon">
       <block wx:if="{{order.status === 'completed'}}">✓</block>
       <block wx:elif="{{order.status === 'cancelled'}}">✕</block>
+      <block wx:elif="{{order.status === 'partial'}}">⚠</block>
       <block wx:else>🛵</block>
     </text>
     <text class="status-text">{{order.statusText}}</text>
     <text class="status-desc" wx:if="{{order.rider_name}}">骑手: {{order.rider_name}}</text>
+    <text class="status-desc" wx:if="{{subOrders.length > 1}}">{{subOrders.length}}店合单</text>
+  </view>
+
+  <!-- 骑手位置地图 -->
+  <view class="map-card" wx:if="{{order.status === 'delivering' && riderLat}}">
+    <text class="map-title">骑手实时位置</text>
+    <map
+      class="rider-map"
+      latitude="{{riderLat}}"
+      longitude="{{riderLng}}"
+      markers="{{mapMarkers}}"
+      scale="15"
+      show-location
+    />
   </view>
 
   <!-- 配送地址 -->
@@ -21,21 +36,67 @@
     </view>
   </view>
 
-  <!-- 餐厅 -->
-  <view class="card">
-    <text class="shop-name">{{order.restaurant_name}}</text>
-    <view class="order-item" wx:for="{{order.items}}" wx:key="id">
-      <text class="item-name">{{item.name}}</text>
-      <text class="item-qty">x{{item.quantity}}</text>
-      <text class="price">{{item.price * item.quantity}}</text>
+  <!-- 合并订单：每家店独立展示 -->
+  <block wx:if="{{hasSubOrders}}">
+    <view class="card" wx:for="{{subOrders}}" wx:key="id" wx:for-item="sub">
+      <view class="sub-header">
+        <text class="shop-name">{{sub.store_name || sub.store_name_snapshot}}</text>
+        <text class="sub-status" style="color: {{sub.status === 'cancelled' ? '#E53935' : '#4CAF50'}}">
+          <block wx:if="{{sub.status === 'completed'}}">✓ 已完成</block>
+          <block wx:elif="{{sub.status === 'cancelled'}}">✕ 已取消</block>
+          <block wx:elif="{{sub.status === 'delivering'}}">配送中</block>
+          <block wx:elif="{{sub.status === 'ready'}}">待取餐</block>
+          <block wx:elif="{{sub.status === 'preparing'}}">备餐中</block>
+          <block wx:else>待接单</block>
+        </text>
+      </view>
+      <view class="order-item" wx:for="{{sub.items}}" wx:key="id" wx:for-item="item">
+        <text class="item-name">{{item.name}}</text>
+        <text class="item-qty">x{{item.quantity}}</text>
+        <text class="price">¥{{item.price * item.quantity}}</text>
+      </view>
+      <view class="sub-footer">
+        <text class="sub-total">小计: ¥{{sub.items_total}}</text>
+      </view>
+      <!-- 子单时间线 -->
+      <view wx:if="{{sub.timeline && sub.timeline.length > 0}}" class="sub-timeline">
+        <view class="timeline-item" wx:for="{{sub.timeline}}" wx:key="id" wx:for-item="t">
+          <view class="dot"></view>
+          <view class="timeline-content">
+            <text>{{t.description}}</text>
+            <text class="timeline-time">{{t.created_at}}</text>
+          </view>
+        </view>
+      </view>
     </view>
-  </view>
+  </block>
+
+  <!-- 单店订单（兼容旧模式） -->
+  <block wx:else>
+    <view class="card">
+      <text class="shop-name">{{order.store_name}}</text>
+      <view class="order-item" wx:for="{{order.items}}" wx:key="id">
+        <text class="item-name">{{item.name}}</text>
+        <text class="item-qty">x{{item.quantity}}</text>
+        <text class="price">¥{{item.price * item.quantity}}</text>
+      </view>
+    </view>
+  </block>
 
   <!-- 费用 -->
   <view class="card">
-    <view class="fee-row"><text>菜品小计</text><text class="price">{{order.items_total}}</text></view>
-    <view class="fee-row"><text>配送费</text><text class="price">{{order.delivery_fee}}</text></view>
-    <view class="fee-row total"><text>实付金额</text><text class="price">{{order.total_price}}</text></view>
+    <view class="fee-row"><text>菜品小计</text><text class="price">¥{{order.items_total}}</text></view>
+    <view class="fee-row" wx:if="{{order.delivery_fee_original > order.delivery_fee}}">
+      <text>配送费(原价)</text>
+      <text class="price" style="text-decoration: line-through; color: #999">¥{{order.delivery_fee_original}}</text>
+    </view>
+    <view class="fee-row" wx:if="{{order.delivery_fee_discount > 0}}">
+      <text>满减配送费优惠</text>
+      <text class="price discount">-¥{{order.delivery_fee_discount}}</text>
+    </view>
+    <view class="fee-row"><text>配送费</text><text class="price">¥{{order.delivery_fee}}</text></view>
+    <view class="fee-row" wx:if="{{order.coupon_discount > 0}}"><text>优惠券抵扣</text><text class="price discount">-¥{{order.coupon_discount}}</text></view>
+    <view class="fee-row total"><text>实付金额</text><text class="price">¥{{order.total_price}}</text></view>
   </view>
 
   <!-- 订单信息 -->
@@ -45,16 +106,84 @@
     <view class="info-row" wx:if="{{order.remark}}"><text>备注</text><text>{{order.remark}}</text></view>
   </view>
 
-  <!-- 时间线 -->
-  <view class="card" wx:if="{{timeline.length > 0}}">
-    <text class="timeline-title">订单轨迹</text>
-    <view class="timeline-item" wx:for="{{timeline}}" wx:key="id">
-      <view class="dot"></view>
-      <view class="timeline-content">
-        <text>{{item.description}}</text>
-        <text class="timeline-time">{{item.created_at}}</text>
-      </view>
-    </view>
+  <!-- 评价（合单时按子单评价） -->
+  <view class="card review-section" wx:if="{{order.status === 'completed' || order.status === 'partial'}}">
+    <block wx:if="{{hasSubOrders}}">
+      <block wx:for="{{subOrders}}" wx:key="id" wx:for-item="sub">
+        <view wx:if="{{sub.status === 'completed' && !sub.review}}" class="sub-review">
+          <text class="section-title">评价 {{sub.store_name || sub.store_name_snapshot}}</text>
+          <view class="stars-row">
+            <text
+              wx:for="{{[1,2,3,4,5]}}"
+              wx:key="*this"
+              class="star-select {{item <= reviewScore ? 'active' : ''}}"
+              data-score="{{item}}"
+              bindtap="setScore"
+            >★</text>
+          </view>
+          <view class="tag-row">
+            <text
+              wx:for="{{['味道好','送餐快','包装好','分量足','性价比高']}}"
+              wx:key="*this"
+              class="tag-option {{reviewTags.indexOf(item) >= 0 ? 'active' : ''}}"
+              data-tag="{{item}}"
+              bindtap="toggleTag"
+            >{{item}}</text>
+          </view>
+          <textarea
+            class="review-input"
+            placeholder="写下你的评价吧 (选填)"
+            maxlength="500"
+            value="{{reviewContent}}"
+            bindinput="onReviewInput"
+          />
+          <view class="review-submit btn-primary" bindtap="submitReview" data-sub-id="{{sub.id}}">提交评价</view>
+        </view>
+      </block>
+    </block>
+    <block wx:else>
+      <block wx:if="{{order.review}}">
+        <text class="section-title">我的评价</text>
+        <view class="review-done">
+          <view class="stars-display">
+            <text wx:for="{{[1,2,3,4,5]}}" wx:key="*this" class="star {{item <= order.review.score ? 'active' : ''}}">★</text>
+          </view>
+          <text class="review-content" wx:if="{{order.review.content}}">{{order.review.content}}</text>
+          <view class="review-tags" wx:if="{{order.review.tags.length > 0}}">
+            <text class="review-tag" wx:for="{{order.review.tags}}" wx:key="*this">{{item}}</text>
+          </view>
+        </view>
+      </block>
+      <block wx:else>
+        <text class="section-title">评价订单</text>
+        <view class="stars-row">
+          <text
+            wx:for="{{[1,2,3,4,5]}}"
+            wx:key="*this"
+            class="star-select {{item <= reviewScore ? 'active' : ''}}"
+            data-score="{{item}}"
+            bindtap="setScore"
+          >★</text>
+        </view>
+        <view class="tag-row">
+          <text
+            wx:for="{{['味道好','送餐快','包装好','分量足','性价比高']}}"
+            wx:key="*this"
+            class="tag-option {{reviewTags.indexOf(item) >= 0 ? 'active' : ''}}"
+            data-tag="{{item}}"
+            bindtap="toggleTag"
+          >{{item}}</text>
+        </view>
+        <textarea
+          class="review-input"
+          placeholder="写下你的评价吧 (选填)"
+          maxlength="500"
+          value="{{reviewContent}}"
+          bindinput="onReviewInput"
+        />
+        <view class="review-submit btn-primary" bindtap="submitReview">提交评价</view>
+      </block>
+    </block>
   </view>
 
   <!-- 支付按钮 -->
@@ -63,7 +192,7 @@
   </view>
 
   <!-- 取消按钮 -->
-  <view class="cancel-btn" wx:if="{{order.status === 'pending_accept' || order.status === 'pending_pay'}}" bindtap="cancelOrder">
+  <view class="cancel-btn" wx:if="{{order.status === 'pending_pay' || order.status === 'pending_accept'}}" bindtap="cancelOrder">
     取消订单
   </view>
 </view>

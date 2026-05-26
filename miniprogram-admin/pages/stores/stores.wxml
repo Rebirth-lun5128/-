@@ -1,0 +1,89 @@
+<view class="container">
+  <!-- 标签切换 -->
+  <view class="tabs">
+    <view class="tab-item {{activeTab === index ? 'active' : ''}}"
+      wx:for="{{tabs}}" wx:key="*this" bindtap="onTabTap" data-index="{{index}}">
+      {{item}}
+    </view>
+  </view>
+
+  <!-- 搜索框 -->
+  <view class="search-box">
+    <input
+      class="search-input"
+      placeholder="🔍 搜索摊位名称..."
+      value="{{keyword}}"
+      bindinput="onSearchInput"
+      confirm-type="search"
+    />
+  </view>
+
+  <view wx:if="{{stores.length === 0 && !loading}}" class="empty-state">
+    <text>暂无商家数据</text>
+  </view>
+
+  <!-- 商家卡片 -->
+  <view class="store-card card" wx:for="{{stores}}" wx:key="id">
+    <view class="store-top">
+      <view class="store-left">
+        <text class="store-name">{{item.name}}</text>
+        <text class="store-cat">{{item.category}}</text>
+      </view>
+      <text class="tag {{item.verify_status === 'verified' ? 'tag-green' : item.verify_status === 'rejected' ? 'tag-red' : 'tag-orange'}}">
+        {{item.verify_status === 'verified' ? '已核验' : item.verify_status === 'rejected' ? '已拒绝' : '待核验'}}
+      </text>
+    </view>
+
+    <view class="store-meta">
+      <text>📞 {{item.phone}}</text>
+      <text wx:if="{{item.stall_location}}">📍 {{item.stall_location}}</text>
+    </view>
+
+    <!-- 抽成比例 -->
+    <view class="commission-row">
+      <text class="commission-label">抽成比例</text>
+      <view wx:if="{{editId !== item.id}}" class="commission-val" bindtap="startEditRate" data-id="{{item.id}}" data-rate="{{item.commission_rate}}">
+        <text class="commission-num">{{item.commission_rate_display}}%</text>
+        <text class="commission-hint">点击修改</text>
+      </view>
+      <view wx:else class="commission-edit">
+        <input
+          class="rate-input"
+          type="digit"
+          value="{{editRateVal}}"
+          bindinput="onRateInput"
+          placeholder="0-100"
+        />
+        <text class="edit-unit">%</text>
+        <view class="edit-btn save" bindtap="saveRate" data-id="{{item.id}}">保存</view>
+        <view class="edit-btn cancel" bindtap="cancelEdit">取消</view>
+      </view>
+    </view>
+
+    <!-- 配送附加费 -->
+    <view class="commission-row">
+      <text class="commission-label">附加配送费</text>
+      <view wx:if="{{surchargeEditId !== item.id}}" class="commission-val" bindtap="startEditSurcharge" data-id="{{item.id}}" data-val="{{item.delivery_surcharge || 0}}">
+        <text class="commission-num">¥{{item.delivery_surcharge || 0}}</text>
+        <text class="commission-hint">点击修改</text>
+      </view>
+      <view wx:else class="commission-edit">
+        <input
+          class="rate-input"
+          type="digit"
+          value="{{editSurchargeVal}}"
+          bindinput="onSurchargeInput"
+          placeholder="0"
+        />
+        <text class="edit-unit">元</text>
+        <view class="edit-btn save" bindtap="saveSurcharge" data-id="{{item.id}}">保存</view>
+        <view class="edit-btn cancel" bindtap="cancelSurchargeEdit">取消</view>
+      </view>
+    </view>
+
+    <view class="store-footer">
+      <text class="store-time">{{item.created_at.slice(0, 10)}}</text>
+      <navigator url="/pages/store-detail/store-detail?id={{item.id}}" class="store-detail-link">详情 →</navigator>
+    </view>
+  </view>
+</view>

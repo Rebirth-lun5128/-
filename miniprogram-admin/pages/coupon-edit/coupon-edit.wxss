@@ -1,0 +1,193 @@
+/* 表单卡片 */
+.form-card {
+  margin-bottom: 24rpx;
+}
+.form-head {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 30rpx;
+}
+.form-head-icon {
+  font-size: 30rpx;
+}
+.form-head-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #333;
+}
+
+.form-item {
+  margin-bottom: 24rpx;
+}
+.fi-label {
+  display: block;
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+.required {
+  color: #d63031;
+}
+
+/* 输入框 */
+.fi-input {
+  width: 100%;
+  background: #f8f9fc;
+  border-radius: 14rpx;
+  padding: 20rpx 22rpx;
+  font-size: 28rpx;
+  color: #333;
+  box-sizing: border-box;
+  border: 2rpx solid transparent;
+}
+.fi-input:focus {
+  border-color: var(--primary);
+  background: #fff;
+}
+.fi-input-wrap {
+  display: flex;
+  align-items: center;
+  background: #f8f9fc;
+  border-radius: 14rpx;
+  border: 2rpx solid transparent;
+  overflow: hidden;
+}
+.fi-input-wrap:focus-within {
+  border-color: var(--primary);
+  background: #fff;
+}
+.fi-prefix {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--primary);
+  padding-left: 22rpx;
+  flex-shrink: 0;
+}
+.fi-input.has-prefix {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  flex: 1;
+}
+.fi-input.has-prefix:focus {
+  border: none;
+  background: transparent;
+}
+
+/* Picker */
+.fi-picker {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fc;
+  border-radius: 14rpx;
+  padding: 20rpx 22rpx;
+  font-size: 28rpx;
+  color: #333;
+  border: 2rpx solid transparent;
+}
+.picker-arrow {
+  font-size: 20rpx;
+  color: #bbb;
+}
+
+/* 双列 */
+.form-row {
+  display: flex;
+  gap: 16rpx;
+}
+.form-item.half {
+  flex: 1;
+}
+
+/* 预览卡片 */
+.preview-card {
+  margin-bottom: 24rpx;
+}
+.preview-label {
+  font-size: 24rpx;
+  color: #bbb;
+  display: block;
+  margin-bottom: 12rpx;
+  padding-left: 4rpx;
+}
+.preview-inner {
+  display: flex;
+  background: linear-gradient(135deg, #fff9f0, #fef8ff);
+  border-radius: 20rpx;
+  border: 2rpx dashed #d4c8f0;
+  overflow: hidden;
+}
+.pv-left {
+  width: 150rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx 0;
+}
+.pv-amount {
+  display: flex;
+  align-items: baseline;
+}
+.pv-symbol {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--primary);
+}
+.pv-num {
+  font-size: 48rpx;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1;
+}
+.pv-type {
+  font-size: 20rpx;
+  color: #b4a5e0;
+  font-weight: 600;
+  margin-top: 6rpx;
+}
+.pv-divider {
+  width: 2rpx;
+  align-self: stretch;
+  margin: 16rpx 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    #d4c8f0 0,
+    #d4c8f0 6rpx,
+    transparent 6rpx,
+    transparent 12rpx
+  );
+}
+.pv-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 24rpx;
+  gap: 8rpx;
+}
+.pv-name {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #333;
+}
+.pv-cond {
+  font-size: 24rpx;
+  color: #E17055;
+  font-weight: 500;
+}
+
+/* 提交按钮 */
+.btn-submit {
+  width: 100%;
+  text-align: center;
+  padding: 24rpx 0;
+  font-size: 30rpx;
+  font-weight: 700;
+  border-radius: 16rpx;
+  background: linear-gradient(135deg, #6C5CE7, #a29bfe);
+  color: #fff;
+  box-shadow: 0 6rpx 20rpx rgba(108,92,231,0.25);
+}

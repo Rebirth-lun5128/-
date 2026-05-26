@@ -1,15 +1,79 @@
+.page {
+  padding: 20rpx;
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
 .balance-card {
   background: linear-gradient(135deg, #FF9800, #F57C00);
   border-radius: 20rpx;
-  padding: 60rpx 0;
+  padding: 50rpx 0 36rpx;
   text-align: center;
   color: #fff;
+  margin-bottom: 24rpx;
+}
+.balance-label { font-size: 28rpx; display: block; opacity: 0.85; }
+.balance-num { font-size: 80rpx; font-weight: bold; display: block; margin: 12rpx 0; letter-spacing: 4rpx; }
+.balance-stats { font-size: 24rpx; opacity: 0.8; }
+.sep { margin: 0 12rpx; opacity: 0.5; }
+
+.withdraw-section {
+  text-align: center;
+  margin-bottom: 24rpx;
+}
+.btn-withdraw {
+  background: #FF9800;
+  color: #fff;
+  border-radius: 44rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  padding: 24rpx 0;
+  width: 100%;
+  border: none;
+}
+.btn-withdraw[disabled] {
+  background: #ccc;
+  color: #999;
+}
+.withdraw-tip {
+  display: block;
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 12rpx;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
   margin-bottom: 20rpx;
 }
-.balance-label { font-size: 28rpx; display: block; opacity: 0.9; }
-.balance-num { font-size: 80rpx; font-weight: bold; display: block; margin: 16rpx 0; }
-.balance-extra { font-size: 26rpx; display: block; opacity: 0.8; }
-
-.section-title { font-size: 28rpx; font-weight: bold; display: block; margin-bottom: 16rpx; }
-.stat-row { display: flex; justify-content: space-between; padding: 16rpx 0; font-size: 28rpx; border-bottom: 1rpx solid #f5f5f5; }
+.section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 16rpx;
+}
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+}
 .stat-row:last-child { border-bottom: none; }
+.stat-name { font-size: 28rpx; }
+.stat-val { font-size: 28rpx; color: #333; }
+
+.income-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+.income-item:last-child { border-bottom: none; }
+.income-store { font-size: 28rpx; display: block; }
+.income-no { font-size: 22rpx; color: #999; margin-top: 4rpx; }
+.income-amount { font-size: 28rpx; color: #FF9800; font-weight: bold; display: block; text-align: right; }
+.income-time { font-size: 22rpx; color: #999; margin-top: 4rpx; display: block; }

@@ -1,0 +1,116 @@
+<view class="container">
+  <!-- Tab 切换 -->
+  <view class="tabs">
+    <view class="tab-item {{activeTab === 'orders' ? 'active' : ''}}" bindtap="switchTab" data-tab="orders">订单列表</view>
+    <view class="tab-item {{activeTab === 'modifications' ? 'active' : ''}}" bindtap="switchTab" data-tab="modifications">修改审核</view>
+  </view>
+
+  <!-- ========== 订单列表 Tab ========== -->
+  <block wx:if="{{activeTab === 'orders'}}">
+    <!-- 搜索框 -->
+    <view class="search-box">
+      <input class="search-input" placeholder="🔍 搜索订单号..." value="{{keyword}}" bindinput="onSearchInput" confirm-type="search" />
+    </view>
+
+    <!-- 状态筛选 -->
+    <view class="filters">
+      <view class="filter-item {{statusFilter === '' ? 'active' : ''}}" bindtap="onFilterTap" data-status="">全部</view>
+      <view class="filter-item {{statusFilter === 'pending' ? 'active' : ''}}" bindtap="onFilterTap" data-status="pending">处理中</view>
+      <view class="filter-item {{statusFilter === 'delivering' ? 'active' : ''}}" bindtap="onFilterTap" data-status="delivering">配送中</view>
+      <view class="filter-item {{statusFilter === 'completed' ? 'active' : ''}}" bindtap="onFilterTap" data-status="completed">已完成</view>
+      <view class="filter-item {{statusFilter === 'cancelled' ? 'active' : ''}}" bindtap="onFilterTap" data-status="cancelled">已取消</view>
+    </view>
+
+    <view wx:if="{{orders.length === 0 && !loading}}" class="empty-state"><text>暂无订单</text></view>
+
+    <!-- 订单卡片 -->
+    <view class="order-card card" wx:for="{{orders}}" wx:key="id" bindtap="goToDetail" data-id="{{item.id}}">
+      <view class="order-head">
+        <text class="order-no">#{{item.order_no}}</text>
+        <text class="order-status {{item.status}}">{{statusText(item.status)}}</text>
+      </view>
+      <view class="order-body">
+        <view class="order-body-row">
+          <text class="obr-label">店铺</text>
+          <text class="obr-val">
+            <text wx:if="{{item.store_count > 1}}" class="multi-badge">{{item.store_count}}店合单</text>
+            <text wx:else>{{item.store_names ? item.store_names[0] : '—'}}</text>
+          </text>
+        </view>
+        <view class="order-body-row">
+          <text class="obr-label">骑手</text>
+          <text class="obr-val">{{item.rider_name || '未分配'}}</text>
+        </view>
+      </view>
+      <view class="order-foot">
+        <text class="order-price">¥{{item.total_price}}</text>
+        <text class="order-time">{{item.created_at.slice(0, 16)}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{orders.length > 0 && !hasMore}}" class="end-hint">— 没有更多了 —</view>
+  </block>
+
+  <!-- ========== 修改审核 Tab ========== -->
+  <block wx:if="{{activeTab === 'modifications'}}">
+    <!-- 状态筛选 -->
+    <view class="filters">
+      <view class="filter-item {{modStatus === '' ? 'active' : ''}}" bindtap="onModFilterTap" data-status="">全部</view>
+      <view class="filter-item {{modStatus === 'pending_review' ? 'active' : ''}}" bindtap="onModFilterTap" data-status="pending_review">待审核</view>
+      <view class="filter-item {{modStatus === 'approved' ? 'active' : ''}}" bindtap="onModFilterTap" data-status="approved">已通过</view>
+      <view class="filter-item {{modStatus === 'rejected' ? 'active' : ''}}" bindtap="onModFilterTap" data-status="rejected">已拒绝</view>
+    </view>
+
+    <view wx:if="{{modifications.length === 0 && !loading}}" class="empty-state"><text>暂无修改申请</text></view>
+
+    <!-- 修改申请卡片 -->
+    <view class="card mod-card" wx:for="{{modifications}}" wx:key="id">
+      <view class="mod-head">
+        <view class="mod-head-left">
+          <text class="mod-type {{item.type}}">{{item.type === 'cancel' ? '取消' : item.type === 'change_address' ? '改地址' : item.type === 'refund' ? '退款' : item.type}}</text>
+          <text class="mod-tag {{item.status}}">{{item.status === 'pending_review' ? '待审核' : item.status === 'approved' ? '已通过' : '已拒绝'}}</text>
+        </view>
+        <text class="mod-order-no">{{item.order_no}}</text>
+      </view>
+
+      <view class="mod-body">
+        <view class="info-row" wx:if="{{item.store_name}}">
+          <text class="ir-label">店铺</text>
+          <text class="ir-val">{{item.store_name}}</text>
+        </view>
+        <view class="info-row" wx:if="{{item.user_name}}">
+          <text class="ir-label">用户</text>
+          <text class="ir-val">{{item.user_name}}</text>
+        </view>
+        <view class="info-row">
+          <text class="ir-label">原因</text>
+          <text class="ir-val">{{item.reason || '—'}}</text>
+        </view>
+        <view class="info-row" wx:if="{{item.new_address}}">
+          <text class="ir-label">新地址</text>
+          <text class="ir-val">{{item.new_address}}</text>
+        </view>
+        <view class="info-row" wx:if="{{item.items_total > 0}}">
+          <text class="ir-label">金额</text>
+          <text class="ir-val price">¥{{item.items_total}}</text>
+        </view>
+        <view class="info-row">
+          <text class="ir-label">申请时间</text>
+          <text class="ir-val">{{item.created_at.slice(0, 16)}}</text>
+        </view>
+        <view class="info-row" wx:if="{{item.reviewed_at}}">
+          <text class="ir-label">{{item.status === 'approved' ? '通过时间' : '拒绝时间'}}</text>
+          <text class="ir-val">{{item.reviewed_at.slice(0, 16)}}</text>
+        </view>
+      </view>
+
+      <!-- 审核按钮 -->
+      <view class="mod-actions" wx:if="{{item.status === 'pending_review'}}">
+        <view class="btn-success btn-sm" bindtap="approveMod" data-id="{{item.id}}">✓ 同意</view>
+        <view class="btn-danger btn-sm" bindtap="rejectMod" data-id="{{item.id}}">✗ 拒绝</view>
+      </view>
+    </view>
+
+    <view wx:if="{{modifications.length > 0}}" class="end-hint">— 已加载全部 —</view>
+  </block>
+</view>

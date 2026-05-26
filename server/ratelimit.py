@@ -137,4 +137,4 @@ def _make_limiter(max_requests: int, window_seconds: int) -> BaseRateLimiter:
 
 # Preset limiters (auto-detect Redis)
 general_limiter = _make_limiter(max_requests=120, window_seconds=60)
-strict_limiter = _make_limiter(max_requests=10, window_seconds=60)
+strict_limiter = _make_limiter(max_requests=30, window_seconds=60)

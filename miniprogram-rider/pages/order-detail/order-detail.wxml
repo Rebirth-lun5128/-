@@ -1,28 +1,75 @@
 <view class="container" wx:if="{{order}}">
-  <view class="card">
+  <!-- 订单状态 -->
+  <view class="card status-card">
     <text class="order-no">订单号: {{order.order_no}}</text>
-    <text class="status">{{order.status === 'delivering' ? '配送中' : order.status}}</text>
+    <text class="order-status">{{order.rider_name ? '骑手: ' + order.rider_name : ''}}</text>
+    <text class="store-count" wx:if="{{order.sub_orders.length > 1}}">{{order.sub_orders.length}}店合单</text>
   </view>
 
-  <view class="card">
-    <text class="section-title">餐厅信息</text>
-    <text class="shop-name">{{order.restaurant_name}}</text>
-  </view>
-
+  <!-- 收货信息 -->
   <view class="card">
     <text class="section-title">收货信息</text>
-    <text>{{order.address_snapshot.contact_name}} {{order.address_snapshot.contact_phone}}</text>
-    <text class="addr">{{order.address_snapshot.detail}}</text>
+    <text class="contact">{{order.address_snapshot.contact_name}} {{order.address_snapshot.contact_phone}}</text>
+    <text class="addr">{{order.address_snapshot.province || ''}}{{order.address_snapshot.city || ''}}{{order.address_snapshot.district || ''}}{{order.address_snapshot.detail}}</text>
   </view>
 
+  <!-- 各子单 -->
+  <view class="card" wx:for="{{order.sub_orders}}" wx:key="id" wx:for-item="sub">
+    <view class="sub-header">
+      <text class="shop-name">🏪 {{sub.store_name || sub.store_name_snapshot}}</text>
+      <text class="sub-status" style="color: {{sub.status === 'cancelled' ? '#F44336' : (sub.status === 'completed' ? '#4CAF50' : '#FF6B35')}}">
+        {{statusMap[sub.status] || sub.status}}
+      </text>
+    </view>
+    <!-- 菜品 -->
+    <view class="item" wx:for="{{sub.items}}" wx:key="id" wx:for-item="item">
+      <text class="item-name">{{item.name}} x{{item.quantity}}</text>
+      <text class="price">¥{{item.price * item.quantity}}</text>
+    </view>
+    <view class="sub-total-row">
+      <text>小计</text>
+      <text class="price">¥{{sub.items_total}}</text>
+    </view>
+    <!-- 子单时间线 -->
+    <view wx:if="{{sub.timeline && sub.timeline.length > 0}}" class="sub-timeline">
+      <view class="tl-item" wx:for="{{sub.timeline}}" wx:key="id" wx:for-item="t">
+        <view class="tl-dot"></view>
+        <view class="tl-content">
+          <text class="tl-desc">{{t.description}}</text>
+          <text class="tl-time">{{t.created_at}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 费用 -->
   <view class="card">
-    <text class="section-title">菜品</text>
-    <view class="item" wx:for="{{order.items}}" wx:key="id">
-      <text>{{item.name}} x{{item.quantity}}</text>
-      <text class="price">{{item.price * item.quantity}}</text>
+    <text class="section-title">费用明细</text>
+    <view class="fee-row"><text>菜品合计</text><text class="price">¥{{order.items_total}}</text></view>
+    <view class="fee-row" wx:if="{{order.delivery_fee_original > order.delivery_fee}}">
+      <text>配送费(原价)</text>
+      <text class="price" style="text-decoration: line-through; color: #999">¥{{order.delivery_fee_original}}</text>
     </view>
-    <view class="fee-row">
-      <text>配送费</text><text class="price">{{order.delivery_fee}}</text>
+    <view class="fee-row" wx:if="{{order.delivery_fee_discount > 0}}">
+      <text>满减优惠</text>
+      <text class="price discount">-¥{{order.delivery_fee_discount}}</text>
     </view>
+    <view class="fee-row"><text>配送费</text><text class="price">¥{{order.delivery_fee}}</text></view>
+    <view class="fee-row" wx:if="{{order.coupon_discount > 0}}">
+      <text>优惠券抵扣</text>
+      <text class="price discount">-¥{{order.coupon_discount}}</text>
+    </view>
+    <view class="fee-row total">
+      <text>实付金额</text>
+      <text class="price final">¥{{order.total_price}}</text>
+    </view>
+  </view>
+
+  <!-- 订单信息 -->
+  <view class="card">
+    <text class="section-title">订单信息</text>
+    <view class="info-row"><text>订单编号</text><text>{{order.order_no}}</text></view>
+    <view class="info-row"><text>下单时间</text><text>{{order.created_at}}</text></view>
+    <view class="info-row" wx:if="{{order.remark}}"><text>备注</text><text>{{order.remark}}</text></view>
   </view>
 </view>

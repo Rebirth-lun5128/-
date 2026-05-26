@@ -1,0 +1,6 @@
+{
+  "statusLine": {
+    "type": "command",
+    "command": "powershell -NoProfile -Command \"$i = [Console]::In.ReadToEnd() | ConvertFrom-Json; $parts = @(); $d = $i.workspace.current_dir; if ($d) { $parts += $d }; $m = $i.model.display_name; if ($m) { $parts += '| ' + $m }; $r = $i.context_window.remaining_percentage; if ($null -ne $r) { $parts += '| ' + $r + '% ctx remaining' }; $parts -join ' ' \""
+  }
+}

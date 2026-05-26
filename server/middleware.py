@@ -13,6 +13,10 @@ logger = logging.getLogger("app.middleware")
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        # WebSocket 不走 HTTP 日志中间件，避免影响握手
+        if request.scope.get("type") == "websocket":
+            return await call_next(request)
+
         request_id = uuid.uuid4().hex[:12]
         request.state.request_id = request_id
         start = time.perf_counter()

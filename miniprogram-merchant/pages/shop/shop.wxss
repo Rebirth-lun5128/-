@@ -5,3 +5,11 @@
 .form-item input { font-size: 30rpx; }
 .radio-label { margin-right: 40rpx; font-size: 28rpx; }
 .tips { padding: 16rpx 0; font-size: 24rpx; color: #FF9800; line-height: 1.6; }
+
+.upload-row { display: flex; align-items: center; gap: 16rpx; }
+.upload-preview { width: 120rpx; height: 120rpx; border-radius: 8rpx; border: 1rpx solid #eee; }
+.banner-preview { width: 200rpx; height: 100rpx; }
+.upload-btn {
+  width: 120rpx; height: 120rpx; border: 2rpx dashed #ccc; border-radius: 8rpx;
+  display: flex; align-items: center; justify-content: center; font-size: 26rpx; color: #999;
+}

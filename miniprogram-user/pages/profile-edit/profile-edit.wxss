@@ -1,0 +1,102 @@
+.container {
+  padding: 24rpx;
+}
+
+/* 头像区域 */
+.avatar-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.section-label {
+  font-size: 28rpx;
+  color: #666;
+}
+.avatar-picker {
+  position: relative;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 60rpx;
+  overflow: hidden;
+  background: linear-gradient(135deg, #FF6B35, #FF8C5A);
+}
+.avatar-img {
+  width: 100%;
+  height: 100%;
+}
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+  font-weight: 800;
+  color: #fff;
+}
+.avatar-camera {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 36rpx;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+}
+
+/* 表单 */
+.form-section {
+  margin-top: 20rpx;
+}
+.form-item {
+  margin-top: 28rpx;
+}
+.form-item.last {
+  margin-bottom: 4rpx;
+}
+.fi-label {
+  display: block;
+  font-size: 26rpx;
+  color: #999;
+  margin-bottom: 10rpx;
+}
+.fi-input {
+  width: 100%;
+  background: #f8f9fc;
+  border-radius: 14rpx;
+  padding: 20rpx 22rpx;
+  font-size: 28rpx;
+  color: #333;
+  box-sizing: border-box;
+  border: 2rpx solid transparent;
+}
+.fi-input:focus {
+  border-color: #FF6B35;
+  background: #fff;
+}
+.fi-hint {
+  display: block;
+  font-size: 22rpx;
+  color: #ccc;
+  margin-top: 8rpx;
+}
+
+/* 保存按钮 */
+.btn-primary {
+  margin-top: 40rpx;
+  width: 100%;
+  text-align: center;
+  padding: 24rpx 0;
+  border-radius: 16rpx;
+  background: linear-gradient(135deg, #FF6B35, #FF8C5A);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+.btn-primary.disabled {
+  background: #ddd;
+  color: #999;
+}

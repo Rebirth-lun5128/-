@@ -13,14 +13,17 @@
     <text class="section-title">配送中</text>
     <view class="order-info">
       <text class="order-no">#{{myOrder.order_no}}</text>
-      <view class="addr-row">
-        <text class="addr-label">取餐:</text>
-        <text>{{myOrder.restaurant_name}}</text>
+      <view class="store-list">
+        <text wx:for="{{myOrder.sub_orders}}" wx:key="id" wx:for-item="sub">
+          {{sub.store_name || sub.store_name_snapshot}}
+          <text wx:if="{{index < myOrder.sub_orders.length - 1}}">、</text>
+        </text>
       </view>
       <view class="addr-row">
         <text class="addr-label">送达:</text>
         <text>{{myOrder.address_snapshot.detail}}</text>
       </view>
+      <text class="store-count-tag" wx:if="{{myOrder.sub_orders.length > 1}}">{{myOrder.sub_orders.length}}店合单</text>
     </view>
     <view class="order-actions">
       <view class="btn-outline" bindtap="goToOrderDetail" data-id="{{myOrder.id}}">详情</view>
@@ -36,11 +39,15 @@
     </view>
     <view class="card pool-item" wx:for="{{pendingOrders}}" wx:key="id">
       <view class="pool-header">
-        <text class="shop">{{item.restaurant_name}}</text>
-        <text class="price">{{item.total_price}}</text>
+        <view class="shop-list">
+          <text wx:for="{{item.sub_orders}}" wx:key="id" wx:for-item="sub" class="shop-name">
+            {{sub.store_name || sub.store_name_snapshot}}
+          </text>
+        </view>
+        <text class="store-count-tag" wx:if="{{item.sub_orders.length > 1}}">{{item.sub_orders.length}}店合单</text>
+        <text class="price">¥{{item.total_price}}</text>
       </view>
       <view class="pool-addrs">
-        <text class="pool-addr">取: {{item.restaurant_name}}</text>
         <text class="pool-addr">送: {{item.address_snapshot.detail}}</text>
       </view>
       <view class="pool-footer">

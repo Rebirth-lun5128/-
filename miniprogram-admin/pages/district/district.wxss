@@ -1,0 +1,182 @@
+/* 分区标签 */
+.section-label {
+  font-size: 24rpx;
+  color: #bbb;
+  padding: 0 4rpx 12rpx;
+}
+
+/* 分区卡片 */
+.district-card {
+  margin-bottom: 20rpx;
+}
+.dc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+.dc-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+.dc-icon {
+  font-size: 30rpx;
+}
+.dc-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #222;
+}
+.dc-edit {
+  font-size: 24rpx;
+  color: var(--primary);
+  font-weight: 600;
+  padding: 6rpx 18rpx;
+  border-radius: 20rpx;
+  background: #f5f3ff;
+}
+
+/* 覆盖小区标签 */
+.dc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-bottom: 16rpx;
+}
+.dc-tag {
+  font-size: 22rpx;
+  color: #6C5CE7;
+  background: #f5f3ff;
+  padding: 6rpx 16rpx;
+  border-radius: 14rpx;
+  border: 1rpx solid #e8e2ff;
+}
+.dc-empty {
+  font-size: 24rpx;
+  color: #ccc;
+  margin-bottom: 12rpx;
+  display: block;
+}
+
+.dc-divider {
+  height: 1rpx;
+  background: #f0f0f0;
+  margin-bottom: 16rpx;
+}
+
+/* 元信息 */
+.dc-meta {
+  display: flex;
+  gap: 32rpx;
+}
+.dc-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.dc-meta-val {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #333;
+}
+.dc-meta-val.notice {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #999;
+}
+.dc-meta-label {
+  font-size: 22rpx;
+  color: #bbb;
+}
+
+/* 空状态 */
+.empty-icon {
+  font-size: 60rpx;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+/* === 表单卡片 === */
+.form-card {
+  margin-top: 10rpx;
+}
+.form-head {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 28rpx;
+}
+.form-head-icon {
+  font-size: 30rpx;
+}
+.form-head-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #333;
+}
+
+.form-item {
+  margin-bottom: 22rpx;
+}
+.fi-label {
+  display: block;
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+.required {
+  color: #d63031;
+}
+.fi-input {
+  width: 100%;
+  background: #f8f9fc;
+  border-radius: 14rpx;
+  padding: 20rpx 22rpx;
+  font-size: 28rpx;
+  color: #333;
+  box-sizing: border-box;
+  border: 2rpx solid transparent;
+  transition: border-color 0.2s;
+}
+.fi-input:focus {
+  border-color: var(--primary);
+  background: #fff;
+}
+
+.form-row {
+  display: flex;
+  gap: 16rpx;
+}
+.form-item.half {
+  flex: 1;
+}
+
+/* 按钮 */
+.form-actions {
+  margin-top: 28rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+.form-actions .btn-primary {
+  width: 100%;
+  text-align: center;
+  padding: 22rpx 0;
+  font-size: 30rpx;
+  font-weight: 700;
+  border-radius: 16rpx;
+  background: linear-gradient(135deg, #6C5CE7, #a29bfe);
+  color: #fff;
+  box-shadow: 0 6rpx 20rpx rgba(108,92,231,0.25);
+}
+.btn-cancel {
+  width: 100%;
+  text-align: center;
+  padding: 22rpx 0;
+  font-size: 28rpx;
+  font-weight: 600;
+  border-radius: 16rpx;
+  background: #f5f5f5;
+  color: #999;
+}

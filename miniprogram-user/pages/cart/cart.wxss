@@ -149,6 +149,40 @@
   font-size: 28rpx;
 }
 
+/* 合并结算 */
+.combined-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 30rpx;
+  box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+.combined-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.combined-label {
+  font-size: 24rpx;
+  color: #999;
+}
+.combined-price {
+  font-size: 36rpx;
+  color: #FF6B35;
+  font-weight: bold;
+}
+.combined-btn {
+  padding: 20rpx 36rpx;
+  border-radius: 44rpx;
+  font-size: 28rpx;
+  white-space: nowrap;
+}
+
 /* 通用主按钮 */
 .btn-primary {
   background: #FF6B35;

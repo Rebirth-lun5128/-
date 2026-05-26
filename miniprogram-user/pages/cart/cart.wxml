@@ -12,20 +12,20 @@
     <view
       class="cart-group"
       wx:for="{{restaurants}}"
-      wx:key="restaurant_id"
+      wx:key="store_id"
       wx:for-item="restaurant"
     >
       <!-- 餐厅名 -->
       <view class="cart-restaurant">
-        <text class="restaurant-name">{{restaurant.restaurant_name}}</text>
-        <text class="clear-btn" bindtap="clearRestaurant" data-rid="{{restaurant.restaurant_id}}">清空</text>
+        <text class="restaurant-name">{{restaurant.store_name}}</text>
+        <text class="clear-btn" bindtap="clearRestaurant" data-rid="{{restaurant.store_id}}">清空</text>
       </view>
 
       <!-- 菜品列表 -->
       <view
         class="cart-item"
         wx:for="{{restaurant.items}}"
-        wx:key="menu_item_id"
+        wx:key="product_id"
         wx:for-item="item"
       >
         <image class="cart-item-img" src="{{item.image || '/images/default-food.png'}}" mode="aspectFill" />
@@ -34,19 +34,28 @@
           <text class="cart-item-price">¥{{item.price}}</text>
         </view>
         <view class="cart-item-actions">
-          <view class="qty-btn" bindtap="reduceItem" data-rid="{{restaurant.restaurant_id}}" data-item-id="{{item.menu_item_id}}">-</view>
+          <view class="qty-btn" bindtap="reduceItem" data-rid="{{restaurant.store_id}}" data-item-id="{{item.product_id}}">-</view>
           <text class="qty-num">{{item.quantity}}</text>
-          <view class="qty-btn" bindtap="addItem" data-rid="{{restaurant.restaurant_id}}" data-item-id="{{item.menu_item_id}}">+</view>
+          <view class="qty-btn" bindtap="addItem" data-rid="{{restaurant.store_id}}" data-item-id="{{item.product_id}}">+</view>
         </view>
-        <view class="remove-btn" bindtap="removeItem" data-rid="{{restaurant.restaurant_id}}" data-item-id="{{item.menu_item_id}}">✕</view>
+        <view class="remove-btn" bindtap="removeItem" data-rid="{{restaurant.store_id}}" data-item-id="{{item.product_id}}">✕</view>
       </view>
 
       <!-- 小计 & 结算 -->
       <view class="cart-footer">
         <text class="subtotal-label">小计</text>
         <text class="subtotal-price">¥{{restaurant.subtotal}}</text>
-        <view class="btn-primary checkout-btn" bindtap="goCheckout" data-rid="{{restaurant.restaurant_id}}">去结算</view>
+        <view class="btn-primary checkout-btn" bindtap="goCheckout" data-rid="{{restaurant.store_id}}">去结算</view>
       </view>
+    </view>
+
+    <!-- 合并结算按钮（多店铺时显示） -->
+    <view wx:if="{{restaurants.length > 1}}" class="combined-footer">
+      <view class="combined-info">
+        <text class="combined-label">已选 {{restaurants.length}} 家店铺</text>
+        <text class="combined-price">合计 ¥{{totalPrice}}</text>
+      </view>
+      <view class="btn-primary combined-btn" bindtap="goCombinedCheckout">合并结算（只收一份配送费）</view>
     </view>
   </view>
 </view>

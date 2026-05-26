@@ -31,10 +31,12 @@ def _auth_ws(token: str) -> User:
 
 
 @router.websocket("")
+@router.websocket("/")
 async def websocket_endpoint(ws: WebSocket, token: str = Query(...)):
     try:
         user = _auth_ws(token)
     except ValueError:
+        await ws.accept()
         await ws.close(code=status.WS_1008_POLICY_VIOLATION, reason="认证失败")
         return
 

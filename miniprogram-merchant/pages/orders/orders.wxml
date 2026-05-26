@@ -8,15 +8,16 @@
 
   <view class="order-card card" wx:for="{{orders}}" wx:key="id" bindtap="onOrderTap" data-id="{{item.id}}">
     <view class="order-header">
-      <text class="order-no">#{{item.order_no}}</text>
+      <text class="order-no">#{{item.order_no || '子单' + item.id}}</text>
       <text class="order-status" style="color: {{item.statusColor}}">{{item.statusText}}</text>
     </view>
     <view class="order-items">
       <text wx:for="{{item.items}}" wx:key="id">{{item.name}} x{{item.quantity}} </text>
     </view>
     <view class="order-footer">
-      <text class="order-addr">📍 {{item.address_snapshot.detail}}</text>
-      <text class="price">{{item.total_price}}</text>
+      <text class="order-addr" wx:if="{{item.address_snapshot}}">📍 {{item.address_snapshot.detail}}</text>
+      <text class="order-addr" wx:else>📍 {{item.store_name}}</text>
+      <text class="price">¥{{item.items_total}}</text>
     </view>
   </view>
 </view>

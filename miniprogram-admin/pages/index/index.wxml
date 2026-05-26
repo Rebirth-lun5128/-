@@ -1,0 +1,127 @@
+<view class="container" wx:if="{{dashboard}}">
+  <!-- 欢迎横幅 -->
+  <view class="welcome-banner">
+    <view class="welcome-text">
+      <text class="welcome-hi">管理员 👋</text>
+      <text class="welcome-sub">以下是平台经营概况</text>
+    </view>
+    <view class="welcome-quick">
+      <text class="welcome-stat">今日访问 {{visits.today || dashboard.today_visits || 0}} 次</text>
+      <text class="welcome-stat">{{dashboard.verified_merchants || dashboard.verified_stores || 0}} 家已核验</text>
+      <text class="welcome-stat">{{dashboard.total_riders || 0}} 位骑手</text>
+    </view>
+  </view>
+
+  <!-- 核心指标卡片 -->
+  <view class="kpi-grid">
+    <view class="kpi-card" hover-class="kpi-hover" style="--bg: linear-gradient(135deg, #667eea, #764ba2)" bindtap="goCustomers">
+      <text class="kpi-icon">👤</text>
+      <text class="kpi-value">{{dashboard.total_users || 0}}</text>
+      <text class="kpi-label">用户总数</text>
+      <text class="kpi-arrow">→</text>
+    </view>
+    <view class="kpi-card" hover-class="kpi-hover" style="--bg: linear-gradient(135deg, #00B894, #55efc4)" bindtap="goStores">
+      <text class="kpi-icon">🏪</text>
+      <text class="kpi-value">{{dashboard.total_merchants || dashboard.total_stores || 0}}</text>
+      <text class="kpi-label">商家总数</text>
+      <text class="kpi-arrow">→</text>
+    </view>
+    <view class="kpi-card" hover-class="kpi-hover" style="--bg: linear-gradient(135deg, #E17055, #d63031)" bindtap="goOrders">
+      <text class="kpi-icon">📋</text>
+      <text class="kpi-value">{{dashboard.today_orders || 0}}</text>
+      <text class="kpi-label">今日订单</text>
+      <text class="kpi-arrow">→</text>
+    </view>
+    <view class="kpi-card" hover-class="kpi-hover" style="--bg: linear-gradient(135deg, #6C5CE7, #A29BFE)" bindtap="goOrders">
+      <text class="kpi-icon">💰</text>
+      <text class="kpi-value">¥{{dashboard.today_revenue || 0}}</text>
+      <text class="kpi-label">今日交易额</text>
+      <text class="kpi-arrow">→</text>
+    </view>
+  </view>
+
+  <!-- 访问量卡片 -->
+  <view class="visits-row" wx:if="{{visits.today > 0 || dashboard.today_visits > 0}}">
+    <view class="visits-card today">
+      <text class="visits-num">{{visits.today || dashboard.today_visits || 0}}</text>
+      <text class="visits-label">今日访问量</text>
+    </view>
+    <view class="visits-card yesterday">
+      <text class="visits-num">{{visits.yesterday || 0}}</text>
+      <text class="visits-label">昨日访问量</text>
+    </view>
+    <view class="visits-card total">
+      <text class="visits-num">{{visits.total || 0}}</text>
+      <text class="visits-label">近7天累计</text>
+    </view>
+  </view>
+
+  <!-- 次要指标 -->
+  <view class="sub-grid">
+    <view class="sub-card" hover-class="sub-hover" bindtap="goStoresVerify">
+      <view class="sub-card-top">
+        <text class="sub-num warn">{{dashboard.pending_verify_merchants || dashboard.pending_verify_stores || 0}}</text>
+        <text class="sub-label">待核验商家</text>
+      </view>
+      <text class="sub-link">去处理 →</text>
+    </view>
+    <view class="sub-card" hover-class="sub-hover" bindtap="goOrdersPending">
+      <view class="sub-card-top">
+        <text class="sub-num danger">{{dashboard.pending_orders || 0}}</text>
+        <text class="sub-label">待处理订单</text>
+      </view>
+      <text class="sub-link">去处理 →</text>
+    </view>
+    <view class="sub-card" hover-class="sub-hover" bindtap="goOrdersModifications">
+      <view class="sub-card-top">
+        <text class="sub-num info">{{dashboard.pending_modifications || 0}}</text>
+        <text class="sub-label">待审核修改</text>
+      </view>
+      <text class="sub-link">去处理 →</text>
+    </view>
+    <view class="sub-card">
+      <view class="sub-card-top">
+        <text class="sub-num green">¥{{dashboard.today_platform_fee || 0}}</text>
+        <text class="sub-label">今日平台抽成</text>
+      </view>
+      <text class="sub-rate">费率 {{(dashboard.fee_rate || 0) * 100}}%</text>
+    </view>
+  </view>
+
+  <!-- 近7天趋势 -->
+  <view class="card chart-card" wx:if="{{chartStats.length > 0}}">
+    <text class="section-title">📈 近 7 天订单趋势</text>
+    <view class="chart-bars">
+      <view class="chart-bar-item" wx:for="{{chartStats}}" wx:key="date">
+        <text class="bar-count">{{item.count}}</text>
+        <view class="bar-track">
+          <view class="bar-fill" style="height: {{maxCount > 0 ? (item.count / maxCount * 100) : 5}}%"></view>
+        </view>
+        <text class="bar-label">{{item.date.slice(5)}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 快捷操作 -->
+  <view class="quick-section">
+    <text class="section-title">🔧 快捷管理</text>
+    <view class="quick-grid">
+      <navigator url="/pages/district/district" class="quick-item" hover-class="quick-hover">
+        <text class="quick-icon">⚙️</text>
+        <text class="quick-txt">分区设置</text>
+      </navigator>
+      <navigator url="/pages/coupons/coupons" class="quick-item" hover-class="quick-hover">
+        <text class="quick-icon">🎫</text>
+        <text class="quick-txt">优惠券</text>
+      </navigator>
+      <view class="quick-item" hover-class="quick-hover" bindtap="goStoresVerify">
+        <text class="quick-icon">🔍</text>
+        <text class="quick-txt">商家审核</text>
+      </view>
+      <view class="quick-item" hover-class="quick-hover" bindtap="goOrders">
+        <text class="quick-icon">📊</text>
+        <text class="quick-txt">全部订单</text>
+      </view>
+    </view>
+  </view>
+</view>

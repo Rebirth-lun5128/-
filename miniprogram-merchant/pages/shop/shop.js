@@ -1,10 +1,15 @@
 const api = require('../../utils/api')
+const { getApiBase } = require('../../utils/config')
 const app = getApp()
 
 Page({
   data: {
     isRegister: false,
+    storeTypes: ['夜市摊位', '家庭厨房', '平台自营'],
+    storeTypeKeys: ['stall', 'home_kitchen', 'self_operated'],
+    storeTypeIndex: 0,
     form: {
+      store_type: 'stall',
       name: '',
       logo: '',
       banner: '',
@@ -37,8 +42,11 @@ Page({
   async loadShop() {
     try {
       const shop = await api.get('/api/merchant/shop')
+      const typeIdx = this.data.storeTypeKeys.indexOf(shop.store_type || 'stall')
       this.setData({
+        storeTypeIndex: typeIdx >= 0 ? typeIdx : 0,
         form: {
+          store_type: shop.store_type || 'stall',
           name: shop.name || '',
           logo: shop.logo || '',
           banner: shop.banner || '',
@@ -63,13 +71,54 @@ Page({
     this.setData({ [`form.${field}`]: e.detail.value })
   },
 
-  onStatusChange(e) {
-    this.setData({ 'form.status': e.detail.value })
+  onChooseImage(e) {
+    const field = e.currentTarget.dataset.field
+    const token = wx.getStorageSync('merchant_token')
+    wx.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+      success: (res) => {
+        const tempPath = res.tempFilePaths[0]
+        wx.showLoading({ title: '上传中...' })
+        wx.uploadFile({
+          url: getApiBase() + '/api/common/upload',
+          filePath: tempPath,
+          name: 'file',
+          header: { 'Authorization': `Bearer ${token}` },
+          success: (uploadRes) => {
+            const data = JSON.parse(uploadRes.data)
+            if (data.url) {
+              this.setData({ [`form.${field}`]: getApiBase() + data.url })
+            }
+          },
+          fail: () => {
+            wx.showToast({ title: '上传失败', icon: 'none' })
+          },
+          complete: () => {
+            wx.hideLoading()
+          },
+        })
+      },
+    })
+  },
+
+  onStoreTypeChange(e) {
+    const idx = parseInt(e.detail.value)
+    this.setData({
+      storeTypeIndex: idx,
+      'form.store_type': this.data.storeTypeKeys[idx],
+    })
+  },
+
+  setStatus(e) {
+    this.setData({ 'form.status': e.currentTarget.dataset.status })
   },
 
   async onSubmit() {
     const f = this.data.form
     const data = {
+      store_type: f.store_type,
       name: f.name,
       logo: f.logo,
       banner: f.banner,
@@ -89,7 +138,7 @@ Page({
     try {
       if (this.data.isRegister) {
         await api.post('/api/merchant/shop/register', data)
-        wx.showToast({ title: '入驻申请已提交', icon: 'success' })
+        wx.showToast({ title: '入驻申请已提交，等待核验', icon: 'success' })
         setTimeout(() => wx.switchTab({ url: '/pages/index/index' }), 800)
       } else {
         await api.put('/api/merchant/shop', data)

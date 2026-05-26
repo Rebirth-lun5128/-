@@ -1,0 +1,159 @@
+/* 统计概览 */
+.coupon-summary {
+  padding: 0 4rpx 16rpx;
+  font-size: 26rpx;
+  color: #999;
+}
+.sum-num {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* 空状态 */
+.empty-icon {
+  font-size: 60rpx;
+  display: block;
+  margin-bottom: 12rpx;
+}
+.empty-hint {
+  font-size: 24rpx;
+  color: #ccc;
+  margin-top: 6rpx;
+}
+
+/* 优惠券卡片 */
+.coupon-card {
+  display: flex;
+  margin-bottom: 20rpx;
+  overflow: hidden;
+}
+
+/* 左侧金额区 */
+.cc-left {
+  width: 150rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 0;
+  position: relative;
+}
+.cc-amount {
+  display: flex;
+  align-items: baseline;
+}
+.cc-symbol {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--primary);
+}
+.cc-num {
+  font-size: 52rpx;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1;
+}
+.cc-type {
+  font-size: 20rpx;
+  color: #b4a5e0;
+  font-weight: 600;
+  margin-top: 8rpx;
+  padding: 4rpx 14rpx;
+  background: #f5f3ff;
+  border-radius: 10rpx;
+}
+
+/* 虚线分隔 */
+.cc-divider-dashed {
+  width: 2rpx;
+  align-self: stretch;
+  margin: 20rpx 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    #e0d8f0 0,
+    #e0d8f0 6rpx,
+    transparent 6rpx,
+    transparent 12rpx
+  );
+}
+
+/* 右侧信息区 */
+.cc-right {
+  flex: 1;
+  padding: 8rpx 0 8rpx 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  min-width: 0;
+}
+.cc-name-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cc-name {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #333;
+}
+.cc-status {
+  font-size: 20rpx;
+  font-weight: 600;
+  padding: 4rpx 14rpx;
+  border-radius: 14rpx;
+  flex-shrink: 0;
+}
+.cc-status.on {
+  background: #E8F5E9;
+  color: #00B894;
+}
+.cc-status.off {
+  background: #f5f5f5;
+  color: #bbb;
+}
+.cc-condition {
+  font-size: 24rpx;
+  color: #E17055;
+  font-weight: 500;
+}
+.cc-meta {
+  display: flex;
+  gap: 16rpx;
+}
+.cc-meta text {
+  font-size: 22rpx;
+  color: #bbb;
+}
+.cc-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 4rpx;
+}
+.cc-act {
+  font-size: 24rpx;
+  font-weight: 600;
+  padding: 6rpx 0;
+}
+.cc-act.edit {
+  color: var(--primary);
+}
+.cc-act.stop {
+  color: #f39c12;
+}
+.cc-act.start {
+  color: #00B894;
+}
+
+/* 创建浮动按钮 */
+.btn-fab {
+  width: 100%;
+  text-align: center;
+  padding: 24rpx 0;
+  font-size: 30rpx;
+  font-weight: 700;
+  border-radius: 16rpx;
+  background: linear-gradient(135deg, #6C5CE7, #a29bfe);
+  color: #fff;
+  margin-top: 10rpx;
+  box-shadow: 0 6rpx 20rpx rgba(108,92,231,0.25);
+}

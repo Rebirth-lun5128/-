@@ -3,16 +3,18 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 
-# ---- Menu Item ----
-class MenuItemOut(BaseModel):
+# ---- Product ----
+class ProductOut(BaseModel):
     id: int
-    restaurant_id: int
+    store_id: int
     category_id: Optional[int]
     name: str
     image: str
     price: float
     original_price: Optional[float]
     description: str
+    stock: int
+    limit_per_order: int
     monthly_sales: int
     is_recommended: int
     status: int
@@ -21,48 +23,55 @@ class MenuItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class MenuItemCreate(BaseModel):
+class ProductCreate(BaseModel):
     category_id: Optional[int] = None
     name: str = Field(..., min_length=1, max_length=100)
     image: str = ""
     price: float = Field(..., gt=0)
     original_price: Optional[float] = None
     description: str = ""
+    stock: int = -1
+    limit_per_order: int = 0
     is_recommended: int = 0
     sort_order: int = 0
 
 
-class MenuItemUpdate(BaseModel):
+class ProductUpdate(BaseModel):
     category_id: Optional[int] = None
     name: Optional[str] = None
     image: Optional[str] = None
     price: Optional[float] = None
     original_price: Optional[float] = None
     description: Optional[str] = None
+    stock: Optional[int] = None
+    limit_per_order: Optional[int] = None
     is_recommended: Optional[int] = None
     status: Optional[int] = None
     sort_order: Optional[int] = None
 
 
-# ---- Menu Category ----
-class MenuCategoryOut(BaseModel):
+# ---- Store Category ----
+class StoreCategoryOut(BaseModel):
     id: int
-    restaurant_id: int
+    store_id: int
     name: str
     sort_order: int
-    items: List[MenuItemOut] = []
+    products: List[ProductOut] = []
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class MenuCategoryCreate(BaseModel):
+class StoreCategoryCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=50)
     sort_order: int = 0
 
 
-# ---- Restaurant ----
-class RestaurantOut(BaseModel):
+# ---- Store ----
+class StoreOut(BaseModel):
     id: int
+    user_id: int
+    district_id: Optional[int]
+    store_type: str
     name: str
     logo: str
     banner: str
@@ -80,16 +89,20 @@ class RestaurantOut(BaseModel):
     notice: str
     status: str
     verify_status: str
+    stall_location: str
+    stall_photo: str
+    id_card_photo: str
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class RestaurantDetailOut(RestaurantOut):
-    categories: List[MenuCategoryOut] = []
+class StoreDetailOut(StoreOut):
+    categories: List[StoreCategoryOut] = []
 
 
-class RestaurantUpdate(BaseModel):
+class StoreUpdate(BaseModel):
     name: Optional[str] = None
+    store_type: Optional[str] = None
     logo: Optional[str] = None
     banner: Optional[str] = None
     phone: Optional[str] = None
@@ -108,6 +121,6 @@ class RestaurantUpdate(BaseModel):
     stall_photo: Optional[str] = None
 
 
-class RestaurantListOut(BaseModel):
+class StoreListOut(BaseModel):
     total: int
-    items: List[RestaurantOut]
+    items: List[StoreOut]

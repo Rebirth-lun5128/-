@@ -6,6 +6,7 @@ Page({
     phone: '',
     password: '',
     isRegister: false,
+    showPwd: false,
   },
 
   onLoad() {
@@ -45,5 +46,9 @@ Page({
 
   toggleMode() {
     this.setData({ isRegister: !this.data.isRegister })
+  },
+
+  togglePwd() {
+    this.setData({ showPwd: !this.data.showPwd })
   },
 })

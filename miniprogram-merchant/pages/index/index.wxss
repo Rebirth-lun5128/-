@@ -1,68 +1,130 @@
-.status-bar {
+/* 店铺头部 */
+.shop-header {
+  background: linear-gradient(135deg, #FF6B35, #FF8C5A);
+  border-radius: 16rpx;
+  padding: 32rpx 28rpx;
+  margin-bottom: 24rpx;
+  color: #fff;
+}
+.shop-info {
+  margin-bottom: 20rpx;
+}
+.shop-status-tag {
+  font-size: 30rpx;
+  font-weight: bold;
+}
+.shop-tip {
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+.shop-switch-row {
   display: flex;
   align-items: center;
-  background: #fff;
-  padding: 20rpx 24rpx;
-  margin-bottom: 20rpx;
-  font-size: 28rpx;
+  justify-content: space-between;
 }
-.status-dot {
-  width: 16rpx;
-  height: 16rpx;
-  border-radius: 50%;
-  background: #ccc;
-  margin-right: 12rpx;
+.switch-desc {
+  font-size: 24rpx;
+  opacity: 0.8;
 }
-.status-dot.online {
-  background: #07C160;
+.status-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10rpx 24rpx;
+  border-radius: 40rpx;
+  font-size: 26rpx;
+  font-weight: bold;
 }
-.go-shop {
-  margin-left: auto;
-  color: #07C160;
-}
+.status-badge.open { background: rgba(255,255,255,0.3); }
+.status-badge.resting { background: rgba(255,255,255,0.3); }
+.status-badge.closed { background: rgba(0,0,0,0.2); }
+.switch-hint { font-size: 20rpx; opacity: 0.7; margin-top: 4rpx; }
 
+/* 数据卡片 */
 .stats-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 20rpx;
-  margin-bottom: 20rpx;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
 }
 .stat-card {
-  width: calc(50% - 10rpx);
+  width: calc(50% - 8rpx);
   background: #fff;
   border-radius: 16rpx;
-  padding: 30rpx;
-  text-align: center;
+  padding: 28rpx 24rpx;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  box-sizing: border-box;
+}
+.stat-icon {
+  font-size: 44rpx;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.order-icon { background: #E3F2FD; }
+.pending-icon { background: #FFF3E0; }
+.revenue-icon { background: #E8F5E9; }
+.sales-icon { background: #FCE4EC; }
+.stat-card-hover { background: #f0f0f0; }
+.stat-body {
+  display: flex;
+  flex-direction: column;
 }
 .stat-num {
-  font-size: 48rpx;
+  font-size: 40rpx;
   font-weight: bold;
   display: block;
+  line-height: 1.2;
 }
 .stat-num.warn { color: #FF6B35; }
 .stat-label {
   font-size: 24rpx;
   color: #999;
-  margin-top: 8rpx;
-  display: block;
+  margin-top: 6rpx;
 }
 
+/* 快捷操作 */
 .section-title {
   font-size: 30rpx;
   font-weight: bold;
   display: block;
-  margin-bottom: 20rpx;
+  margin-bottom: 24rpx;
 }
 .quick-actions {
   display: flex;
+  justify-content: space-between;
 }
 .quick-item {
-  flex: 1;
-  text-align: center;
-  font-size: 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
 }
+.quick-icon-wrap {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.quick-icon-wrap.new-order { background: #E3F2FD; }
+.quick-icon-wrap.menu { background: #FFF3E0; }
+.quick-icon-wrap.shop { background: #F3E5F5; }
+.quick-icon-wrap.all-order { background: #E8F5E9; }
+.quick-icon-wrap.review { background: #FCE4EC; position: relative; }
+.quick-icon-wrap.has-badge::after { content: ''; position: absolute; top: -6rpx; right: -6rpx; width: 18rpx; height: 18rpx; border-radius: 50%; background: #FF4444; }
+.badge { position: absolute; top: -10rpx; right: -10rpx; width: 32rpx; height: 32rpx; border-radius: 50%; background: #FF4444; color: #fff; font-size: 20rpx; display: flex; align-items: center; justify-content: center; }
 .quick-icon {
-  display: block;
-  font-size: 50rpx;
-  margin-bottom: 10rpx;
+  font-size: 40rpx;
+}
+.quick-label {
+  font-size: 24rpx;
+  color: #666;
 }

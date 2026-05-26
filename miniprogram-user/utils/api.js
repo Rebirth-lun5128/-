@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8000'
+const { getApiBase } = require('./config')
 
 function request(url, options = {}) {
   const token = wx.getStorageSync('token')
@@ -12,10 +12,11 @@ function request(url, options = {}) {
 
   return new Promise((resolve, reject) => {
     wx.request({
-      url: BASE_URL + url,
+      url: getApiBase() + url,
       method: options.method || 'GET',
       data: options.data || {},
       header,
+      timeout: 15000,
       success(res) {
         if (res.statusCode === 200) {
           resolve(res.data)
@@ -24,12 +25,20 @@ function request(url, options = {}) {
           wx.navigateTo({ url: '/pages/login/login' })
           reject(res.data)
         } else {
-          wx.showToast({ title: res.data.detail || '请求失败', icon: 'none' })
+          const detail = res.data?.detail || '请求失败'
+          if (!options.silent) {
+            wx.showToast({ title: detail, icon: 'none' })
+          }
           reject(res.data)
         }
       },
       fail(err) {
-        wx.showToast({ title: '网络错误', icon: 'none' })
+        if (!options.silent) {
+          const msg = (err.errMsg || '').includes('timeout')
+            ? '连接超时，请确认后端已启动'
+            : '网络错误'
+          wx.showToast({ title: msg, icon: 'none' })
+        }
         reject(err)
       },
     })
@@ -37,8 +46,8 @@ function request(url, options = {}) {
 }
 
 module.exports = {
-  get: (url, data) => request(url, { method: 'GET', data }),
-  post: (url, data) => request(url, { method: 'POST', data }),
-  put: (url, data) => request(url, { method: 'PUT', data }),
-  del: (url, data) => request(url, { method: 'DELETE', data }),
+  get: (url, data, opts) => request(url, { method: 'GET', data, ...opts }),
+  post: (url, data, opts) => request(url, { method: 'POST', data, ...opts }),
+  put: (url, data, opts) => request(url, { method: 'PUT', data, ...opts }),
+  del: (url, data, opts) => request(url, { method: 'DELETE', data, ...opts }),
 }

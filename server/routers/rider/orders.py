@@ -1,15 +1,28 @@
-from datetime import datetime
+from datetime import datetime, date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from auth import require_rider
 from database import get_db
 from models.user import User
 from models.rider import Rider
-from models.order import Order, OrderTimeline
-from schemas.order import OrderOut, OrderDetailOut, OrderListOut
+from models.order import CombinedOrder, SubOrder, SubOrderTimeline
+from models.region import Settlement, SystemConfig
+from schemas.order import (
+    CombinedOrderOut, CombinedOrderDetailOut, CombinedOrderListOut,
+    SubOrderOut, SubOrderDetailOut, SubOrderItemOut, SubOrderTimelineOut,
+)
 from websocket import manager
+
+
+class RiderRegisterIn(BaseModel):
+    real_name: str = Field(..., min_length=1, max_length=50)
+    phone: str = Field(..., min_length=11, max_length=20)
+    id_card: str = ""
+    district_id: int = Field(...)
 
 router = APIRouter(prefix="/api/rider/orders", tags=["骑手端-订单"])
 
@@ -21,72 +34,117 @@ def _get_rider(user: User, db: Session) -> Rider:
     return rider
 
 
-def _add_timeline(order_id: int, status: str, description: str, db: Session):
-    db.add(OrderTimeline(order_id=order_id, status=status, description=description))
+def _add_sub_timeline(sub_order_id: int, status: str, description: str, db: Session):
+    db.add(SubOrderTimeline(sub_order_id=sub_order_id, status=status, description=description))
 
 
-def _order_summary(order, restaurant_name: str = "", rider_name: str = "") -> dict:
+def _combined_order_summary(order, rider_name: str = "") -> dict:
+    store_count = len(order.sub_orders or [])
     return {
         "id": order.id, "order_no": order.order_no, "status": order.status,
-        "user_id": order.user_id, "restaurant_id": order.restaurant_id,
-        "rider_id": order.rider_id, "total_price": float(order.total_price),
-        "restaurant_name": restaurant_name, "rider_name": rider_name,
+        "user_id": order.user_id, "rider_id": order.rider_id,
+        "total_price": float(order.total_price),
+        "store_count": store_count,
+        "rider_name": rider_name,
     }
 
 
-@router.get("/pending", response_model=OrderListOut)
+@router.post("/register")
+def register_rider(
+    body: RiderRegisterIn,
+    user: User = Depends(require_rider),
+    db: Session = Depends(get_db),
+):
+    existing = db.query(Rider).filter(Rider.user_id == user.id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="已注册过骑手")
+
+    rider = Rider(
+        user_id=user.id,
+        real_name=body.real_name,
+        phone=body.phone,
+        id_card=body.id_card,
+        district_id=body.district_id,
+    )
+    db.add(rider)
+    db.commit()
+    db.refresh(rider)
+    return {"message": "骑手注册成功，请等待审核", "rider_id": rider.id}
+
+
+@router.get("/pending")
 def pending_orders(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=50),
     user: User = Depends(require_rider),
     db: Session = Depends(get_db),
 ):
-    """可接的待配送订单"""
     rider = _get_rider(user, db)
-    query = db.query(Order).filter(
-        Order.status == "ready",
-        Order.region_id == rider.region_id,
-    )
+    # 找出该分区所有 pending 状态的总单
+    candidates = db.query(CombinedOrder).filter(
+        CombinedOrder.status == "pending",
+        CombinedOrder.district_id == rider.district_id,
+    ).all()
 
-    total = query.count()
-    items = query.order_by(Order.ready_at.asc()).offset((page - 1) * page_size).limit(page_size).all()
+    # 筛选：所有非取消子单都已 ready
+    ready_orders = []
+    for order in candidates:
+        non_cancelled = [s for s in order.sub_orders if s.status != "cancelled"]
+        if non_cancelled and all(s.status == "ready" for s in non_cancelled):
+            ready_orders.append(order)
+
+    # 分页
+    total = len(ready_orders)
+    ready_orders.sort(key=lambda o: o.created_at or datetime.min)
+    paged = ready_orders[(page - 1) * page_size: page * page_size]
 
     result_items = []
-    for order in items:
-        o = OrderOut.model_validate(order)
-        o.restaurant_name = order.restaurant.name if order.restaurant else ""
+    for order in paged:
+        o = CombinedOrderOut.model_validate(order)
+        o.sub_orders = [SubOrderOut.model_validate(s) for s in (order.sub_orders or [])]
+        for so in o.sub_orders:
+            so.store_name = so.store_name_snapshot
         result_items.append(o)
 
-    return OrderListOut(total=total, items=result_items)
+    return {"total": total, "items": [o.model_dump() for o in result_items]}
 
 
-@router.post("/{order_id}/accept", response_model=OrderOut)
+@router.post("/{order_id}/accept")
 def accept_order(order_id: int, user: User = Depends(require_rider), db: Session = Depends(get_db)):
     rider = _get_rider(user, db)
     if rider.status == "offline":
         raise HTTPException(status_code=400, detail="请先上线")
+    if rider.audit_status != "approved":
+        raise HTTPException(status_code=400, detail="账号尚未通过审核")
 
-    order = db.query(Order).filter(Order.id == order_id).first()
+    order = db.query(CombinedOrder).filter(CombinedOrder.id == order_id).with_for_update().first()
     if not order:
         raise HTTPException(status_code=404, detail="订单不存在")
-    if order.status != "ready":
+    if order.status != "pending":
         raise HTTPException(status_code=400, detail="该订单已被其他骑手接单")
-    if order.region_id != rider.region_id:
+    if order.district_id != rider.district_id:
         raise HTTPException(status_code=400, detail="该订单不在你的配送区域")
 
     order.rider_id = rider.id
     order.status = "delivering"
     order.picked_at = datetime.now()
     rider.status = "busy"
-    _add_timeline(order.id, "delivering", f"骑手 {rider.real_name} 已取餐，正在配送", db)
+
+    for sub in order.sub_orders:
+        if sub.status == "cancelled":
+            continue
+        sub.status = "delivering"
+        _add_sub_timeline(sub.id, "delivering", f"骑手 {rider.real_name} 已取餐，正在配送", db)
+
     db.commit()
     db.refresh(order)
-    # 通知用户和商家
-    restaurant_name = order.restaurant.name if order.restaurant else ""
-    merchant_uid = order.restaurant.user_id if order.restaurant else None
-    summary = _order_summary(order, restaurant_name, rider.real_name)
-    manager.push_order_event_sync("rider_accepted", summary, user_id=order.user_id, merchant_user_id=merchant_uid)
-    # 推送骑手初始位置
+
+    merchant_ids = {sub.store.user_id for sub in order.sub_orders if sub.store and sub.status != "cancelled"}
+    summary = _combined_order_summary(order, rider.real_name)
+    manager.push_order_event_sync("rider_accepted", summary, user_id=order.user_id)
+    for mid in merchant_ids:
+        manager.push_order_event_sync("rider_accepted", summary, merchant_user_id=mid)
+
     if rider.lat is not None and rider.lng is not None:
         manager.push_order_event_sync(
             "rider_location",
@@ -94,62 +152,185 @@ def accept_order(order_id: int, user: User = Depends(require_rider), db: Session
              "lat": float(rider.lat), "lng": float(rider.lng)},
             user_id=order.user_id,
         )
-    result = OrderOut.model_validate(order)
-    result.restaurant_name = restaurant_name
+
+    result = CombinedOrderOut.model_validate(order)
     result.rider_name = rider.real_name
+    result.sub_orders = [SubOrderOut.model_validate(s) for s in (order.sub_orders or [])]
+    for so in result.sub_orders:
+        so.store_name = so.store_name_snapshot
     return result
 
 
-@router.put("/{order_id}/deliver", response_model=OrderOut)
+@router.put("/{order_id}/deliver")
 def mark_delivered(order_id: int, user: User = Depends(require_rider), db: Session = Depends(get_db)):
     rider = _get_rider(user, db)
-    order = db.query(Order).filter(Order.id == order_id, Order.rider_id == rider.id).first()
+    order = db.query(CombinedOrder).filter(
+        CombinedOrder.id == order_id, CombinedOrder.rider_id == rider.id
+    ).first()
     if not order:
         raise HTTPException(status_code=404, detail="订单不存在")
     if order.status != "delivering":
         raise HTTPException(status_code=400, detail="当前状态不可确认送达")
 
+    rider_cfg = db.query(SystemConfig).filter(SystemConfig.config_key == "rider_per_order").first()
+    rider_earning = float(rider_cfg.config_value) if rider_cfg else 5.0
+
+    period = datetime.now().strftime("%Y-%m")
     order.status = "completed"
     order.delivered_at = datetime.now()
     order.completed_at = datetime.now()
     rider.status = "online"
     rider.total_orders += 1
-    rider.balance = float(rider.balance) + 5
-    _add_timeline(order.id, "completed", "骑手已送达，订单完成", db)
+    rider.balance = float(rider.balance) + rider_earning
+
+    timeline_msgs = []
+
+    for sub in order.sub_orders:
+        if sub.status == "cancelled":
+            continue
+        sub.status = "completed"
+
+        rate = float(sub.commission_rate)
+        items_total = float(sub.items_total)
+        platform_fee = round(items_total * rate, 2)
+        merchant_net = round(items_total - platform_fee, 2)
+
+        db.add(Settlement(
+            target_type="store", target_id=sub.store_id,
+            amount=items_total, fee=platform_fee, net_amount=merchant_net,
+            period=period, status="pending",
+        ))
+        _add_sub_timeline(sub.id, "completed",
+                          f"骑手已送达 | 商品¥{items_total:.2f} 平台扣¥{platform_fee:.2f} 商家得¥{merchant_net:.2f}", db)
+        timeline_msgs.append(f"{sub.store_name_snapshot}: ¥{items_total:.2f}")
+
+    # 检查是否有部分取消
+    if any(s.status == "cancelled" for s in order.sub_orders):
+        order.status = "partial"
+
     db.commit()
     db.refresh(order)
-    # 通知用户和商家
-    restaurant_name = order.restaurant.name if order.restaurant else ""
-    merchant_uid = order.restaurant.user_id if order.restaurant else None
-    summary = _order_summary(order, restaurant_name, rider.real_name)
-    manager.push_order_event_sync("order_delivered", summary, user_id=order.user_id, merchant_user_id=merchant_uid)
-    result = OrderOut.model_validate(order)
-    result.restaurant_name = restaurant_name
+
+    merchant_ids = {sub.store.user_id for sub in order.sub_orders if sub.store and sub.status != "cancelled"}
+    summary = _combined_order_summary(order, rider.real_name)
+    summary["settlement"] = timeline_msgs
+    manager.push_order_event_sync("order_delivered", summary, user_id=order.user_id)
+    for mid in merchant_ids:
+        manager.push_order_event_sync("order_delivered", summary, merchant_user_id=mid)
+
+    result = CombinedOrderOut.model_validate(order)
     result.rider_name = rider.real_name
+    result.sub_orders = [SubOrderOut.model_validate(s) for s in (order.sub_orders or [])]
+    for so in result.sub_orders:
+        so.store_name = so.store_name_snapshot
     return result
 
 
-@router.get("/my", response_model=OrderListOut)
+@router.get("/my")
 def my_orders(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=50),
     user: User = Depends(require_rider),
     db: Session = Depends(get_db),
 ):
-    """骑手的配送记录"""
     rider = _get_rider(user, db)
-    query = db.query(Order).filter(Order.rider_id == rider.id)
+    query = db.query(CombinedOrder).filter(CombinedOrder.rider_id == rider.id)
     total = query.count()
-    items = query.order_by(Order.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    items = query.order_by(CombinedOrder.created_at.desc()).offset(
+        (page - 1) * page_size
+    ).limit(page_size).all()
 
     result_items = []
     for order in items:
-        o = OrderOut.model_validate(order)
-        o.restaurant_name = order.restaurant.name if order.restaurant else ""
+        o = CombinedOrderOut.model_validate(order)
         o.rider_name = rider.real_name
+        o.sub_orders = [SubOrderOut.model_validate(s) for s in (order.sub_orders or [])]
+        for so in o.sub_orders:
+            so.store_name = so.store_name_snapshot
         result_items.append(o)
 
-    return OrderListOut(total=total, items=result_items)
+    return {"total": total, "items": [o.model_dump() for o in result_items]}
+
+
+@router.get("/wallet")
+def wallet(user: User = Depends(require_rider), db: Session = Depends(get_db)):
+    rider = _get_rider(user, db)
+    today = date.today()
+
+    today_income = db.query(func.coalesce(func.sum(CombinedOrder.total_price), 0)).filter(
+        CombinedOrder.rider_id == rider.id,
+        CombinedOrder.status.in_(["completed", "partial"]),
+        func.date(CombinedOrder.completed_at) == today,
+    ).scalar() or 0
+
+    recent = db.query(CombinedOrder).filter(
+        CombinedOrder.rider_id == rider.id,
+        CombinedOrder.status.in_(["completed", "partial"]),
+    ).order_by(CombinedOrder.completed_at.desc()).limit(5).all()
+
+    return {
+        "balance": float(rider.balance),
+        "total_orders": rider.total_orders,
+        "rating": float(rider.rating),
+        "today_income": float(today_income),
+        "recent_orders": [
+            {
+                "id": o.id, "order_no": o.order_no,
+                "store_count": len([s for s in (o.sub_orders or []) if s.status != "cancelled"]),
+                "total_price": float(o.total_price),
+                "completed_at": str(o.completed_at),
+            }
+            for o in recent
+        ],
+    }
+
+
+@router.post("/withdraw")
+def withdraw(
+    amount: float = Query(..., gt=0),
+    user: User = Depends(require_rider),
+    db: Session = Depends(get_db),
+):
+    rider = _get_rider(user, db)
+    if amount > float(rider.balance):
+        raise HTTPException(status_code=400, detail="余额不足")
+    if amount < 1:
+        raise HTTPException(status_code=400, detail="提现金额不能少于1元")
+    rider.balance = float(rider.balance) - amount
+    db.commit()
+    return {
+        "message": f"已提现 ¥{amount:.2f} 到微信零钱",
+        "withdraw_amount": amount,
+        "remain_balance": float(rider.balance),
+    }
+
+
+@router.get("/{order_id}")
+def get_order(order_id: int, user: User = Depends(require_rider), db: Session = Depends(get_db)):
+    rider = _get_rider(user, db)
+    order = db.query(CombinedOrder).filter(CombinedOrder.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    if order.rider_id and order.rider_id != rider.id:
+        # 未分配骑手且在骑手分区内则允许查看
+        if not order.rider_id and order.district_id != rider.district_id:
+            raise HTTPException(status_code=403, detail="该订单不在你的配送区域")
+        elif order.rider_id:
+            raise HTTPException(status_code=403, detail="该订单已被其他骑手接单")
+
+    result = CombinedOrderDetailOut.model_validate(order)
+    result.rider_name = order.rider.real_name if order.rider else ""
+    result.sub_orders = []
+    for sub in (order.sub_orders or []):
+        sd = SubOrderDetailOut.model_validate(sub)
+        sd.store_name = sub.store.name if sub.store else sub.store_name_snapshot
+        sd.items = [SubOrderItemOut.model_validate(i) for i in (sub.items or [])]
+        sd.timeline = [
+            SubOrderTimelineOut.model_validate(t)
+            for t in (sub.timeline.order_by(SubOrderTimeline.created_at.asc()).all() if sub.timeline else [])
+        ]
+        result.sub_orders.append(sd)
+    return result
 
 
 @router.put("/status")
@@ -158,7 +339,6 @@ def update_status(
     user: User = Depends(require_rider),
     db: Session = Depends(get_db),
 ):
-    """骑手上下线"""
     rider = _get_rider(user, db)
     if status not in ("online", "offline", "busy"):
         raise HTTPException(status_code=400, detail="无效状态")
@@ -174,38 +354,21 @@ def update_location(
     user: User = Depends(require_rider),
     db: Session = Depends(get_db),
 ):
-    """上报骑手位置，同步推送给相关订单的用户"""
     rider = _get_rider(user, db)
     rider.lat = lat
     rider.lng = lng
     db.commit()
 
-    # 推送给该骑手所有配送中订单的用户
-    active_orders = db.query(Order).filter(
-        Order.rider_id == rider.id,
-        Order.status == "delivering",
+    active_orders = db.query(CombinedOrder).filter(
+        CombinedOrder.rider_id == rider.id,
+        CombinedOrder.status == "delivering",
     ).all()
     for order in active_orders:
         manager.push_order_event_sync(
             "rider_location",
-            {
-                "order_id": order.id,
-                "rider_id": rider.id,
-                "rider_name": rider.real_name,
-                "lat": lat,
-                "lng": lng,
-            },
+            {"order_id": order.id, "rider_id": rider.id, "rider_name": rider.real_name,
+             "lat": lat, "lng": lng},
             user_id=order.user_id,
         )
 
     return {"message": "位置已更新"}
-
-
-@router.get("/wallet")
-def wallet(user: User = Depends(require_rider), db: Session = Depends(get_db)):
-    rider = _get_rider(user, db)
-    return {
-        "balance": float(rider.balance),
-        "total_orders": rider.total_orders,
-        "rating": float(rider.rating),
-    }

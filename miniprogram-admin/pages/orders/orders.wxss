@@ -1,0 +1,196 @@
+/* 搜索框 */
+.search-box {
+  margin-bottom: 16rpx;
+}
+.search-input {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 22rpx 28rpx;
+  font-size: 28rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.03);
+}
+
+/* 订单卡片 */
+.order-card:active {
+  background: #fafaff;
+}
+.order-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+.order-no {
+  font-size: 26rpx;
+  color: #999;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+.order-status {
+  font-size: 24rpx;
+  font-weight: 600;
+  padding: 6rpx 18rpx;
+  border-radius: 24rpx;
+}
+.order-status.pending,
+.order-status.pending_pay {
+  background: #FFF8E1;
+  color: #f39c12;
+}
+.order-status.delivering {
+  background: #EDE7F6;
+  color: #6C5CE7;
+}
+.order-status.completed {
+  background: #E8F5E9;
+  color: #00B894;
+}
+.order-status.cancelled {
+  background: #FFEBEE;
+  color: #d63031;
+}
+.order-status.partial {
+  background: #FFF3E0;
+  color: #E17055;
+}
+
+/* 订单信息 */
+.order-body {
+  margin-bottom: 16rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+.order-body-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8rpx 0;
+}
+.obr-label {
+  font-size: 26rpx;
+  color: #999;
+}
+.obr-val {
+  font-size: 26rpx;
+  color: #333;
+  font-weight: 500;
+}
+.multi-badge {
+  display: inline-block;
+  background: #EDE7F6;
+  color: #6C5CE7;
+  padding: 2rpx 12rpx;
+  border-radius: 16rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+/* 订单底部 */
+.order-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.order-price {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #E17055;
+}
+.order-time {
+  font-size: 24rpx;
+  color: #bbb;
+}
+
+/* 结束提示 */
+.end-hint {
+  text-align: center;
+  color: #ddd;
+  font-size: 24rpx;
+  padding: 20rpx 0;
+}
+
+/* ====== 修改审核卡片 ====== */
+.mod-card {
+  margin-bottom: 20rpx;
+}
+.mod-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+.mod-head-left {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.mod-type {
+  font-size: 24rpx;
+  font-weight: 700;
+  padding: 6rpx 16rpx;
+  border-radius: 16rpx;
+}
+.mod-type.cancel { background: #FFEBEE; color: #d63031; }
+.mod-type.change_address { background: #E3F2FD; color: #0984e3; }
+.mod-type.refund { background: #FFF3E0; color: #E17055; }
+.mod-tag {
+  font-size: 22rpx;
+  font-weight: 600;
+  padding: 4rpx 14rpx;
+  border-radius: 14rpx;
+}
+.mod-tag.pending_review { background: #FFF8E1; color: #f39c12; }
+.mod-tag.approved { background: #E8F5E9; color: #00B894; }
+.mod-tag.rejected { background: #FFEBEE; color: #d63031; }
+.mod-order-no {
+  font-size: 24rpx;
+  color: #bbb;
+  font-family: 'Courier New', monospace;
+}
+
+.mod-body {
+  margin-bottom: 8rpx;
+  padding-bottom: 12rpx;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+.mod-body .info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8rpx 0;
+}
+.mod-body .ir-label {
+  font-size: 26rpx;
+  color: #999;
+}
+.mod-body .ir-val {
+  font-size: 26rpx;
+  color: #333;
+  font-weight: 500;
+}
+.mod-body .ir-val.price {
+  color: #E17055;
+  font-weight: 700;
+}
+
+.mod-actions {
+  display: flex;
+  gap: 16rpx;
+  padding-top: 12rpx;
+}
+.mod-actions .btn-sm {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+.mod-actions .btn-success {
+  background: linear-gradient(135deg, #00B894, #55efc4);
+  color: #fff;
+}
+.mod-actions .btn-danger {
+  background: linear-gradient(135deg, #d63031, #ff7675);
+  color: #fff;
+}

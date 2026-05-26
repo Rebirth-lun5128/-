@@ -3,16 +3,22 @@
     <view class="form-item">
       <text class="label">分类</text>
       <picker range="{{categories}}" range-key="name" bindchange="onCategoryChange">
-        <text>{{categories[0] ? categories[0].name : '请选择'}}</text>
+        <text class="picker-val">{{selectedCatName || '请选择'}}</text>
       </picker>
     </view>
     <view class="form-item">
-      <text class="label">菜品名称 *</text>
+      <text class="label">商品名称 *</text>
       <input placeholder="请输入名称" value="{{form.name}}" bindinput="onInput" data-field="name" />
     </view>
     <view class="form-item">
-      <text class="label">图片</text>
-      <input placeholder="图片URL" value="{{form.image}}" bindinput="onInput" data-field="image" />
+      <text class="label">商品图片</text>
+      <view class="upload-row">
+        <image class="upload-preview" src="{{form.image}}" mode="aspectFill" wx:if="{{form.image}}" bindtap="onChooseImage"></image>
+        <view class="upload-btn" bindtap="onChooseImage">
+          <text class="upload-plus">+</text>
+          <text class="upload-text">{{form.image ? '换图' : '上传'}}</text>
+        </view>
+      </view>
     </view>
     <view class="form-item">
       <text class="label">价格 *</text>
@@ -20,12 +26,41 @@
     </view>
     <view class="form-item">
       <text class="label">原价</text>
-      <input type="digit" placeholder="0.00" value="{{form.original_price}}" bindinput="onInput" data-field="original_price" />
+      <input type="digit" placeholder="划线价(选填)" value="{{form.original_price}}" bindinput="onInput" data-field="original_price" />
     </view>
     <view class="form-item">
       <text class="label">描述</text>
-      <input placeholder="菜品描述" value="{{form.description}}" bindinput="onInput" data-field="description" />
+      <input placeholder="商品描述" value="{{form.description}}" bindinput="onInput" data-field="description" />
     </view>
   </view>
+
+  <view class="card">
+    <text class="section-title">库存与限购</text>
+    <view class="form-item">
+      <text class="label">库存数量</text>
+      <view class="switch-row">
+        <text class="switch-label">不限库存</text>
+        <switch checked="{{stockUnlimited}}" bindchange="onStockToggle" color="#FF6B35" />
+      </view>
+      <view class="stock-input-row" wx:if="{{!stockUnlimited}}">
+        <view class="stock-presets">
+          <view class="stock-tag {{form.stock == '10' ? 'active' : ''}}" bindtap="onStockPreset" data-val="10">10</view>
+          <view class="stock-tag {{form.stock == '20' ? 'active' : ''}}" bindtap="onStockPreset" data-val="20">20</view>
+          <view class="stock-tag {{form.stock == '50' ? 'active' : ''}}" bindtap="onStockPreset" data-val="50">50</view>
+          <view class="stock-tag {{form.stock == '100' ? 'active' : ''}}" bindtap="onStockPreset" data-val="100">100</view>
+        </view>
+        <input class="stock-input" type="number" placeholder="自定义数量" value="{{stockUnlimited ? '' : form.stock}}" bindinput="onStockInput" />
+      </view>
+    </view>
+    <view class="form-item">
+      <text class="label">每单限购</text>
+      <view class="switch-row">
+        <text class="switch-label">不限购</text>
+        <switch checked="{{limitUnlimited}}" bindchange="onLimitToggle" color="#FF6B35" />
+      </view>
+      <input wx:if="{{!limitUnlimited}}" type="number" placeholder="每单最多购买件数" value="{{form.limit_per_order}}" bindinput="onInput" data-field="limit_per_order" />
+    </view>
+  </view>
+
   <view class="btn-primary" bindtap="onSubmit">保存</view>
 </view>

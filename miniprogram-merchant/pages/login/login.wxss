@@ -36,6 +36,17 @@
 .form-item input {
   font-size: 32rpx;
 }
+.pwd-row {
+  display: flex;
+  align-items: center;
+}
+.pwd-input {
+  flex: 1;
+}
+.pwd-eye {
+  padding: 0 16rpx;
+  font-size: 36rpx;
+}
 .toggle {
   text-align: center;
   margin-top: 30rpx;

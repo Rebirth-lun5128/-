@@ -1,0 +1,159 @@
+/* 骑手概览 */
+.rider-summary {
+  padding: 0 4rpx 16rpx;
+}
+.summary-text {
+  font-size: 26rpx;
+  color: #999;
+}
+.sum-num {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.empty-icon {
+  font-size: 60rpx;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+/* 骑手卡片 */
+.rider-card {
+  margin-bottom: 20rpx;
+}
+
+/* 顶部区域 */
+.rc-top {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+}
+.rc-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 40rpx;
+  background: linear-gradient(135deg, #6C5CE7, #a29bfe);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.rc-avatar text {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #fff;
+}
+.rc-info {
+  flex: 1;
+  min-width: 0;
+}
+.rc-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 6rpx;
+}
+.rc-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #222;
+}
+.rc-phone {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 状态指示器 */
+.rc-status-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 6rpx;
+  flex-shrink: 0;
+}
+.rc-status-dot.on { background: #00B894; }
+.rc-status-dot.busy { background: #f39c12; }
+.rc-status-dot.off { background: #ccc; }
+.rc-status-text {
+  font-size: 22rpx;
+  color: #999;
+}
+
+/* 审核标签 */
+.rc-audit-tag {
+  font-size: 22rpx;
+  font-weight: 600;
+  padding: 6rpx 16rpx;
+  border-radius: 16rpx;
+  flex-shrink: 0;
+}
+
+/* 分割线 */
+.rc-divider {
+  height: 1rpx;
+  background: #f0f0f0;
+  margin: 20rpx 0;
+}
+
+/* 统计数据网格 */
+.rc-stats {
+  display: flex;
+  flex-wrap: wrap;
+}
+.rc-stat-item {
+  width: 50%;
+  padding: 10rpx 0;
+}
+.rc-stat-item:nth-child(3),
+.rc-stat-item:nth-child(4) {
+  padding-bottom: 0;
+}
+.rc-stat-val {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 4rpx;
+}
+.rc-stat-val.price {
+  color: #E17055;
+}
+.rc-stat-val.star {
+  color: #f39c12;
+}
+.rc-stat-label {
+  font-size: 22rpx;
+  color: #bbb;
+}
+
+/* 审核按钮 */
+.rc-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+.rc-actions .btn-success,
+.rc-actions .btn-danger {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+.rc-actions .btn-success {
+  background: linear-gradient(135deg, #00B894, #55efc4);
+  color: #fff;
+}
+.rc-actions .btn-danger {
+  background: linear-gradient(135deg, #d63031, #ff7675);
+  color: #fff;
+}
+
+.end-hint {
+  text-align: center;
+  color: #ddd;
+  font-size: 24rpx;
+  padding: 20rpx 0;
+}

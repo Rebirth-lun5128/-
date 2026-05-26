@@ -26,7 +26,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     if "sub" in to_encode:
-        to_encode["sub"] = str(to_encode["sub"])  # JWT spec requires sub to be string
+        to_encode["sub"] = str(to_encode["sub"])
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
@@ -36,7 +36,6 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
-    """解析 JWT 获取当前用户"""
     token = credentials.credentials
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
@@ -73,6 +72,6 @@ class RoleChecker:
 require_user = RoleChecker("user")
 require_merchant = RoleChecker("merchant")
 require_rider = RoleChecker("rider")
-require_region_admin = RoleChecker("region_admin", "super_admin")
+require_district_admin = RoleChecker("district_admin", "super_admin")
 require_super_admin = RoleChecker("super_admin")
-require_any_admin = RoleChecker("region_admin", "super_admin")
+require_any_admin = RoleChecker("district_admin", "super_admin")

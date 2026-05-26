@@ -3,13 +3,14 @@
 
   <view class="card order-card" wx:for="{{orders}}" wx:key="id">
     <view class="order-header">
-      <text class="shop">{{item.restaurant_name}}</text>
-      <text class="price">{{item.delivery_fee}}</text>
+      <text class="shop">{{item.storeNames || '订单' + item.order_no}}</text>
+      <text class="store-tag" wx:if="{{item.storeCount > 1}}">{{item.storeCount}}店</text>
+      <text class="price">¥{{item.delivery_fee}}</text>
     </view>
     <text class="addr">{{item.address_snapshot.detail}}</text>
     <view class="order-footer">
       <text class="time">{{item.created_at}}</text>
-      <text class="tag tag-orange">{{item.status === 'completed' ? '已完成' : item.status === 'cancelled' ? '已取消' : '配送中'}}</text>
+      <text class="tag tag-orange">{{item.status === 'completed' ? '已完成' : item.status === 'cancelled' ? '已取消' : item.status === 'partial' ? '部分完成' : '配送中'}}</text>
     </view>
   </view>
 </view>

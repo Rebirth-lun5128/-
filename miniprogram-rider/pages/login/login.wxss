@@ -7,3 +7,7 @@
 .form-item:last-child { border-bottom: none; }
 .label { display: block; font-size: 26rpx; color: #999; margin-bottom: 12rpx; }
 .form-item input { font-size: 32rpx; }
+.pwd-row { display: flex; align-items: center; }
+.pwd-input { flex: 1; }
+.pwd-eye { padding: 0 16rpx; font-size: 36rpx; }
+.toggle { text-align: center; margin-top: 30rpx; color: #FF9800; font-size: 28rpx; }

@@ -1,0 +1,54 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/index/index",
+    "pages/customers/customers",
+    "pages/stores/stores",
+    "pages/store-detail/store-detail",
+    "pages/riders/riders",
+    "pages/orders/orders",
+    "pages/order-detail/order-detail",
+    "pages/district/district",
+    "pages/coupons/coupons",
+    "pages/coupon-edit/coupon-edit"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#6C5CE7",
+    "navigationBarTitleText": "夜市管理后台",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f0f2f7"
+  },
+  "tabBar": {
+    "color": "#999",
+    "selectedColor": "#6C5CE7",
+    "backgroundColor": "#fff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "概览",
+        "iconPath": "images/tab-home.png",
+        "selectedIconPath": "images/tab-home-active.png"
+      },
+      {
+        "pagePath": "pages/stores/stores",
+        "text": "商家",
+        "iconPath": "images/tab-store.png",
+        "selectedIconPath": "images/tab-store-active.png"
+      },
+      {
+        "pagePath": "pages/riders/riders",
+        "text": "骑手",
+        "iconPath": "images/tab-rider.png",
+        "selectedIconPath": "images/tab-rider-active.png"
+      },
+      {
+        "pagePath": "pages/orders/orders",
+        "text": "订单",
+        "iconPath": "images/tab-order.png",
+        "selectedIconPath": "images/tab-order-active.png"
+      }
+    ]
+  }
+}

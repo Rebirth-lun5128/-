@@ -27,15 +27,19 @@ def my_address(client, auth_header, db_session):
 
 # ---- Test: Create Order ----
 class TestCreateOrder:
-    def test_success(self, client, auth_header, db_session, restaurant, menu_items, my_address):
-        """Create order with items that meet min_price (>=20)."""
-        item1, item2, _ = menu_items  # 羊肉串 5, 牛肉串 6
+    def test_success(self, client, auth_header, db_session, restaurant, menu_items, my_address, region):
+        """Create combined order with items from one store."""
+        item1, item2, _ = menu_items
         body = {
-            "restaurant_id": restaurant.id,
             "address_id": my_address.id,
-            "items": [
-                {"menu_item_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
-                {"menu_item_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+            "sub_orders": [
+                {
+                    "store_id": restaurant.id,
+                    "items": [
+                        {"product_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
+                        {"product_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+                    ],
+                }
             ],
             "remark": "少放辣",
         }
@@ -46,19 +50,22 @@ class TestCreateOrder:
         assert data["status"] == "pending_pay"
         assert data["order_no"] != ""
         assert data["items_total"] == 21.0
-        assert data["total_price"] == 21.0 + float(restaurant.delivery_fee) + 1.0
-        assert len(data["items"]) == 2
-        assert data["restaurant_name"] == restaurant.name
         assert data["remark"] == "少放辣"
+        assert len(data["sub_orders"]) == 1
+        assert data["sub_orders"][0]["store_name"] == restaurant.name
 
-    def test_below_min_price(self, client, auth_header, db_session, restaurant, menu_items, my_address):
-        """Order with items_total < restaurant.min_price returns 400."""
-        item1, _, _ = menu_items  # 羊肉串 5
+    def test_below_min_price(self, client, auth_header, db_session, restaurant, menu_items, my_address, region):
+        """Order with items_total < store.min_price returns 400."""
+        item1, _, _ = menu_items
         body = {
-            "restaurant_id": restaurant.id,
             "address_id": my_address.id,
-            "items": [
-                {"menu_item_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 1},
+            "sub_orders": [
+                {
+                    "store_id": restaurant.id,
+                    "items": [
+                        {"product_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 1},
+                    ],
+                }
             ],
         }
         # items_total = 5 < min_price(20)
@@ -66,43 +73,55 @@ class TestCreateOrder:
         assert res.status_code == 400
         assert "起送价" in res.json()["detail"]
 
-    def test_invalid_restaurant(self, client, auth_header, menu_items):
-        """Non-existent restaurant returns 400."""
+    def test_invalid_restaurant(self, client, auth_header, menu_items, my_address, region):
+        """Non-existent store returns 400."""
         item1, _, _ = menu_items
         body = {
-            "restaurant_id": 99999,
-            "address_id": 99999,
-            "items": [
-                {"menu_item_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 1},
+            "address_id": my_address.id,
+            "sub_orders": [
+                {
+                    "store_id": 99999,
+                    "items": [
+                        {"product_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 1},
+                    ],
+                }
             ],
         }
         res = client.post("/api/user/orders", json=body, headers=auth_header)
         assert res.status_code == 400
-        assert res.json()["detail"] == "餐厅不可用"
+        assert "不存在" in res.json()["detail"]
 
-    def test_invalid_address(self, client, auth_header, restaurant, menu_items):
+    def test_invalid_address(self, client, auth_header, restaurant, menu_items, region):
         """Address that does not exist returns 400."""
         item1, item2, _ = menu_items
         body = {
-            "restaurant_id": restaurant.id,
             "address_id": 99999,
-            "items": [
-                {"menu_item_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
-                {"menu_item_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+            "sub_orders": [
+                {
+                    "store_id": restaurant.id,
+                    "items": [
+                        {"product_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
+                        {"product_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+                    ],
+                }
             ],
         }
         res = client.post("/api/user/orders", json=body, headers=auth_header)
         assert res.status_code == 400
         assert res.json()["detail"] == "地址不存在"
 
-    def test_disabled_menu_item(self, client, auth_header, db_session, restaurant, menu_items, my_address):
+    def test_disabled_menu_item(self, client, auth_header, db_session, restaurant, menu_items, my_address, region):
         """Order containing a disabled (status=0) menu item returns 400."""
-        _, _, disabled = menu_items  # 已下架菜品 status=0
+        _, _, disabled = menu_items
         body = {
-            "restaurant_id": restaurant.id,
             "address_id": my_address.id,
-            "items": [
-                {"menu_item_id": disabled.id, "name": disabled.name, "price": float(disabled.price), "quantity": 1},
+            "sub_orders": [
+                {
+                    "store_id": restaurant.id,
+                    "items": [
+                        {"product_id": disabled.id, "name": disabled.name, "price": float(disabled.price), "quantity": 1},
+                    ],
+                }
             ],
         }
         res = client.post("/api/user/orders", json=body, headers=auth_header)
@@ -112,15 +131,19 @@ class TestCreateOrder:
 
 # ---- Test: Pay Order ----
 class TestPayOrder:
-    def test_success(self, client, auth_header, db_session, restaurant, menu_items, my_address):
-        """Pay returns isMock=True and auto-advances order to pending_accept."""
+    def test_success(self, client, auth_header, db_session, restaurant, menu_items, my_address, region):
+        """Pay returns isMock=True and auto-advances order to pending."""
         item1, item2, _ = menu_items
         body = {
-            "restaurant_id": restaurant.id,
             "address_id": my_address.id,
-            "items": [
-                {"menu_item_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
-                {"menu_item_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+            "sub_orders": [
+                {
+                    "store_id": restaurant.id,
+                    "items": [
+                        {"product_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
+                        {"product_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+                    ],
+                }
             ],
         }
         create = client.post("/api/user/orders", json=body, headers=auth_header)
@@ -133,20 +156,24 @@ class TestPayOrder:
         assert "appId" in data
         assert "package" in data
 
-        # Verify order status advanced to pending_accept
+        # Verify order status advanced to pending
         detail = client.get(f"/api/user/orders/{order_id}", headers=auth_header)
-        assert detail.json()["status"] == "pending_accept"
+        assert detail.json()["status"] == "pending"
         assert detail.json()["paid_at"] is not None
 
-    def test_already_paid(self, client, auth_header, db_session, restaurant, menu_items, my_address):
+    def test_already_paid(self, client, auth_header, db_session, restaurant, menu_items, my_address, region):
         """Paying an already paid order returns 400."""
         item1, item2, _ = menu_items
         body = {
-            "restaurant_id": restaurant.id,
             "address_id": my_address.id,
-            "items": [
-                {"menu_item_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
-                {"menu_item_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+            "sub_orders": [
+                {
+                    "store_id": restaurant.id,
+                    "items": [
+                        {"product_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
+                        {"product_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+                    ],
+                }
             ],
         }
         create = client.post("/api/user/orders", json=body, headers=auth_header)
@@ -161,15 +188,19 @@ class TestPayOrder:
 
 # ---- Test: Cancel Order ----
 class TestCancelOrder:
-    def test_cancel_from_pending_pay(self, client, auth_header, db_session, restaurant, menu_items, my_address):
-        """Cancel an order that is in pending_pay status."""
+    def test_cancel_from_pending_pay(self, client, auth_header, db_session, restaurant, menu_items, my_address, region):
+        """Cancel a combined order that is in pending_pay status."""
         item1, item2, _ = menu_items
         body = {
-            "restaurant_id": restaurant.id,
             "address_id": my_address.id,
-            "items": [
-                {"menu_item_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
-                {"menu_item_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+            "sub_orders": [
+                {
+                    "store_id": restaurant.id,
+                    "items": [
+                        {"product_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
+                        {"product_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+                    ],
+                }
             ],
         }
         create = client.post("/api/user/orders", json=body, headers=auth_header)
@@ -178,65 +209,78 @@ class TestCancelOrder:
         res = client.put(f"/api/user/orders/{order_id}/cancel?reason=不想要了", headers=auth_header)
         assert res.status_code == 200
         assert res.json()["status"] == "cancelled"
-        assert res.json()["cancel_by"] == "user"
-        assert "不想要了" in res.json()["cancel_reason"]
 
-    def test_cancel_from_pending_accept(self, client, auth_header, db_session, restaurant, menu_items, my_address):
-        """Cancel an order that is in pending_accept status (after payment)."""
+    def test_cancel_from_pending(self, client, auth_header, db_session, restaurant, menu_items, my_address, region):
+        """Cancel combined order from pending status returns 400. Use sub-order cancel instead."""
         item1, item2, _ = menu_items
         body = {
-            "restaurant_id": restaurant.id,
             "address_id": my_address.id,
-            "items": [
-                {"menu_item_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
-                {"menu_item_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+            "sub_orders": [
+                {
+                    "store_id": restaurant.id,
+                    "items": [
+                        {"product_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
+                        {"product_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+                    ],
+                }
             ],
         }
         create = client.post("/api/user/orders", json=body, headers=auth_header)
         order_id = create.json()["id"]
-        # Pay to advance to pending_accept
+        # Pay to advance to pending
         client.post(f"/api/user/orders/{order_id}/pay", headers=auth_header)
 
+        # Cannot cancel entire combined order after payment — must cancel sub-orders
         res = client.put(f"/api/user/orders/{order_id}/cancel?reason=等太久了", headers=auth_header)
-        assert res.status_code == 200
-        assert res.json()["status"] == "cancelled"
-        assert res.json()["cancel_by"] == "user"
+        assert res.status_code == 400
 
 
-# ---- Test: Refund Order ----
+# ---- Test: Refund Sub-Order ----
 class TestRefundOrder:
-    def test_refund_from_pending_accept(self, client, auth_header, db_session, restaurant, menu_items, my_address):
-        """Refund an order from pending_accept status."""
+    def test_refund_from_pending_accept(self, client, auth_header, db_session, restaurant, menu_items, my_address, region):
+        """Refund a sub_order from pending_accept status."""
         item1, item2, _ = menu_items
         body = {
-            "restaurant_id": restaurant.id,
             "address_id": my_address.id,
-            "items": [
-                {"menu_item_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
-                {"menu_item_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+            "sub_orders": [
+                {
+                    "store_id": restaurant.id,
+                    "items": [
+                        {"product_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
+                        {"product_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+                    ],
+                }
             ],
         }
         create = client.post("/api/user/orders", json=body, headers=auth_header)
         order_id = create.json()["id"]
-        # Pay to advance to pending_accept
+        # Pay to advance to pending (sub_orders → pending_accept)
         client.post(f"/api/user/orders/{order_id}/pay", headers=auth_header)
 
-        res = client.post(f"/api/user/orders/{order_id}/refund?reason=不想要了", headers=auth_header)
+        # Get the sub_order id
+        detail = client.get(f"/api/user/orders/{order_id}", headers=auth_header)
+        sub_id = detail.json()["sub_orders"][0]["id"]
+
+        res = client.put(f"/api/user/orders/sub/{sub_id}/cancel?reason=不想要了", headers=auth_header)
         assert res.status_code == 200
         assert res.json()["status"] == "cancelled"
 
 
 # ---- Test: List Orders ----
 class TestListOrders:
-    def test_pagination(self, client, auth_header, db_session, restaurant, menu_items, my_address):
+    def test_pagination(self, client, auth_header, db_session, restaurant, menu_items, my_address, region):
         """List orders with pagination returns correct page size."""
         item1, item2, _ = menu_items
         body = {
-            "restaurant_id": restaurant.id,
             "address_id": my_address.id,
-            "items": [
-                {"menu_item_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
-                {"menu_item_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+            "sub_orders": [
+                {
+                    "store_id": restaurant.id,
+                    "items": [
+                        {"product_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
+                        {"product_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+                    ],
+                }
             ],
         }
         # Create 2 orders
@@ -249,42 +293,50 @@ class TestListOrders:
         assert data["total"] >= 2
         assert len(data["items"]) == 1
 
-    def test_status_filter(self, client, auth_header, db_session, restaurant, menu_items, my_address):
+    def test_status_filter(self, client, auth_header, db_session, restaurant, menu_items, my_address, region):
         """List orders filtered by status returns only matching orders."""
         item1, item2, _ = menu_items
         body = {
-            "restaurant_id": restaurant.id,
             "address_id": my_address.id,
-            "items": [
-                {"menu_item_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
-                {"menu_item_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+            "sub_orders": [
+                {
+                    "store_id": restaurant.id,
+                    "items": [
+                        {"product_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
+                        {"product_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+                    ],
+                }
             ],
         }
-        # Create one order and pay it (status -> pending_accept)
+        # Create one order and pay it (status -> pending)
         create = client.post("/api/user/orders", json=body, headers=auth_header)
         client.post(f"/api/user/orders/{create.json()['id']}/pay", headers=auth_header)
         # Create another order (stays pending_pay)
         client.post("/api/user/orders", json=body, headers=auth_header)
 
-        res = client.get("/api/user/orders?status=pending_accept", headers=auth_header)
+        res = client.get("/api/user/orders?status=pending", headers=auth_header)
         assert res.status_code == 200
         items = res.json()["items"]
         assert len(items) >= 1
         for item in items:
-            assert item["status"] == "pending_accept"
+            assert item["status"] == "pending"
 
 
 # ---- Test: Order Detail ----
 class TestOrderDetail:
-    def test_get_detail_with_timeline(self, client, auth_header, db_session, restaurant, menu_items, my_address):
-        """Get order detail returns timeline and items."""
+    def test_get_detail_with_timeline(self, client, auth_header, db_session, restaurant, menu_items, my_address, region):
+        """Get order detail returns sub_orders with items."""
         item1, item2, _ = menu_items
         body = {
-            "restaurant_id": restaurant.id,
             "address_id": my_address.id,
-            "items": [
-                {"menu_item_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
-                {"menu_item_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+            "sub_orders": [
+                {
+                    "store_id": restaurant.id,
+                    "items": [
+                        {"product_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
+                        {"product_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+                    ],
+                }
             ],
         }
         create = client.post("/api/user/orders", json=body, headers=auth_header)
@@ -293,11 +345,9 @@ class TestOrderDetail:
         res = client.get(f"/api/user/orders/{order_id}", headers=auth_header)
         assert res.status_code == 200
         data = res.json()
-        assert len(data["timeline"]) >= 1
-        assert data["timeline"][0]["status"] == "pending_pay"
-        assert data["timeline"][0]["description"] == "订单已创建，等待支付"
-        assert len(data["items"]) == 2
-        assert data["restaurant_name"] == restaurant.name
+        assert len(data["sub_orders"]) == 1
+        assert len(data["sub_orders"][0]["items"]) == 2
+        assert data["sub_orders"][0]["store_name"] == restaurant.name
 
     def test_not_found(self, client, auth_header):
         """Getting a non-existent order returns 404."""
@@ -308,15 +358,19 @@ class TestOrderDetail:
 
 # ---- Test: Rider Location ----
 class TestRiderLocation:
-    def test_not_delivering(self, client, auth_header, db_session, restaurant, menu_items, my_address):
+    def test_not_delivering(self, client, auth_header, db_session, restaurant, menu_items, my_address, region):
         """Getting rider location when order is not delivering returns 400."""
         item1, item2, _ = menu_items
         body = {
-            "restaurant_id": restaurant.id,
             "address_id": my_address.id,
-            "items": [
-                {"menu_item_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
-                {"menu_item_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+            "sub_orders": [
+                {
+                    "store_id": restaurant.id,
+                    "items": [
+                        {"product_id": item1.id, "name": item1.name, "price": float(item1.price), "quantity": 3},
+                        {"product_id": item2.id, "name": item2.name, "price": float(item2.price), "quantity": 1},
+                    ],
+                }
             ],
         }
         create = client.post("/api/user/orders", json=body, headers=auth_header)

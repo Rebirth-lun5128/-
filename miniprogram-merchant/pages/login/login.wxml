@@ -11,7 +11,12 @@
     </view>
     <view class="form-item">
       <text class="label">密码</text>
-      <input type="password" placeholder="请输入密码 (开发: 123456)" value="{{password}}" bindinput="onPwdInput" />
+      <view class="pwd-row">
+        <input class="pwd-input" type="text" password="{{!showPwd}}" placeholder="请输入密码" value="{{password}}" bindinput="onPwdInput" />
+        <view class="pwd-eye" bindtap="togglePwd">
+          <text>{{showPwd ? '🙈' : '👁️'}}</text>
+        </view>
+      </view>
     </view>
   </view>
 

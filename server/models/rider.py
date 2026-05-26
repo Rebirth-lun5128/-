@@ -20,7 +20,7 @@ class Rider(Base):
     total_orders = Column(Integer, default=0)
     rating = Column(DECIMAL(2, 1), default=5.0)
     audit_status = Column(SQLEnum("pending", "approved", "rejected"), default="pending")
-    region_id = Column(Integer, ForeignKey("regions.id"), nullable=True)
+    district_id = Column(Integer, ForeignKey("districts.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

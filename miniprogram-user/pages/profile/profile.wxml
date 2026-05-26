@@ -1,29 +1,100 @@
-<view class="container" wx:if="{{userInfo}}">
-  <view class="profile-header card">
-    <image class="avatar" src="{{userInfo.avatar || '/images/default-avatar.png'}}" />
-    <text class="nickname">{{userInfo.nickname}}</text>
-    <text class="phone" wx:if="{{userInfo.phone}}">{{userInfo.phone}}</text>
+<view class="page-bg" wx:if="{{userInfo}}">
+  <!-- 头部 -->
+  <view class="header-card">
+    <view class="header-top">
+      <image class="avatar" src="{{userInfo.avatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+      <view class="header-info">
+        <text class="nickname">{{userInfo.nickname || '食客'}}</text>
+        <text class="phone" wx:if="{{userInfo.phone}}">{{userInfo.phone}}</text>
+      </view>
+      <view class="header-edit" bindtap="editProfile">
+        <text class="edit-icon">✎</text>
+      </view>
+    </view>
+    <!-- 统计行 -->
+    <view class="stats-row">
+      <view class="stat-item" bindtap="goToOrders">
+        <text class="stat-num">{{orderCount || 0}}</text>
+        <text class="stat-label">全部订单</text>
+      </view>
+      <view class="stat-item" bindtap="goToOrders" data-status="pending_pay">
+        <text class="stat-num">{{pendingCount || 0}}</text>
+        <text class="stat-label">待付款</text>
+      </view>
+      <view class="stat-item" bindtap="goToOrders" data-status="delivering">
+        <text class="stat-num">{{deliveringCount || 0}}</text>
+        <text class="stat-label">配送中</text>
+      </view>
+      <view class="stat-item" bindtap="goToCoupons">
+        <text class="stat-num">{{couponCount || 0}}</text>
+        <text class="stat-label">优惠券</text>
+      </view>
+    </view>
   </view>
 
-  <view class="menu-group card">
-    <view class="menu-item" bindtap="goToOrders">
-      <text>我的订单</text>
-      <text class="arrow">></text>
+  <!-- 订单快捷入口 -->
+  <view class="card order-bar">
+    <view class="card-title-row">
+      <text class="card-title">我的订单</text>
+      <text class="card-link" bindtap="goToOrders">全部 ></text>
     </view>
-    <view class="menu-item" bindtap="goToAddress">
-      <text>收货地址</text>
-      <text class="arrow">></text>
+    <view class="order-quick">
+      <view class="order-quick-item" bindtap="goToOrders" data-status="pending_pay">
+        <text class="oq-icon">💳</text>
+        <text class="oq-label">待付款</text>
+      </view>
+      <view class="order-quick-item" bindtap="goToOrders" data-status="pending_accept">
+        <text class="oq-icon">👨‍🍳</text>
+        <text class="oq-label">待接单</text>
+      </view>
+      <view class="order-quick-item" bindtap="goToOrders" data-status="delivering">
+        <text class="oq-icon">🛵</text>
+        <text class="oq-label">配送中</text>
+      </view>
+      <view class="order-quick-item" bindtap="goToOrders" data-status="completed">
+        <text class="oq-icon">✅</text>
+        <text class="oq-label">已完成</text>
+      </view>
     </view>
   </view>
 
-  <view class="menu-group card">
-    <view class="menu-item">
-      <text>联系客服</text>
-      <text class="arrow">></text>
+  <!-- 常用服务 -->
+  <view class="card service-grid">
+    <view class="service-item" bindtap="goToAddress">
+      <view class="svc-icon-wrap addr">
+        <text class="svc-icon">📍</text>
+      </view>
+      <text class="svc-label">收货地址</text>
     </view>
-    <view class="menu-item">
-      <text>关于我们</text>
-      <text class="arrow">></text>
+    <view class="service-item" bindtap="goToCoupons">
+      <view class="svc-icon-wrap coupon">
+        <text class="svc-icon">🎫</text>
+      </view>
+      <text class="svc-label">优惠券中心</text>
+    </view>
+    <view class="service-item" bindtap="goToFavorites">
+      <view class="svc-icon-wrap fav">
+        <text class="svc-icon">❤️</text>
+      </view>
+      <text class="svc-label">我的收藏</text>
+    </view>
+    <view class="service-item" bindtap="goToCart">
+      <view class="svc-icon-wrap cart">
+        <text class="svc-icon">🛒</text>
+      </view>
+      <text class="svc-label">购物车</text>
+    </view>
+    <view class="service-item">
+      <view class="svc-icon-wrap contact" bindtap="contactSupport">
+        <text class="svc-icon">💬</text>
+      </view>
+      <text class="svc-label">联系客服</text>
+    </view>
+    <view class="service-item">
+      <view class="svc-icon-wrap about" bindtap="showAbout">
+        <text class="svc-icon">ℹ️</text>
+      </view>
+      <text class="svc-label">关于我们</text>
     </view>
   </view>
 

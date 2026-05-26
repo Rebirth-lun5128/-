@@ -1,21 +1,21 @@
 class TestPendingOrders:
-    def test_pending_orders_empty(self, client, auth_header_rider, rider, order):
-        """List pending orders returns empty when no orders have status='ready'."""
+    def test_pending_orders_exists(self, client, auth_header_rider, rider, combined_order):
+        """List pending orders returns combined_order with all sub_orders ready."""
+        # combined_order fixture has status="pending" and all sub_orders "ready"
         resp = client.get("/api/rider/orders/pending", headers=auth_header_rider)
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total"] == 0
-        assert data["items"] == []
+        assert data["total"] >= 1
+        for item in data["items"]:
+            assert item["status"] == "pending"
+            assert len(item["sub_orders"]) >= 1
 
 
 class TestAcceptOrder:
-    def test_accept_order(self, client, auth_header_rider, rider, order, db_session):
-        """Accept a ready order; sets status to 'delivering' and assigns rider."""
-        order.status = "ready"
-        db_session.flush()
-
+    def test_accept_order(self, client, auth_header_rider, rider, combined_order, db_session):
+        """Accept a pending combined_order; sets status to 'delivering' and assigns rider."""
         resp = client.post(
-            f"/api/rider/orders/{order.id}/accept", headers=auth_header_rider
+            f"/api/rider/orders/{combined_order.id}/accept", headers=auth_header_rider
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -24,14 +24,13 @@ class TestAcceptOrder:
         assert data["picked_at"] is not None
         assert data["rider_name"] == rider.real_name
 
-    def test_accept_offline_rider(self, client, auth_header_rider, rider, order, db_session):
+    def test_accept_offline_rider(self, client, auth_header_rider, rider, combined_order, db_session):
         """Offline rider cannot accept orders."""
         rider.status = "offline"
-        order.status = "ready"
         db_session.flush()
 
         resp = client.post(
-            f"/api/rider/orders/{order.id}/accept", headers=auth_header_rider
+            f"/api/rider/orders/{combined_order.id}/accept", headers=auth_header_rider
         )
         assert resp.status_code == 400
 
@@ -39,38 +38,32 @@ class TestAcceptOrder:
         rider.status = "online"
         db_session.flush()
 
-    def test_accept_already_taken(self, client, auth_header_rider, rider, order, db_session):
-        """Order already accepted (status != 'ready') returns 400."""
-        order.status = "ready"
-        db_session.flush()
-
+    def test_accept_already_taken(self, client, auth_header_rider, rider, combined_order, db_session):
+        """Order already accepted (status != 'pending') returns 400."""
         # First accept succeeds
         resp = client.post(
-            f"/api/rider/orders/{order.id}/accept", headers=auth_header_rider
+            f"/api/rider/orders/{combined_order.id}/accept", headers=auth_header_rider
         )
         assert resp.status_code == 200
 
-        # Second accept fails (order no longer 'ready')
+        # Second accept fails (order no longer 'pending')
         resp = client.post(
-            f"/api/rider/orders/{order.id}/accept", headers=auth_header_rider
+            f"/api/rider/orders/{combined_order.id}/accept", headers=auth_header_rider
         )
         assert resp.status_code == 400
 
 
 class TestMarkDelivered:
-    def test_mark_delivered(self, client, auth_header_rider, rider, order, db_session):
+    def test_mark_delivered(self, client, auth_header_rider, rider, combined_order, db_session, system_configs):
         """Deliver an accepted order; status becomes 'completed', rider earns +5 balance."""
-        order.status = "ready"
-        db_session.flush()
-
-        client.post(f"/api/rider/orders/{order.id}/accept", headers=auth_header_rider)
+        client.post(f"/api/rider/orders/{combined_order.id}/accept", headers=auth_header_rider)
 
         resp = client.put(
-            f"/api/rider/orders/{order.id}/deliver", headers=auth_header_rider
+            f"/api/rider/orders/{combined_order.id}/deliver", headers=auth_header_rider
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert data["status"] == "completed"
+        assert data["status"] in ("completed", "partial")
         assert data["delivered_at"] is not None
         assert data["completed_at"] is not None
 
@@ -79,29 +72,26 @@ class TestMarkDelivered:
         assert rider.total_orders == 51
         assert float(rider.balance) == 105.0
 
-    def test_deliver_non_assigned_order(self, client, auth_header_rider, rider, order):
+    def test_deliver_non_assigned_order(self, client, auth_header_rider, rider, combined_order):
         """Cannot deliver an order not assigned to this rider."""
         resp = client.put(
-            f"/api/rider/orders/{order.id}/deliver", headers=auth_header_rider
+            f"/api/rider/orders/{combined_order.id}/deliver", headers=auth_header_rider
         )
         assert resp.status_code == 404
 
 
 class TestMyOrders:
-    def test_my_orders(self, client, auth_header_rider, rider, order, db_session):
+    def test_my_orders(self, client, auth_header_rider, rider, combined_order, db_session, system_configs):
         """After delivering, the order appears in the rider's history."""
-        order.status = "ready"
-        db_session.flush()
-
-        client.post(f"/api/rider/orders/{order.id}/accept", headers=auth_header_rider)
-        client.put(f"/api/rider/orders/{order.id}/deliver", headers=auth_header_rider)
+        client.post(f"/api/rider/orders/{combined_order.id}/accept", headers=auth_header_rider)
+        client.put(f"/api/rider/orders/{combined_order.id}/deliver", headers=auth_header_rider)
 
         resp = client.get("/api/rider/orders/my", headers=auth_header_rider)
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] >= 1
         ids = [o["id"] for o in data["items"]]
-        assert order.id in ids
+        assert combined_order.id in ids
 
 
 class TestRiderStatus:

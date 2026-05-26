@@ -59,8 +59,9 @@ class ConnectionManager:
         user_id: Optional[int] = None,
         merchant_user_id: Optional[int] = None,
         rider_user_id: Optional[int] = None,
+        broadcast_role: Optional[str] = None,
     ):
-        """推送订单事件给指定角色"""
+        """推送订单事件给指定角色或广播到某个角色"""
         msg = {"event": event, "order": order}
         if user_id:
             await self.send_to_user(user_id, msg)
@@ -68,6 +69,8 @@ class ConnectionManager:
             await self.send_to_user(merchant_user_id, msg)
         if rider_user_id:
             await self.send_to_user(rider_user_id, msg)
+        if broadcast_role:
+            await self.send_to_role(broadcast_role, msg)
 
     # ---- 同步包装 (供同步路由调用) ----
 
@@ -79,27 +82,30 @@ class ConnectionManager:
         user_id: Optional[int] = None,
         merchant_user_id: Optional[int] = None,
         rider_user_id: Optional[int] = None,
+        broadcast_role: Optional[str] = None,
     ):
         """push_order_event 的同步版本"""
         try:
             loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.ensure_future(
-                    self.push_order_event(event, order, user_id=user_id,
-                                          merchant_user_id=merchant_user_id,
-                                          rider_user_id=rider_user_id)
-                )
-            else:
-                loop.run_until_complete(
-                    self.push_order_event(event, order, user_id=user_id,
-                                          merchant_user_id=merchant_user_id,
-                                          rider_user_id=rider_user_id)
-                )
         except RuntimeError:
-            asyncio.run(
-                self.push_order_event(event, order, user_id=user_id,
-                                      merchant_user_id=merchant_user_id,
-                                      rider_user_id=rider_user_id)
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        if loop.is_running():
+            asyncio.ensure_future(
+                self.push_order_event(
+                    event, order,
+                    user_id=user_id, merchant_user_id=merchant_user_id,
+                    rider_user_id=rider_user_id, broadcast_role=broadcast_role,
+                )
+            )
+        else:
+            loop.run_until_complete(
+                self.push_order_event(
+                    event, order,
+                    user_id=user_id, merchant_user_id=merchant_user_id,
+                    rider_user_id=rider_user_id, broadcast_role=broadcast_role,
+                )
             )
 
 

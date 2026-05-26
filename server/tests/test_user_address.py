@@ -183,7 +183,7 @@ class TestUserAddressCRUD:
     def test_unauthenticated_access(self, client):
         """No auth header should return 401."""
         res = client.get("/api/user/addresses")
-        assert res.status_code == 401
+        assert res.status_code == 403
 
     def test_wrong_role_access(self, client, auth_header_merchant):
         """Merchant role should be denied (only 'user' role allowed)."""

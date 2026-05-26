@@ -1,0 +1,89 @@
+<view class="container" wx:if="{{store}}">
+  <!-- 店铺信息 -->
+  <view class="card">
+    <view class="detail-head">
+      <text class="detail-name">{{store.name}}</text>
+      <text class="tag {{store.verify_status === 'verified' ? 'tag-green' : store.verify_status === 'rejected' ? 'tag-red' : 'tag-orange'}}">
+        {{store.verify_status === 'unverified' ? '待核验' : store.verify_status === 'verified' ? '已通过' : '已拒绝'}}
+      </text>
+    </view>
+
+    <view class="detail-grid">
+      <view class="detail-item">
+        <text class="di-label">类型</text>
+        <text class="di-val">{{store.store_type === 'stall' ? '夜市摊位' : store.store_type === 'home_kitchen' ? '家庭厨房' : '平台自营'}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="di-label">分类</text>
+        <text class="di-val">{{store.category}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="di-label">电话</text>
+        <text class="di-val">{{store.phone}}</text>
+      </view>
+      <view class="detail-item" wx:if="{{store.stall_location}}">
+        <text class="di-label">摊位位置</text>
+        <text class="di-val">{{store.stall_location}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="di-label">核验方式</text>
+        <text class="di-val">{{store.verify_method || '—'}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="di-label">入驻时间</text>
+        <text class="di-val">{{store.created_at_display}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 抽成比例修改 -->
+  <view class="card">
+    <text class="section-title">⚙️ 抽成配置</text>
+    <view class="setting-row">
+      <text class="setting-label">抽成比例</text>
+      <view wx:if="{{!editingRate}}" class="setting-val" bindtap="startEditRate">
+        <text class="setting-num">{{store.commission_rate_display}}%</text>
+        <text class="setting-hint">点击修改</text>
+      </view>
+      <view wx:else class="edit-inline">
+        <input class="edit-input" type="digit" value="{{editRateVal}}" bindinput="onRateInput" placeholder="0-100" />
+        <text class="edit-unit">%</text>
+        <view class="edit-btn save" bindtap="saveRate">保存</view>
+        <view class="edit-btn cancel" bindtap="cancelEdit">取消</view>
+      </view>
+    </view>
+    <view class="setting-row">
+      <text class="setting-label">配送附加费</text>
+      <view wx:if="{{!editingSurcharge}}" class="setting-val" bindtap="startEditSurcharge">
+        <text class="setting-num">¥{{store.delivery_surcharge || 0}}</text>
+        <text class="setting-hint">点击修改</text>
+      </view>
+      <view wx:else class="edit-inline">
+        <input class="edit-input" type="digit" value="{{editSurchargeVal}}" bindinput="onSurchargeInput" placeholder="0" />
+        <text class="edit-unit">元</text>
+        <view class="edit-btn save" bindtap="saveSurcharge">保存</view>
+        <view class="edit-btn cancel" bindtap="cancelSurcharge">取消</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 核验操作 -->
+  <view class="card" wx:if="{{store.verify_status === 'unverified'}}">
+    <text class="section-title">🔍 核验操作</text>
+    <view class="btn-group">
+      <view class="btn-success" bindtap="verify" data-status="verified" data-method="现场核验">通过 · 现场核验</view>
+      <view class="btn-primary" bindtap="verify" data-status="verified" data-method="视频核验">通过 · 视频核验</view>
+      <view class="btn-danger" bindtap="verify" data-status="rejected">拒绝</view>
+    </view>
+  </view>
+
+  <!-- 店铺控制 -->
+  <view class="card" wx:if="{{store.verify_status === 'verified'}}">
+    <text class="section-title">🛠 店铺控制</text>
+    <view class="btn-group">
+      <view class="btn-danger" bindtap="toggleStatus">
+        {{store.status === 'open' ? '强制关店' : '恢复营业'}}
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,207 @@
+/* ====== 全局变量 ====== */
+page {
+  --primary: #6C5CE7;
+  --primary-light: #A29BFE;
+  --primary-dark: #5A4BD1;
+  --success: #00B894;
+  --warning: #FDCB6E;
+  --danger: #E17055;
+  --info: #74B9FF;
+  --bg: #f0f2f7;
+  --card-radius: 20rpx;
+
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 28rpx;
+  color: #333;
+  background: #f0f2f7;
+}
+
+/* ====== 容器 ====== */
+.container {
+  padding: 24rpx;
+}
+
+/* ====== 卡片 ====== */
+.card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0,0,0,0.04);
+}
+
+/* ====== 主按钮 ====== */
+.btn-primary {
+  background: linear-gradient(135deg, #6C5CE7, #A29BFE);
+  color: #fff;
+  border-radius: 48rpx;
+  font-size: 32rpx;
+  padding: 24rpx 0;
+  text-align: center;
+  border: none;
+  font-weight: 600;
+  box-shadow: 0 6rpx 24rpx rgba(108,92,231,0.3);
+}
+.btn-primary:active {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #00B894, #55efc4);
+  color: #fff;
+  border-radius: 48rpx;
+  font-size: 26rpx;
+  padding: 16rpx 32rpx;
+  text-align: center;
+  font-weight: 600;
+}
+.btn-danger {
+  background: linear-gradient(135deg, #E17055, #d63031);
+  color: #fff;
+  border-radius: 48rpx;
+  font-size: 26rpx;
+  padding: 16rpx 32rpx;
+  text-align: center;
+  font-weight: 600;
+}
+.btn-sm {
+  font-size: 24rpx;
+  padding: 14rpx 28rpx;
+}
+
+.btn-group {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+/* ====== 标签 ====== */
+.tag {
+  display: inline-block;
+  font-size: 22rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 24rpx;
+  font-weight: 600;
+}
+.tag-purple { background: #EDE7F6; color: #6C5CE7; }
+.tag-orange { background: #FFF3E0; color: #E17055; }
+.tag-green  { background: #E8F5E9; color: #00B894; }
+.tag-red    { background: #FFEBEE; color: #d63031; }
+.tag-blue   { background: #E3F2FD; color: #0984e3; }
+.tag-gray   { background: #ECEFF1; color: #90A4AE; }
+
+/* ====== 价格 ====== */
+.price {
+  color: #E17055;
+  font-weight: 700;
+}
+
+/* ====== Tabs ====== */
+.tabs {
+  display: flex;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 8rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.03);
+}
+.tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  font-size: 26rpx;
+  color: #999;
+  border-radius: 14rpx;
+  transition: all 0.2s;
+}
+.tab-item.active {
+  background: linear-gradient(135deg, #6C5CE7, #A29BFE);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4rpx 14rpx rgba(108,92,231,0.25);
+}
+
+/* ====== 筛选栏 ====== */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+.filter-item {
+  font-size: 24rpx;
+  color: #999;
+  padding: 12rpx 24rpx;
+  border-radius: 28rpx;
+  background: #fff;
+  border: 2rpx solid #eee;
+}
+.filter-item.active {
+  color: #fff;
+  background: #6C5CE7;
+  border-color: #6C5CE7;
+  font-weight: 600;
+}
+
+/* ====== 信息行 ====== */
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12rpx 0;
+  font-size: 26rpx;
+  color: #666;
+}
+.info-row text:first-child {
+  color: #999;
+}
+
+/* ====== 空状态 ====== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+  color: #bbb;
+  font-size: 28rpx;
+}
+
+/* ====== 区域标题 ====== */
+.section-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+/* ====== 表单 ====== */
+.form-item {
+  margin-bottom: 28rpx;
+}
+.form-item .label {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 12rpx;
+}
+.form-item input,
+.form-item picker {
+  width: 100%;
+  background: #f8f9fc;
+  border-radius: 16rpx;
+  padding: 22rpx 24rpx;
+  font-size: 30rpx;
+  box-sizing: border-box;
+  border: 2rpx solid transparent;
+  transition: border 0.2s;
+}
+.form-item input:focus {
+  border-color: #6C5CE7;
+  background: #fff;
+}

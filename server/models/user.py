@@ -15,16 +15,15 @@ class User(Base):
     avatar = Column(String(500), default="")
     phone = Column(String(20), default="")
     hashed_password = Column(String(200), default="")
-    role = Column(SQLEnum("user", "merchant", "rider", "region_admin", "super_admin"), nullable=False, default="user")
-    region_id = Column(Integer, ForeignKey("regions.id"), nullable=True)
+    role = Column(SQLEnum("user", "merchant", "rider", "district_admin", "super_admin"), nullable=False, default="user")
+    district_id = Column(Integer, ForeignKey("districts.id"), nullable=True)
     status = Column(Integer, default=1)
     last_login = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
-    # 关系
     addresses = relationship("UserAddress", back_populates="user", lazy="dynamic")
-    restaurant = relationship("Restaurant", back_populates="owner", uselist=False)
+    store = relationship("Store", back_populates="owner", uselist=False)
     rider_info = relationship("Rider", back_populates="user", uselist=False)
 
 

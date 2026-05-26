@@ -1,8 +1,9 @@
 <view class="login-page">
   <view class="login-header">
-    <text class="title">骑手登录</text>
+    <text class="title">{{isRegister ? '骑手注册' : '骑手登录'}}</text>
     <text class="subtitle">开启配送之旅</text>
   </view>
+
   <view class="form">
     <view class="form-item">
       <text class="label">手机号</text>
@@ -10,8 +11,17 @@
     </view>
     <view class="form-item">
       <text class="label">密码</text>
-      <input type="password" placeholder="请输入密码" value="{{password}}" bindinput="onPwdInput" />
+      <view class="pwd-row">
+        <input class="pwd-input" type="text" password="{{!showPwd}}" placeholder="请输入密码" value="{{password}}" bindinput="onPwdInput" />
+        <view class="pwd-eye" bindtap="togglePwd">
+          <text>{{showPwd ? '🙈' : '👁️'}}</text>
+        </view>
+      </view>
     </view>
   </view>
-  <button class="btn-primary" bindtap="doLogin">登录</button>
+
+  <button class="btn-primary" bindtap="doLogin">{{isRegister ? '注册' : '登录'}}</button>
+  <view class="toggle" bindtap="toggleMode">
+    {{isRegister ? '已有账号？去登录' : '没有账号？去注册'}}
+  </view>
 </view>

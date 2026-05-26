@@ -1,29 +1,51 @@
 <view class="container" wx:if="{{dashboard}}">
-  <!-- 营业状态 -->
-  <view class="status-bar">
-    <text class="status-dot {{dashboard.status === 'open' ? 'online' : ''}}"></text>
-    <text>店铺状态: {{dashboard.status === 'open' ? '营业中' : '已休息'}}</text>
-    <text class="go-shop" bindtap="goToShop">管理</text>
+  <!-- 店铺头部卡片 -->
+  <view class="shop-header">
+    <view class="shop-info">
+      <text class="shop-status-tag {{dashboard.status === 'open' ? 'open' : 'closed'}}">
+        {{dashboard.status === 'open' ? '🟢 营业中' : '⚫ 已收摊'}}
+      </text>
+      <text class="shop-tip" wx:if="{{dashboard.verify_status !== 'verified'}}"> · 待核验</text>
+    </view>
+    <view class="shop-switch-row">
+      <text class="switch-desc">点击切换营业状态</text>
+      <view class="status-badge {{dashboard.status === 'open' ? 'open' : dashboard.status === 'resting' ? 'resting' : 'closed'}}" bindtap="toggleStatus">
+        <text>{{dashboard.status === 'open' ? '🟢 营业中' : dashboard.status === 'resting' ? '🟡 休息中' : '⚫ 已收摊'}}</text>
+        <text class="switch-hint">点击切换</text>
+      </view>
+    </view>
   </view>
 
   <!-- 数据卡片 -->
   <view class="stats-grid">
-    <view class="stat-card" bindtap="goToOrders">
-      <text class="stat-num">{{dashboard.today_orders}}</text>
-      <text class="stat-label">今日订单</text>
-    </view>
-    <view class="stat-card" bindtap="goToOrders" data-status="pending_accept">
-      <text class="stat-num warn">{{dashboard.pending_orders}}</text>
-      <text class="stat-label">待处理</text>
-    </view>
-    <view class="stat-card">
-      <text class="stat-num price">{{dashboard.today_revenue}}</text>
-      <text class="stat-label">今日营收</text>
-    </view>
-    <view class="stat-card">
-      <text class="stat-num">{{dashboard.monthly_sales || 0}}</text>
-      <text class="stat-label">月销量</text>
-    </view>
+    <navigator class="stat-card" hover-class="stat-card-hover" url="/pages/orders/orders">
+      <view class="stat-icon order-icon">📋</view>
+      <view class="stat-body">
+        <text class="stat-num">{{dashboard.today_orders}}</text>
+        <text class="stat-label">今日订单</text>
+      </view>
+    </navigator>
+    <navigator class="stat-card" hover-class="stat-card-hover" url="/pages/orders/orders?status=pending_accept">
+      <view class="stat-icon pending-icon">⏳</view>
+      <view class="stat-body">
+        <text class="stat-num {{dashboard.pending_orders > 0 ? 'warn' : ''}}">{{dashboard.pending_orders}}</text>
+        <text class="stat-label">待处理</text>
+      </view>
+    </navigator>
+    <navigator class="stat-card" hover-class="stat-card-hover" url="/pages/settlement/settlement">
+      <view class="stat-icon revenue-icon">💰</view>
+      <view class="stat-body">
+        <text class="stat-num price">¥{{dashboard.today_revenue}}</text>
+        <text class="stat-label">今日营收</text>
+      </view>
+    </navigator>
+    <navigator class="stat-card" hover-class="stat-card-hover" url="/pages/settlement/settlement">
+      <view class="stat-icon sales-icon">🔥</view>
+      <view class="stat-body">
+        <text class="stat-num">{{dashboard.monthly_sales || 0}}</text>
+        <text class="stat-label">月销量</text>
+      </view>
+    </navigator>
   </view>
 
   <!-- 快捷操作 -->
@@ -31,21 +53,41 @@
     <text class="section-title">快捷操作</text>
     <view class="quick-actions">
       <view class="quick-item" bindtap="goToOrders" data-status="pending_accept">
-        <text class="quick-icon">📋</text>
-        <text>新订单</text>
+        <view class="quick-icon-wrap new-order">
+          <text class="quick-icon">📋</text>
+        </view>
+        <text class="quick-label">新订单</text>
       </view>
       <view class="quick-item" bindtap="goToMenu">
-        <text class="quick-icon">📝</text>
-        <text>菜单管理</text>
+        <view class="quick-icon-wrap menu">
+          <text class="quick-icon">📝</text>
+        </view>
+        <text class="quick-label">商品管理</text>
       </view>
       <view class="quick-item" bindtap="goToShop">
-        <text class="quick-icon">🏪</text>
-        <text>店铺设置</text>
+        <view class="quick-icon-wrap shop">
+          <text class="quick-icon">⚙️</text>
+        </view>
+        <text class="quick-label">店铺设置</text>
+      </view>
+      <view class="quick-item" bindtap="goToModifications">
+        <view class="quick-icon-wrap review {{dashboard.pending_modifications > 0 ? 'has-badge' : ''}}">
+          <text class="quick-icon">🔔</text>
+          <view class="badge" wx:if="{{dashboard.pending_modifications > 0}}">{{dashboard.pending_modifications}}</view>
+        </view>
+        <text class="quick-label">待审核</text>
       </view>
       <view class="quick-item" bindtap="goToOrders">
-        <text class="quick-icon">📊</text>
-        <text>全部订单</text>
+        <view class="quick-icon-wrap all-order">
+          <text class="quick-icon">📊</text>
+        </view>
+        <text class="quick-label">全部订单</text>
       </view>
     </view>
   </view>
+</view>
+
+<!-- 未加载时的空状态 -->
+<view class="empty-state" wx:else>
+  <text>加载中...</text>
 </view>

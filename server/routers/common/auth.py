@@ -11,7 +11,7 @@ from config import settings
 from database import get_db
 from models.user import User
 from ratelimit import strict_limiter
-from schemas.user import LoginOut, UserOut, WechatLoginIn, PhoneLoginIn
+from schemas.user import LoginOut, UserOut, UserUpdate, WechatLoginIn, PhoneLoginIn
 
 logger = logging.getLogger("app.auth")
 
@@ -93,11 +93,12 @@ def phone_register(body: PhoneLoginIn, db: Session = Depends(get_db), _rl=Depend
     if existing:
         raise HTTPException(status_code=400, detail="手机号已注册")
 
+    role = body.role if body.role in ("user", "merchant", "rider") else "user"
     user = User(
         openid=f"phone_{body.phone}",
         nickname=body.phone[-4:],
         phone=body.phone,
-        role="merchant",
+        role=role,
         hashed_password=hash_password(body.password),
     )
     db.add(user)
@@ -108,4 +109,25 @@ def phone_register(body: PhoneLoginIn, db: Session = Depends(get_db), _rl=Depend
 
 @router.get("/me", response_model=UserOut)
 def get_me(user: User = Depends(get_current_user)):
+    return UserOut.model_validate(user)
+
+
+@router.put("/profile", response_model=UserOut)
+def update_profile(
+    body: UserUpdate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """更新用户资料（昵称、头像、手机号）"""
+    if body.nickname is not None:
+        user.nickname = body.nickname
+    if body.avatar is not None:
+        user.avatar = body.avatar
+    if body.phone is not None:
+        existing = db.query(User).filter(User.phone == body.phone, User.id != user.id).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="该手机号已被使用")
+        user.phone = body.phone
+    db.commit()
+    db.refresh(user)
     return UserOut.model_validate(user)
