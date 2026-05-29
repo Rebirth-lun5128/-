@@ -17,12 +17,12 @@ onActivated(loadStats)
 async function loadStats() {
   loading.value = true
   try {
-    await authStore.refreshUser?.()
+    await authStore.refreshUser()
     const [all, pending, delivering, coupons] = await Promise.all([
-      api.get('/api/user/orders', { page: 1, page_size: 1, status: '' }).catch(() => ({ total: 0 })),
-      api.get('/api/user/orders', { page: 1, page_size: 1, status: 'pending_pay' }).catch(() => ({ total: 0 })),
-      api.get('/api/user/orders', { page: 1, page_size: 1, status: 'delivering' }).catch(() => ({ total: 0 })),
-      api.get('/api/user/coupons/my').catch(() => []),
+      api.get('/api/user/orders', { page: 1, page_size: 1, status: '' }, { silent: true }).catch(() => ({ total: 0 })),
+      api.get('/api/user/orders', { page: 1, page_size: 1, status: 'pending_pay' }, { silent: true }).catch(() => ({ total: 0 })),
+      api.get('/api/user/orders', { page: 1, page_size: 1, status: 'delivering' }, { silent: true }).catch(() => ({ total: 0 })),
+      api.get('/api/user/coupons/my', {}, { silent: true }).catch(() => []),
     ])
     orderCount.value = all.total || 0
     pendingCount.value = pending.total || 0

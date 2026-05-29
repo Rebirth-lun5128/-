@@ -17,6 +17,8 @@ const isCombined = computed(() => storeIds.value.length > 1)
 const storeGroups = ref([])
 const itemsTotal = ref(0)
 const deliveryFee = ref(0)
+const deliveryFeeOriginal = ref(0)
+const deliveryFeeDiscount = ref(0)
 const couponDiscount = ref(0)
 const totalPrice = computed(() => Math.max(0, itemsTotal.value + deliveryFee.value - couponDiscount.value))
 const address = ref(null)
@@ -24,24 +26,47 @@ const remark = ref('')
 const coupons = ref([])
 const selectedCoupon = ref(null)
 const showCouponPopup = ref(false)
+const loading = ref(false)
 
-onMounted(() => {
+onMounted(async () => {
+  await loadAddress()
+  await loadCoupons()
+  buildStoreGroups()
+  await loadDeliveryFee()
+})
+
+function buildStoreGroups() {
   const groups = []
   let total = 0
   for (const sid of storeIds.value) {
     const items = cartStore.items.filter(i => i.storeId === sid)
     if (items.length === 0) continue
     const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0)
-    const storeName = items[0]?.storeName || items[0]?.name || '未知店铺'
+    const storeName = items[0]?.storeName || '未知店铺'
     groups.push({ store_id: sid, store_name: storeName, items, subtotal })
     total += subtotal
   }
   storeGroups.value = groups
   itemsTotal.value = total
+}
 
-  loadAddress()
-  loadCoupons()
-})
+async function loadDeliveryFee() {
+  try {
+    let totalFee = 0
+    let totalOriginal = 0
+    for (const sid of storeIds.value) {
+      try {
+        const store = await api.get(`/api/user/stores/${sid}`, {}, { silent: true })
+        const fee = parseFloat(store.delivery_fee) || 0
+        totalOriginal += fee
+        totalFee += fee
+      } catch {}
+    }
+    deliveryFeeOriginal.value = totalOriginal
+    deliveryFee.value = totalFee
+    deliveryFeeDiscount.value = Math.max(0, totalOriginal - totalFee)
+  } catch {}
+}
 
 async function loadAddress() {
   try {
@@ -51,14 +76,14 @@ async function loadAddress() {
     } else {
       address.value = addresses.find(a => a.is_default) || addresses[0] || null
     }
-  } catch { }
+  } catch {}
 }
 
 async function loadCoupons() {
   try {
     const res = await api.get('/api/user/coupons/my')
     coupons.value = res.filter(c => c.status === 'unused')
-  } catch { }
+  } catch {}
 }
 
 function chooseAddress() {
@@ -83,32 +108,47 @@ async function submitOrder() {
     showToast({ message: '请选择收货地址', type: 'fail' })
     return
   }
-  const body = {
-    address_id: address.value.id,
-    sub_orders: storeGroups.value.map(g => ({
-      store_id: g.store_id,
-      items: g.items.map(item => ({
-        product_id: item.productId,
-        name: item.name,
-        image: item.image || '',
-        price: item.price,
-        quantity: item.quantity,
-      })),
-    })),
-    remark: remark.value,
-  }
-  if (selectedCoupon.value) body.user_coupon_id = selectedCoupon.value.id
-
+  loading.value = true
   try {
+    const body = {
+      address_id: address.value.id,
+      sub_orders: storeGroups.value.map(g => ({
+        store_id: g.store_id,
+        items: g.items.map(item => ({
+          product_id: item.productId,
+          name: item.name,
+          image: item.image || '',
+          price: item.price,
+          quantity: item.quantity,
+        })),
+      })),
+      remark: remark.value,
+    }
+    if (selectedCoupon.value) body.user_coupon_id = selectedCoupon.value.id
+
     const order = await api.post('/api/user/orders', body)
     for (const sid of storeIds.value) cartStore.clearByStore(sid)
-    await showDialog({ title: '确认支付', message: `订单金额: ¥${order.total_price}\n(开发阶段为模拟支付)` })
+
+    try {
+      await showDialog({ title: '确认支付', message: `订单金额: ¥${order.total_price}\n(开发阶段为模拟支付)` })
+    } catch {
+      // 用户取消支付弹窗 → 订单保留在 pending_pay 状态
+      showToast({ message: '订单已创建，请尽快支付', type: 'success' })
+      setTimeout(() => router.replace('/orders'), 800)
+      return
+    }
+
     try {
       await api.post(`/api/user/orders/${order.id}/pay`)
       showToast({ message: '支付成功', type: 'success' })
       setTimeout(() => router.replace('/orders'), 800)
-    } catch { }
-  } catch { }
+    } catch {
+      showToast({ message: '订单已创建，请尽快支付', type: 'success' })
+      setTimeout(() => router.replace('/orders'), 800)
+    }
+  } catch {} finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -145,7 +185,16 @@ async function submitOrder() {
     <!-- 费用明细 -->
     <div class="bg-white mt-2 p-3">
       <div class="flex justify-between mb-2"><span class="text-gray">商品总额</span><span>¥{{ itemsTotal.toFixed(2) }}</span></div>
-      <div class="flex justify-between mb-2"><span class="text-gray">配送费</span><span>¥{{ deliveryFee.toFixed(2) }}</span></div>
+      <div class="flex justify-between mb-2">
+        <span class="text-gray">配送费</span>
+        <span>
+          <span v-if="deliveryFeeOriginal > deliveryFee" class="text-gray" style="text-decoration:line-through;font-size:12px">¥{{ deliveryFeeOriginal.toFixed(2) }}</span>
+          <span :class="deliveryFee > 0 ? '' : 'text-primary'">{{ deliveryFee > 0 ? '¥' + deliveryFee.toFixed(2) : '免配送费' }}</span>
+        </span>
+      </div>
+      <div class="flex justify-between mb-2" v-if="deliveryFeeDiscount > 0">
+        <span class="text-gray">配送费满减</span><span class="text-danger">−¥{{ deliveryFeeDiscount.toFixed(2) }}</span>
+      </div>
       <div class="flex justify-between mb-2" v-if="couponDiscount > 0"><span class="text-gray">优惠券</span><span class="text-danger">−¥{{ couponDiscount.toFixed(2) }}</span></div>
     </div>
 
@@ -171,7 +220,7 @@ async function submitOrder() {
         <span class="text-primary font-bold text-xl ml-1">¥{{ totalPrice.toFixed(2) }}</span>
         <span class="text-sm text-gray ml-2" v-if="isCombined">跨店合单</span>
       </div>
-      <van-button type="primary" round color="#ff6b35" @click="submitOrder" style="height:44px;min-width:120px">
+      <van-button type="primary" round color="#ff6b35" :loading="loading" @click="submitOrder" style="height:44px;min-width:120px">
         提交订单
       </van-button>
     </div>

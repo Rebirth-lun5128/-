@@ -17,8 +17,10 @@ http.interceptors.request.use((config) => {
 http.interceptors.response.use(
   (res) => res,
   (err) => {
-    const msg = err.response?.data?.detail || err.message || '网络错误'
-    showToast({ message: msg, type: 'fail' })
+    if (!err.config?.silent) {
+      const msg = err.response?.data?.detail || err.message || '网络错误'
+      showToast({ message: msg, type: 'fail' })
+    }
     if (err.response?.status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
@@ -29,10 +31,10 @@ http.interceptors.response.use(
 )
 
 export const api = {
-  get: (url, params) => http.get(url, { params }).then((r) => r.data),
-  post: (url, data) => http.post(url, data).then((r) => r.data),
-  put: (url, data) => http.put(url, data).then((r) => r.data),
-  del: (url) => http.delete(url).then((r) => r.data),
+  get: (url, params, opts) => http.get(url, { params, ...opts }).then((r) => r.data),
+  post: (url, data, opts) => http.post(url, data, opts).then((r) => r.data),
+  put: (url, data, opts) => http.put(url, data, opts).then((r) => r.data),
+  del: (url, opts) => http.delete(url, opts).then((r) => r.data),
 }
 
 export default http

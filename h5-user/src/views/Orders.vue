@@ -2,6 +2,7 @@
 import { ref, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '../utils/api'
+import { getOrderStatusText, getOrderStatusColor } from '../utils/util'
 
 const router = useRouter()
 
@@ -12,15 +13,6 @@ const orders = ref([])
 const page = ref(1)
 const hasMore = ref(true)
 const loading = ref(false)
-
-function statusText(s) {
-  const map = { pending_pay: '待支付', pending: '处理中', pending_accept: '等待接单', preparing: '备餐中', ready: '待取餐', delivering: '配送中', delivered: '已送达', completed: '已完成', partial: '部分完成', cancelled: '已取消' }
-  return map[s] || s
-}
-function statusColor(s) {
-  const map = { pending_pay: '#FF9800', pending: '#FF6B35', pending_accept: '#FF6B35', preparing: '#2196F3', ready: '#4CAF50', delivering: '#2196F3', delivered: '#4CAF50', completed: '#999', partial: '#FF9800', cancelled: '#999' }
-  return map[s] || '#999'
-}
 
 onActivated(() => loadOrders())
 
@@ -34,13 +26,13 @@ async function loadOrders() {
     const res = await api.get('/api/user/orders', params)
     const items = (res.items || []).map(o => ({
       ...o,
-      statusText: statusText(o.status),
-      statusColor: statusColor(o.status),
+      statusText: getOrderStatusText(o.status),
+      statusColor: getOrderStatusColor(o.status),
     }))
     orders.value = page.value === 1 ? items : [...orders.value, ...items]
     page.value++
     hasMore.value = items.length < res.total
-  } catch { } finally {
+  } catch {} finally {
     loading.value = false
   }
 }

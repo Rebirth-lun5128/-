@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { api } from '../utils/api'
 
 export const authStore = reactive({
   token: localStorage.getItem('token') || '',
@@ -25,5 +26,13 @@ export const authStore = reactive({
   updateUserInfo(info) {
     this.userInfo = { ...this.userInfo, ...info }
     localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
+  },
+
+  async refreshUser() {
+    try {
+      const info = await api.get('/api/common/auth/me')
+      this.userInfo = info
+      localStorage.setItem('userInfo', JSON.stringify(info))
+    } catch {}
   },
 })
