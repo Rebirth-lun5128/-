@@ -34,7 +34,7 @@
       <view class="category-title">{{item.name}}</view>
       <view
         class="menu-item"
-        wx:for="{{item.items}}"
+        wx:for="{{item.products}}"
         wx:key="id"
         wx:if="{{item.status === 1}}"
       >
@@ -66,13 +66,13 @@
 
   <!-- 底部购物车栏 -->
   <view class="cart-bar" wx:if="{{cartCount > 0}}">
-    <view class="cart-icon-wrap" bindtap="toggleCartPopup">
+    <view class="cart-icon-wrap" bindtap="goToCart">
       <view class="cart-icon">🛒</view>
       <view class="cart-badge" wx:if="{{cartCount > 0}}">{{cartCount}}</view>
     </view>
-    <view class="cart-info">
-      <text class="price">{{cartTotal}}</text>
-      <text class="delivery-fee">另需配送¥{{restaurant.delivery_fee}}</text>
+    <view class="cart-info" bindtap="goToCart">
+      <text class="price">¥{{cartTotal}}</text>
+      <text class="delivery-fee">共{{cartCount}}件</text>
     </view>
     <view class="btn-primary cart-submit" bindtap="goToConfirm">去结算</view>
   </view>

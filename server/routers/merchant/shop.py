@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from auth import require_merchant
@@ -181,11 +181,11 @@ def settlement(user: User = Depends(require_merchant), db: Session = Depends(get
 
 @router.post("/withdraw")
 def withdraw(
-    amount: float = Query(..., gt=0),
+    amount: float = Body(..., gt=0, embed=True),
     user: User = Depends(require_merchant),
     db: Session = Depends(get_db),
 ):
-    """商家提现"""
+    """商家申请结算（管理员审核后线下打款）"""
     store = _get_merchant_store(user, db)
 
     total_revenue = db.query(func.coalesce(func.sum(SubOrder.items_total), 0)).filter(
@@ -203,22 +203,27 @@ def withdraw(
         Settlement.status == "paid",
     ).scalar() or 0
 
-    pending = max(0, net_revenue - float(settled_amount))
-    if amount > pending:
-        raise HTTPException(status_code=400, detail=f"可提现金额不足，当前可提现 ¥{pending:.2f}")
+    pending_settlement = db.query(func.coalesce(func.sum(Settlement.net_amount), 0)).filter(
+        Settlement.target_type == "store",
+        Settlement.target_id == store.id,
+        Settlement.status == "pending",
+    ).scalar() or 0
+
+    available = max(0, net_revenue - float(settled_amount) - float(pending_settlement))
+    if amount > available:
+        raise HTTPException(status_code=400, detail=f"可结算金额不足，当前可结算 ¥{available:.2f}")
     if amount < 1:
-        raise HTTPException(status_code=400, detail="提现金额不能少于1元")
+        raise HTTPException(status_code=400, detail="结算金额不能少于1元")
 
     period = datetime.now().strftime("%Y-%m")
     db.add(Settlement(
         target_type="store", target_id=store.id,
         amount=amount, fee=0, net_amount=amount,
-        period=period, status="paid",
-        paid_at=datetime.now(),
+        period=period, status="pending",
     ))
     db.commit()
     return {
-        "message": f"已提现 ¥{amount:.2f} 到微信零钱",
-        "withdraw_amount": amount,
-        "remain": round(pending - amount, 2),
+        "message": f"已提交 ¥{amount:.2f} 结算申请，等待管理员处理",
+        "settlement_amount": amount,
+        "remain": round(available - amount, 2),
     }

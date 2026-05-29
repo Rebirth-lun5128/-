@@ -1,3 +1,35 @@
+/* ====== 新订单提醒条 ====== */
+.new-order-bar {
+  background: linear-gradient(135deg, #E17055, #d63031);
+  border-radius: 16rpx;
+  padding: 16rpx 24rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  animation: pulse-bar 1.5s ease-in-out infinite;
+}
+@keyframes pulse-bar {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+.no-dot {
+  width: 16rpx; height: 16rpx;
+  border-radius: 50%;
+  background: #fff;
+  animation: blink-dot 0.8s ease-in-out infinite;
+}
+@keyframes blink-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.no-text {
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 600;
+  flex: 1;
+}
+
 /* ====== 欢迎横幅 ====== */
 .welcome-banner {
   background: linear-gradient(135deg, #1a1940, #2d2b6b, #3d3b9b);
@@ -229,3 +261,154 @@
 .quick-txt { font-size: 22rpx; color: #666; font-weight: 500; }
 .sub-hover { opacity: 0.8; transform: scale(0.97); }
 .quick-hover { opacity: 0.7; }
+
+/* ====== 配送模式卡片 ====== */
+.delivery-card { margin-bottom: 28rpx; }
+.delivery-hdr {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16rpx;
+}
+.delivery-title { font-size: 28rpx; font-weight: 700; color: #333; }
+.delivery-sub { font-size: 22rpx; color: #999; margin-left: 12rpx; }
+
+/* 配送中 */
+.active-delivery { }
+.ad-banner {
+  display: flex; align-items: center; gap: 14rpx;
+  background: linear-gradient(135deg, #FFF3ED, #FFE8D6);
+  border-radius: 16rpx; padding: 20rpx 22rpx; margin-bottom: 16rpx;
+}
+.ad-label { font-size: 24rpx; font-weight: 700; color: #E17055; }
+.ad-order-no { font-size: 24rpx; color: #333; font-weight: 600; }
+.ad-info { font-size: 22rpx; color: #999; }
+.ad-actions { display: flex; justify-content: flex-end; }
+.ad-btn {
+  padding: 16rpx 40rpx; border-radius: 40rpx; font-size: 26rpx; font-weight: 700;
+}
+.ad-btn.deliver { background: #00B894; color: #fff; }
+
+/* 待接单 */
+.pending-section { margin-top: 10rpx; }
+.pending-title { font-size: 24rpx; color: #999; margin-bottom: 10rpx; display: block; }
+.pending-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 18rpx 0; border-bottom: 1rpx solid #f5f5f5;
+}
+.pending-item:last-child { border-bottom: none; }
+.pi-info { display: flex; gap: 16rpx; align-items: center; }
+.pi-no { font-size: 26rpx; color: #333; font-weight: 600; }
+.pi-detail { font-size: 22rpx; color: #999; }
+.pi-price { font-size: 26rpx; color: #E17055; font-weight: 700; }
+.pi-accept {
+  padding: 12rpx 28rpx; border-radius: 30rpx;
+  background: linear-gradient(135deg, #6C5CE7, #A29BFE);
+  color: #fff; font-size: 24rpx; font-weight: 600;
+}
+.pending-empty { text-align: center; padding: 20rpx 0; color: #ccc; font-size: 24rpx; }
+
+/* 收入概览 */
+.delivery-stats {
+  display: flex; gap: 20rpx; margin-top: 20rpx;
+  padding-top: 16rpx; border-top: 1rpx solid #f0f0f0;
+}
+.ds-item { display: flex; flex-direction: column; gap: 4rpx; }
+.ds-val { font-size: 28rpx; font-weight: 700; color: #6C5CE7; }
+.ds-label { font-size: 20rpx; color: #bbb; }
+.ds-withdraw {
+  padding: 10rpx 24rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, #6C5CE7, #A29BFE);
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: 600;
+  align-self: center;
+}
+
+/* 遮罩 */
+.mask {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4); z-index: 100;
+}
+
+/* 提现弹窗 */
+.withdraw-dialog {
+  position: fixed;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 36rpx 32rpx;
+  width: 560rpx;
+  z-index: 101;
+  box-shadow: 0 16rpx 48rpx rgba(0,0,0,0.15);
+}
+.wd-title { font-size: 30rpx; font-weight: 700; color: #333; display: block; }
+.wd-balance { font-size: 24rpx; color: #666; display: block; margin-top: 8rpx; }
+.wd-input-wrap {
+  display: flex; align-items: center; gap: 8rpx;
+  background: #f5f6fa; border-radius: 12rpx;
+  padding: 16rpx 24rpx; margin-top: 24rpx;
+}
+.wd-yuan { font-size: 32rpx; font-weight: 700; color: #333; }
+.wd-input { flex: 1; font-size: 32rpx; font-weight: 700; color: #333; }
+.wd-hint { font-size: 22rpx; color: #bbb; display: block; margin-top: 10rpx; }
+.wd-btns { display: flex; gap: 16rpx; margin-top: 28rpx; }
+.wd-btn { flex: 1; padding: 20rpx 0; border-radius: 40rpx; font-size: 28rpx; font-weight: 600; text-align: center; border: none; }
+.wd-btn.cancel { background: #f5f5f5; color: #666; }
+.wd-btn.confirm { background: linear-gradient(135deg, #6C5CE7, #A29BFE); color: #fff; }
+.wd-btn.confirm[disabled] { opacity: 0.5; }
+
+/* ====== 配送记录 / 提现记录 ====== */
+.delivery-section-sub {
+  margin-top: 10rpx;
+  padding-top: 10rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+.dss-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16rpx 0;
+}
+.dss-title { font-size: 24rpx; font-weight: 600; color: #666; }
+.dss-arrow { font-size: 20rpx; color: #bbb; }
+.dss-item {
+  padding: 14rpx 0;
+  border-bottom: 1rpx solid #f8f8f8;
+}
+.dss-item:last-child { border-bottom: none; }
+.dss-row {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.dss-order-no { font-size: 26rpx; color: #333; font-weight: 600; }
+.dss-amount { font-size: 28rpx; font-weight: 700; color: #E17055; }
+.dss-status {
+  font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 16rpx;
+  background: #f0f0f0; color: #999;
+}
+.dss-status.completed { background: #E8F8EE; color: #00B894; }
+.dss-status.partial { background: #FFF8E8; color: #E17055; }
+.dss-status.delivering { background: #EDE7FF; color: #6C5CE7; }
+.dss-status.pending { background: #FFF3E0; color: #E17055; }
+.dss-status.paid { background: #E8F8EE; color: #00B894; }
+.dss-row.sub { font-size: 22rpx; color: #999; margin-top: 4rpx; }
+
+/* ====== 退出登录 ====== */
+.logout-card {
+  margin: 30rpx 20rpx 40rpx;
+  padding: 24rpx 28rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.04);
+}
+.logout-info { font-size: 24rpx; color: #999; }
+.logout-btn {
+  padding: 14rpx 32rpx;
+  border-radius: 32rpx;
+  background: #f5f5f5;
+  font-size: 26rpx;
+  color: #d63031;
+  font-weight: 600;
+}
+.logout-btn:active { background: #ffe8e8; }

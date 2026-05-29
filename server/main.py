@@ -64,6 +64,8 @@ from routers.merchant.menu import router as merchant_menu_router
 from routers.merchant.order import router as merchant_order_router
 from routers.rider.orders import router as rider_router
 from routers.admin.dashboard import router as admin_router
+from routers.admin.product import router as admin_product_router
+from routers.admin.delivery import router as admin_delivery_router
 
 app.include_router(auth_router)
 app.include_router(pay_router)
@@ -78,6 +80,8 @@ app.include_router(merchant_menu_router)
 app.include_router(merchant_order_router)
 app.include_router(rider_router)
 app.include_router(admin_router)
+app.include_router(admin_product_router)
+app.include_router(admin_delivery_router)
 
 # 静态文件
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)

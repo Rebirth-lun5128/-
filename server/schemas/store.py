@@ -3,6 +3,17 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 
+# ---- District ----
+class DistrictUpdate(BaseModel):
+    name: Optional[str] = None
+    coverage: Optional[str] = None       # JSON string
+    delivery_fee: Optional[int] = None
+    delivery_range: Optional[int] = None
+    notice: Optional[str] = None
+    admin_id: Optional[int] = None
+    status: Optional[int] = None
+
+
 # ---- Product ----
 class ProductOut(BaseModel):
     id: int
@@ -92,6 +103,8 @@ class StoreOut(BaseModel):
     stall_location: str
     stall_photo: str
     id_card_photo: str
+    combinable_districts: Optional[List[int]] = None
+    district_name: str = ""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -112,6 +125,8 @@ class StoreUpdate(BaseModel):
     category: Optional[str] = None
     min_price: Optional[float] = None
     delivery_fee: Optional[float] = None
+    district_id: Optional[int] = None
+    combinable_districts: Optional[List[int]] = None
     delivery_time: Optional[str] = None
     business_hours: Optional[dict] = None
     notice: Optional[str] = None

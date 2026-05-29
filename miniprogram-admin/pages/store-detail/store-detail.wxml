@@ -11,7 +11,10 @@
     <view class="detail-grid">
       <view class="detail-item">
         <text class="di-label">类型</text>
-        <text class="di-val">{{store.store_type === 'stall' ? '夜市摊位' : store.store_type === 'home_kitchen' ? '家庭厨房' : '平台自营'}}</text>
+        <view class="di-val edit-type" bindtap="editStoreType">
+          <text>{{store.store_type === 'stall' ? '夜市摊位' : store.store_type === 'home_kitchen' ? '私房菜' : '平台自营'}}</text>
+          <text class="setting-hint">点击修改</text>
+        </view>
       </view>
       <view class="detail-item">
         <text class="di-label">分类</text>
@@ -33,6 +36,61 @@
         <text class="di-label">入驻时间</text>
         <text class="di-val">{{store.created_at_display}}</text>
       </view>
+    </view>
+  </view>
+
+  <!-- 区域配置 -->
+  <view class="card">
+    <text class="section-title">🗺️ 区域配置</text>
+    <view class="setting-row">
+      <text class="setting-label">所属分区</text>
+      <view class="setting-val" bindtap="openDistrictEdit">
+        <text class="setting-num">{{store.district_name || '未分配'}}</text>
+        <text class="setting-hint">点击修改</text>
+      </view>
+    </view>
+    <view class="setting-row">
+      <text class="setting-label">跨区合单</text>
+      <view class="setting-val" bindtap="openDistrictEdit">
+        <text class="setting-num">
+          {{store.combinable_districts && store.combinable_districts.length > 0 ? store.combinable_districts.length + ' 个区' : '仅本区'}}
+        </text>
+        <text class="setting-hint">点击修改</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 区域编辑弹窗 -->
+  <view class="mask" wx:if="{{showDistrictDialog}}" catchtap="closeDistrictDialog"></view>
+  <view class="dialog" wx:if="{{showDistrictDialog}}">
+    <view class="dialog-header">
+      <text>区域配置</text>
+      <text class="dialog-close" bindtap="closeDistrictDialog">✕</text>
+    </view>
+    <view class="dialog-body">
+      <view class="form-item">
+        <text class="fi-label">所属分区</text>
+        <picker mode="selector" range="{{districtOptions}}" range-key="name" bindchange="onDistrictChange">
+          <view class="form-picker">{{editDistrictName || '未分配'}}</view>
+        </picker>
+      </view>
+      <view class="form-item">
+        <text class="fi-label">可跨区合单的分区（多选）</text>
+        <view class="checkbox-list">
+          <view
+            class="checkbox-item {{editCombinable.indexOf(item.id) > -1 ? 'checked' : ''}}"
+            wx:for="{{districtOptions}}" wx:key="id"
+            bindtap="toggleCombinable" data-id="{{item.id}}"
+          >
+            <text>{{item.name}}</text>
+            <text class="check-mark" wx:if="{{editCombinable.indexOf(item.id) > -1}}">✓</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="dialog-footer">
+      <view class="btn-cancel" bindtap="closeDistrictDialog">取消</view>
+      <view class="btn-save" bindtap="saveDistrictSettings">保存</view>
     </view>
   </view>
 
@@ -81,6 +139,7 @@
   <view class="card" wx:if="{{store.verify_status === 'verified'}}">
     <text class="section-title">🛠 店铺控制</text>
     <view class="btn-group">
+      <view class="btn-primary" bindtap="goProducts">管理商品</view>
       <view class="btn-danger" bindtap="toggleStatus">
         {{store.status === 'open' ? '强制关店' : '恢复营业'}}
       </view>

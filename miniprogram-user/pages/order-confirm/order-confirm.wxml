@@ -16,11 +16,16 @@
     </view>
   </view>
 
-  <!-- 多店铺合并订单：每家店独立展示 -->
+  <!-- 多店铺合并订单 -->
   <block wx:if="{{isCombined}}">
+    <view class="card combined-banner">
+      <text class="combined-banner-icon">🛵</text>
+      <text class="combined-banner-text">跨店合单配送 · {{storeGroups.length}} 家店统一送达</text>
+    </view>
     <view class="card" wx:for="{{storeGroups}}" wx:key="store_id" wx:for-item="group">
       <view class="shop-info">
         <text class="shop-name">{{group.store_name}}</text>
+        <text class="shop-tag">合单</text>
       </view>
       <view class="order-item" wx:for="{{group.items}}" wx:key="product_id" wx:for-item="item">
         <text class="item-name">{{item.name}}</text>
@@ -28,7 +33,7 @@
         <text class="price">¥{{item.price * item.quantity}}</text>
       </view>
       <view class="subtotal-line">
-        <text>小计</text>
+        <text>本店小计</text>
         <text class="price">¥{{group.subtotal}}</text>
       </view>
     </view>

@@ -111,6 +111,7 @@
           <text>{{item.delivery_time}}</text>
         </view>
         <view class="store-tags-row">
+          <text class="district-tag" wx:if="{{item.district_name}}">📍 {{item.district_name}}</text>
           <text class="min-price-tag">¥{{item.min_price}} 起送</text>
           <text class="delivery-tag" wx:if="{{item.delivery_fee > 0}}">配送 ¥{{item.delivery_fee}}</text>
           <text class="delivery-tag free" wx:else>免配送费</text>

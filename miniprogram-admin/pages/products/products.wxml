@@ -1,0 +1,136 @@
+<view class="container">
+  <!-- 店铺名 -->
+  <view class="store-header">
+    <text class="store-name">{{storeName || '商品管理'}}</text>
+  </view>
+
+  <!-- 分类标签 -->
+  <scroll-view class="cat-scroll" scroll-x>
+    <view class="cat-tab {{activeCategoryId === null ? 'active' : ''}}" bindtap="onCatTap" data-id="">
+      全部
+    </view>
+    <view
+      class="cat-tab {{activeCategoryId === item.id ? 'active' : ''}}"
+      wx:for="{{categories}}" wx:key="id"
+      bindtap="onCatTap" data-id="{{item.id}}"
+    >
+      {{item.name}}
+      <text class="cat-edit" catchtap="openCatEdit" data-id="{{item.id}}" data-name="{{item.name}}">✎</text>
+      <text class="cat-del" catchtap="deleteCategory" data-id="{{item.id}}">✕</text>
+    </view>
+    <view class="cat-tab cat-add" bindtap="openCatAdd">+ 添加</view>
+  </scroll-view>
+
+  <!-- 商品列表 -->
+  <view class="prod-list">
+    <view class="prod-card" wx:for="{{products}}" wx:key="id">
+      <image class="prod-img" src="{{item.image || '/images/default-logo.png'}}" mode="aspectFill" />
+      <view class="prod-body">
+        <view class="prod-top">
+          <text class="prod-name">{{item.name}}</text>
+          <view class="prod-status {{item.status === 1 ? 'on' : 'off'}}" bindtap="toggleStatus" data-id="{{item.id}}" data-status="{{item.status}}">
+            {{item.status === 1 ? '上架' : '下架'}}
+          </view>
+        </view>
+        <view class="prod-meta">
+          <text class="prod-price">¥{{item.price}}</text>
+          <text wx:if="{{item.original_price}}" class="prod-orig">¥{{item.original_price}}</text>
+          <text class="prod-stock">库存 {{item.stock === -1 ? '无限' : item.stock}}</text>
+        </view>
+        <view class="prod-actions">
+          <view class="action-btn edit" bindtap="openProdEdit" data-id="{{item.id}}">编辑</view>
+          <view class="action-btn del" bindtap="deleteProduct" data-id="{{item.id}}">删除</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{products.length === 0}}" class="empty-hint">暂无商品</view>
+  </view>
+
+  <!-- 底部添加按钮 -->
+  <view class="bottom-bar">
+    <view class="add-btn" bindtap="openProdAdd">+ 添加商品</view>
+  </view>
+
+  <!-- ====== 商品编辑弹窗 ====== -->
+  <view class="mask" wx:if="{{showProdDialog}}" catchtap="closeProdDialog"></view>
+  <view class="dialog" wx:if="{{showProdDialog}}">
+    <view class="dialog-header">
+      <text>{{dialogTitle}}</text>
+      <text class="dialog-close" bindtap="closeProdDialog">✕</text>
+    </view>
+    <scroll-view class="dialog-body" scroll-y>
+      <!-- 图片 -->
+      <view class="form-item">
+        <text class="form-label">商品图片</text>
+        <view class="img-picker" bindtap="onChooseImage">
+          <image wx:if="{{prodForm.image}}" class="img-preview" src="{{prodForm.image}}" mode="aspectFill" />
+          <view wx:else class="img-placeholder">点击上传</view>
+        </view>
+      </view>
+      <!-- 名称 -->
+      <view class="form-item">
+        <text class="form-label">名称</text>
+        <input class="form-input" value="{{prodForm.name}}" bindinput="onProdFieldInput" data-field="name" placeholder="商品名称" />
+      </view>
+      <!-- 分类 -->
+      <view class="form-item">
+        <text class="form-label">分类</text>
+        <picker mode="selector" range="{{categories}}" range-key="name" bindchange="onCatPicker" data-cats="{{categories}}">
+          <view class="form-picker">{{catPickerLabel || '未分类'}}</view>
+        </picker>
+      </view>
+      <!-- 价格 -->
+      <view class="form-row">
+        <view class="form-item half">
+          <text class="form-label">价格</text>
+          <input class="form-input" type="digit" value="{{prodForm.price}}" bindinput="onProdNumInput" data-field="price" />
+        </view>
+        <view class="form-item half">
+          <text class="form-label">原价</text>
+          <input class="form-input" type="digit" value="{{prodForm.original_price}}" bindinput="onProdNumInput" data-field="original_price" />
+        </view>
+      </view>
+      <!-- 库存 / 排序 -->
+      <view class="form-row">
+        <view class="form-item half">
+          <text class="form-label">库存 (-1=无限)</text>
+          <input class="form-input" type="number" value="{{prodForm.stock}}" bindinput="onProdNumInput" data-field="stock" />
+        </view>
+        <view class="form-item half">
+          <text class="form-label">排序</text>
+          <input class="form-input" type="number" value="{{prodForm.sort_order}}" bindinput="onProdNumInput" data-field="sort_order" />
+        </view>
+      </view>
+      <!-- 描述 -->
+      <view class="form-item">
+        <text class="form-label">描述</text>
+        <textarea class="form-textarea" value="{{prodForm.description}}" bindinput="onProdFieldInput" data-field="description" placeholder="商品描述" />
+      </view>
+      <!-- 推荐 -->
+      <view class="form-item">
+        <text class="form-label">推荐</text>
+        <switch checked="{{prodForm.is_recommended === 1}}" bindchange="onSwitchRec" />
+      </view>
+    </scroll-view>
+    <view class="dialog-footer">
+      <view class="btn-cancel" bindtap="closeProdDialog">取消</view>
+      <view class="btn-save" bindtap="saveProduct">保存</view>
+    </view>
+  </view>
+
+  <!-- ====== 分类弹窗 ====== -->
+  <view class="mask" wx:if="{{showCatDialog}}" catchtap="closeCatDialog"></view>
+  <view class="dialog small" wx:if="{{showCatDialog}}">
+    <view class="dialog-header">
+      <text>{{editingCatId ? '修改分类' : '添加分类'}}</text>
+    </view>
+    <view class="dialog-body">
+      <input class="form-input" value="{{catFormName}}" bindinput="onCatNameInput" placeholder="分类名称" maxlength="20" />
+    </view>
+    <view class="dialog-footer">
+      <view class="btn-cancel" bindtap="closeCatDialog">取消</view>
+      <view class="btn-save" bindtap="saveCategory">保存</view>
+    </view>
+  </view>
+</view>

@@ -6,6 +6,7 @@
       <view class="dc-name-row">
         <text class="dc-icon">🏘️</text>
         <text class="dc-name">{{item.name}}</text>
+        <text class="dc-status {{item.status === 1 ? 'on' : 'off'}}">{{item.status === 1 ? '启用' : '停用'}}</text>
       </view>
       <text class="dc-edit" bindtap="editDistrict" data-district="{{item}}">✎ 编辑</text>
     </view>
@@ -20,19 +21,33 @@
 
     <view class="dc-meta">
       <view class="dc-meta-item">
-        <text class="dc-meta-val">{{item.delivery_fee}}分</text>
-        <text class="dc-meta-label">配送费</text>
+        <text class="dc-meta-val">¥{{item.feeDisplay}}</text>
+        <text class="dc-meta-label">基础配送费</text>
+      </view>
+      <view class="dc-meta-item">
+        <text class="dc-meta-val peak">¥{{item.peakFeeDisplay}}</text>
+        <text class="dc-meta-label">高峰配送费</text>
       </view>
       <view class="dc-meta-item">
         <text class="dc-meta-val">{{item.delivery_range}}km</text>
         <text class="dc-meta-label">配送范围</text>
       </view>
-      <view class="dc-meta-item" wx:if="{{item.notice}}">
-        <text class="dc-meta-val notice" wx:if="{{item.notice.length > 10}}">{{item.notice.slice(0,10)}}...</text>
-        <text class="dc-meta-val notice" wx:else>{{item.notice}}</text>
-        <text class="dc-meta-label">公告</text>
+    </view>
+
+    <!-- 高峰时段 -->
+    <view class="dc-peak-info" wx:if="{{item.peak_start_hour != null}}">
+      <text class="peak-label">⏰ 高峰时段 {{item.peak_start_hour}}:00 — {{item.peak_end_hour}}:00</text>
+    </view>
+
+    <!-- 满减规则 -->
+    <view class="dc-rules" wx:if="{{item.delivery_fee_rules && item.delivery_fee_rules.length > 0}}">
+      <text class="rules-label">🏷️ 满减规则</text>
+      <view class="rule-tag" wx:for="{{item.delivery_fee_rules}}" wx:key="*this" wx:for-item="r">
+        <text wx:if="{{r.type === 'free'}}">满{{r.threshold}}元免配送费</text>
+        <text wx:else>满{{r.threshold}}元减{{r.reduce}}元</text>
       </view>
     </view>
+    <text class="dc-notice" wx:if="{{item.notice}}">📢 {{item.notice}}</text>
   </view>
 
   <view class="empty-state" wx:if="{{districts.length === 0}}">
@@ -40,13 +55,15 @@
     <text>暂无分区，请创建一个</text>
   </view>
 
-  <!-- 编辑/创建表单 -->
-  <view class="card form-card">
+  <!-- ====== 编辑/创建表单（分区管理员仅编辑，不能创建） ====== -->
+  <view class="card form-card" wx:if="{{isSuperAdmin || editing}}">
     <view class="form-head">
       <text class="form-head-icon">{{editing ? '✏️' : '➕'}}</text>
       <text class="form-head-title">{{editing ? '编辑分区' : '新建分区'}}</text>
     </view>
 
+    <!-- 基本信息 -->
+    <view class="form-section-title">基本信息</view>
     <view class="form-item">
       <text class="fi-label">分区名称 <text class="required">*</text></text>
       <input class="fi-input" placeholder="如: 阳光花园社区" value="{{form.name}}" bindinput="onInput" data-field="name" />
@@ -57,8 +74,8 @@
     </view>
     <view class="form-row">
       <view class="form-item half">
-        <text class="fi-label">配送费(分)</text>
-        <input class="fi-input" type="number" placeholder="0" value="{{form.delivery_fee}}" bindinput="onInput" data-field="delivery_fee" />
+        <text class="fi-label">配送费(元)</text>
+        <input class="fi-input" type="digit" placeholder="0" value="{{form.delivery_fee}}" bindinput="onInput" data-field="delivery_fee" />
       </view>
       <view class="form-item half">
         <text class="fi-label">范围(km)</text>
@@ -69,10 +86,63 @@
       <text class="fi-label">分区公告</text>
       <input class="fi-input" placeholder="公告内容（选填）" value="{{form.notice}}" bindinput="onInput" data-field="notice" />
     </view>
+    <view class="form-item" wx:if="{{editing}}">
+      <text class="fi-label">状态</text>
+      <switch checked="{{form.status === 1}}" bindchange="onSwitchStatus" />
+      <text class="switch-label">{{form.status === 1 ? '启用' : '停用'}}</text>
+    </view>
+
+    <!-- 高峰配送费 -->
+    <view class="form-section-title" style="margin-top:32rpx">⏰ 高峰配送费设置</view>
+    <view class="form-row">
+      <view class="form-item half">
+        <text class="fi-label">高峰配送费(元)</text>
+        <input class="fi-input" type="digit" placeholder="0=不启用" value="{{form.peak_fee}}" bindinput="onInput" data-field="peak_fee" />
+      </view>
+      <view class="form-item half">
+        <text class="fi-label">开始时段</text>
+        <picker mode="selector" range="{{hourOptions}}" bindchange="onPeakStart" data-hours="{{hourOptions}}">
+          <view class="form-picker">{{form.peak_start || '选择'}}</view>
+        </picker>
+      </view>
+    </view>
+    <view class="form-item" wx:if="{{form.peak_start}}">
+      <text class="fi-label">结束时段</text>
+      <picker mode="selector" range="{{hourOptions}}" bindchange="onPeakEnd" data-hours="{{hourOptions}}">
+        <view class="form-picker">{{form.peak_end || '选择'}}</view>
+      </picker>
+    </view>
 
     <view class="form-actions">
       <view class="btn-primary" bindtap="saveDistrict">{{editing ? '保存修改' : '创建分区'}}</view>
       <view class="btn-cancel" wx:if="{{editing}}" bindtap="resetForm">取消编辑</view>
     </view>
+  </view>
+
+  <!-- ====== 满减规则管理（仅编辑时显示） ====== -->
+  <view class="card rules-card" wx:if="{{editing}}">
+    <view class="form-head">
+      <text class="form-head-icon">🏷️</text>
+      <text class="form-head-title">满减配送费规则</text>
+      <text class="add-rule-btn" bindtap="addRule">+ 添加</text>
+    </view>
+
+    <view wx:if="{{ruleList.length === 0}}" class="empty-hint">暂未设置满减规则</view>
+
+    <view class="rule-item" wx:for="{{ruleList}}" wx:key="idx">
+      <view class="rule-row">
+        <picker mode="selector" range="{{ruleTypes}}" bindchange="onRuleTypeChange" data-idx="{{index}}">
+          <view class="rule-type-picker">{{ruleTypes[item.type === 'free' ? 0 : 1]}}</view>
+        </picker>
+        <text class="rule-conn">满</text>
+        <input class="rule-input" type="number" placeholder="金额" value="{{item.threshold}}" bindinput="onRuleFieldInput" data-idx="{{index}}" data-field="threshold" />
+        <text class="rule-conn" wx:if="{{item.type === 'reduce'}}">减</text>
+        <input class="rule-input" wx:if="{{item.type === 'reduce'}}" type="number" placeholder="减免" value="{{item.reduce}}" bindinput="onRuleFieldInput" data-idx="{{index}}" data-field="reduce" />
+        <text class="rule-conn" wx:if="{{item.type === 'free'}}">免配送费</text>
+      </view>
+      <text class="rule-del" bindtap="removeRule" data-idx="{{index}}">删除</text>
+    </view>
+
+    <view class="btn-primary" wx:if="{{ruleList.length > 0}}" bindtap="saveRules" style="margin-top:20rpx">保存满减规则</view>
   </view>
 </view>

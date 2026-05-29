@@ -88,7 +88,46 @@
       "Read(//tmp/**)",
       "Bash(git checkout *)",
       "Bash(git add *)",
-      "Bash(git reset *)"
+      "Bash(git reset *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(pytest tests/test_prediction.py tests/test_game.py tests/test_match.py -v --tb=short)",
+      "Bash(mkdir -p \"E:/CC/.claude/skills\")",
+      "Bash(cp -r /tmp/superpowers/skills/* \"E:/CC/.claude/skills/\")",
+      "Bash(mkdir -p \"E:/CC/.claude/hooks\")",
+      "Bash(cp /tmp/superpowers/hooks/run-hook.cmd \"E:/CC/.claude/hooks/\")",
+      "Bash(cp /tmp/superpowers/hooks/session-start \"E:/CC/.claude/hooks/\")",
+      "Bash(pytest tests/test_game.py -v --tb=short)",
+      "Bash(pytest tests/ -v --tb=line)",
+      "WebSearch",
+      "Bash(mkdir -p \"E:/CC/.claude/commands\")",
+      "Bash(cp /tmp/planning-with-files/commands/*.md \"E:/CC/.claude/commands/\")",
+      "Bash(npm create *)",
+      "Bash(npm run *)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm ls *)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(npx vite *)",
+      "Bash(sqlite3 *)",
+      "Bash(pip3 install *)",
+      "Bash(C:/Users/Administrator/AppData/Local/Programs/Python/Python312/python *)",
+      "Bash(ls /c/Python* /c/Users/Administrator/AppData/Local/Programs/Python/)",
+      "Read(//c/Program Files/**)",
+      "Bash(find /c -name \"python.exe\" -type f)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /e/CC/.claude/hooks/session-start",
+            "async": false
+          }
+        ]
+      }
     ]
   }
 }

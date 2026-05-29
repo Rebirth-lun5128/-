@@ -37,18 +37,6 @@ def create_category(body: StoreCategoryCreate, user: User = Depends(require_merc
     return cat
 
 
-@router.put("/categories/{category_id}")
-def update_category(category_id: int, body: StoreCategoryCreate, user: User = Depends(require_merchant), db: Session = Depends(get_db)):
-    store = _get_store(user, db)
-    cat = db.query(StoreCategory).filter(StoreCategory.id == category_id, StoreCategory.store_id == store.id).first()
-    if not cat:
-        raise HTTPException(status_code=404, detail="分类不存在")
-    cat.name = body.name
-    db.commit()
-    db.refresh(cat)
-    return cat
-
-
 @router.put("/categories/sort")
 def sort_categories(ids: list[int] = Body(...), user: User = Depends(require_merchant), db: Session = Depends(get_db)):
     """批量更新分类排序"""
@@ -59,6 +47,18 @@ def sort_categories(ids: list[int] = Body(...), user: User = Depends(require_mer
             cat.sort_order = i
     db.commit()
     return {"message": "排序已更新"}
+
+
+@router.put("/categories/{category_id}")
+def update_category(category_id: int, body: StoreCategoryCreate, user: User = Depends(require_merchant), db: Session = Depends(get_db)):
+    store = _get_store(user, db)
+    cat = db.query(StoreCategory).filter(StoreCategory.id == category_id, StoreCategory.store_id == store.id).first()
+    if not cat:
+        raise HTTPException(status_code=404, detail="分类不存在")
+    cat.name = body.name
+    db.commit()
+    db.refresh(cat)
+    return cat
 
 
 @router.delete("/categories/{category_id}")

@@ -18,6 +18,13 @@ class ConnectionManager:
             "user": set(), "merchant": set(), "rider": set(), "admin": set(),
         }
 
+    @staticmethod
+    def _normalize_role(role: str) -> str:
+        """将管理角色统一映射到 'admin' 组"""
+        if role in ("district_admin", "super_admin"):
+            return "admin"
+        return role
+
     async def connect(self, ws: WebSocket, user_id: int, role: str):
         await ws.accept()
         if user_id in self._user_conns:
@@ -27,13 +34,13 @@ class ConnectionManager:
             except Exception:
                 pass
         self._user_conns[user_id] = ws
-        role_set = self._role_users.get(role)
+        role_set = self._role_users.get(self._normalize_role(role))
         if role_set is not None:
             role_set.add(user_id)
 
     def disconnect(self, user_id: int, role: str):
         self._user_conns.pop(user_id, None)
-        role_set = self._role_users.get(role)
+        role_set = self._role_users.get(self._normalize_role(role))
         if role_set:
             role_set.discard(user_id)
 
@@ -49,6 +56,11 @@ class ConnectionManager:
 
     async def send_to_role(self, role: str, data: dict):
         for user_id in list(self._role_users.get(role, set())):
+            await self.send_to_user(user_id, data)
+
+    async def broadcast(self, data: dict):
+        """向所有已连接用户广播"""
+        for user_id in list(self._user_conns.keys()):
             await self.send_to_user(user_id, data)
 
     async def push_order_event(
@@ -107,6 +119,19 @@ class ConnectionManager:
                     rider_user_id=rider_user_id, broadcast_role=broadcast_role,
                 )
             )
+
+    def broadcast_sync(self, data: dict):
+        """broadcast 的同步版本"""
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        if loop.is_running():
+            asyncio.ensure_future(self.broadcast(data))
+        else:
+            loop.run_until_complete(self.broadcast(data))
 
 
 manager = ConnectionManager()

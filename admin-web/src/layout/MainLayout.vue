@@ -77,6 +77,11 @@
         </div>
         <div class="header-right">
           <span v-if="!isMobile" class="header-time">{{ nowTime }}</span>
+          <el-badge :value="newOrderCount" :hidden="newOrderCount === 0" class="header-badge">
+            <el-button text circle class="header-btn" @click="goToOrders" title="新订单提醒">
+              <el-icon size="18"><Bell /></el-icon>
+            </el-button>
+          </el-badge>
           <el-button text circle class="header-btn" @click="logout" title="退出登录">
             <el-icon size="18"><SwitchButton /></el-icon>
           </el-button>
@@ -100,7 +105,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   DataAnalysis, Shop, Van, Document, Location,
-  Setting, SwitchButton, Fold, Expand, Operation
+  Setting, SwitchButton, Fold, Expand, Operation, Goods, User, Bell, Avatar
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -114,12 +119,64 @@ let timer = null
 const currentRoute = computed(() => route.path)
 const currentTitle = computed(() => route.meta?.title || '管理后台')
 
+// ---- WebSocket 新订单通知 ----
+const newOrderCount = ref(0)
+let ws = null
+let wsReconnectTimer = null
+
+function connectWebSocket() {
+  const token = localStorage.getItem('admin_token')
+  if (!token) return
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const url = `${protocol}//${location.host}/ws?token=${token}`
+  try {
+    ws = new WebSocket(url)
+    ws.onopen = () => {
+      if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null }
+    }
+    ws.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data)
+        if (data.event === 'new_order') {
+          newOrderCount.value++
+          // 桌面端弹窗通知
+          if (window.Notification && Notification.permission === 'granted') {
+            new Notification('新订单提醒', {
+              body: `${data.order?.order_no || ''} 待处理`,
+              icon: '/favicon.ico',
+            })
+          }
+        }
+      } catch (_) {}
+    }
+    ws.onclose = () => {
+      wsReconnectTimer = setTimeout(connectWebSocket, 5000)
+    }
+    ws.onerror = () => { ws?.close() }
+  } catch (_) {}
+}
+
+function goToOrders() {
+  newOrderCount.value = 0
+  router.push('/orders')
+}
+
+// 请求桌面通知权限
+if (window.Notification && Notification.permission === 'default') {
+  Notification.requestPermission()
+}
+
 const menuItems = [
   { path: '/dashboard', label: '数据大盘', icon: DataAnalysis, color: 'linear-gradient(135deg, #667eea, #764ba2)' },
-  { path: '/stores',     label: '商家管理', icon: Shop,          color: 'linear-gradient(135deg, #00B894, #55efc4)' },
+  { path: '/customers',     label: '客户管理', icon: User,          color: 'linear-gradient(135deg, #74b9ff, #0984e3)' },
+  { path: '/notifications',label: '推送通知', icon: Bell,          color: 'linear-gradient(135deg, #fdcb6e, #f39c12)' },
+  { path: '/stores',        label: '商家管理', icon: Shop,          color: 'linear-gradient(135deg, #00B894, #55efc4)' },
   { path: '/riders',     label: '骑手管理', icon: Van,           color: 'linear-gradient(135deg, #FDCB6E, #e17055)' },
   { path: '/orders',     label: '订单监控', icon: Document,      color: 'linear-gradient(135deg, #E17055, #d63031)' },
   { path: '/districts',  label: '分区管理', icon: Location,      color: 'linear-gradient(135deg, #74b9ff, #0984e3)' },
+  { path: '/products',   label: '商品管理', icon: Goods,         color: 'linear-gradient(135deg, #fd79a8, #e84393)' },
+  { path: '/settlements',label: '结算审批', icon: Operation,     color: 'linear-gradient(135deg, #fdcb6e, #e17055)' },
+  { path: '/admins',     label: '管理员管理', icon: Avatar,       color: 'linear-gradient(135deg, #636e72, #2d3436)' },
   { path: '/system',     label: '系统配置', icon: Setting,       color: 'linear-gradient(135deg, #a29bfe, #6c5ce7)' },
 ]
 
@@ -163,10 +220,13 @@ onMounted(() => {
   updateTime()
   timer = setInterval(updateTime, 30000)
   window.addEventListener('resize', checkMobile)
+  connectWebSocket()
 })
 onUnmounted(() => {
   clearInterval(timer)
   window.removeEventListener('resize', checkMobile)
+  if (wsReconnectTimer) clearTimeout(wsReconnectTimer)
+  if (ws) { ws.close(); ws = null }
 })
 </script>
 
@@ -470,6 +530,8 @@ body {
   transition: color 0.2s;
 }
 .header-btn:hover { color: #ff6b6b !important; }
+.header-badge { margin-right: -4px; }
+.header-badge :deep(.el-badge__content) { font-size: 10px; }
 
 /* ==================== 内容区 ==================== */
 .app-main {

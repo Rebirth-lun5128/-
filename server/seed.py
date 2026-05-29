@@ -56,6 +56,17 @@ def seed():
             db.flush()
         d.admin_id = admin.id
 
+        # 分区管理员
+        district_admin = db.query(User).filter(User.phone == "13800000001").first()
+        if not district_admin:
+            district_admin = User(
+                openid="admin_district", nickname="分区管理员-张运营", phone="13800000001",
+                role="district_admin", district_id=district_id,
+                hashed_password=hash_password("admin123"),
+            )
+            db.add(district_admin)
+            db.flush()
+
         # ---- 4. 骑手 ----
         rider_user = db.query(User).filter(User.phone == "13800000002").first()
         if not rider_user:
@@ -185,7 +196,8 @@ def seed():
         print("""
 ╔══════════════════════════════════════╗
 ║  测试账号 (密码均为 123456):         ║
-║  管理员:  13800000000 / admin123     ║
+║  超管:    13800000000 / admin123     ║
+║  分区管理: 13800000001 / admin123    ║
 ║  骑手:    13800000002               ║
 ║  商家1:   13800000011 (老王烧烤)     ║
 ║  商家2:   13800000012 (李姐私房菜)   ║

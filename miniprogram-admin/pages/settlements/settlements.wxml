@@ -1,0 +1,63 @@
+<view class="container">
+  <view class="filters">
+    <view class="filter-row">
+      <text class="filter-label">状态</text>
+      <view class="filter-item {{filterStatus === 'pending' ? 'active' : ''}}" bindtap="onFilterStatus" data-status="pending">审核中</view>
+      <view class="filter-item {{filterStatus === 'paid' ? 'active' : ''}}" bindtap="onFilterStatus" data-status="paid">已打款</view>
+      <view class="filter-item {{filterStatus === '' ? 'active' : ''}}" bindtap="onFilterStatus" data-status="">全部</view>
+    </view>
+    <view class="filter-row">
+      <text class="filter-label">类型</text>
+      <view class="filter-item {{filterType === 'rider' ? 'active' : ''}}" bindtap="onFilterType" data-type="rider">骑手</view>
+      <view class="filter-item {{filterType === 'store' ? 'active' : ''}}" bindtap="onFilterType" data-type="store">商家</view>
+      <view class="filter-item {{filterType === '' ? 'active' : ''}}" bindtap="onFilterType" data-type="">全部</view>
+    </view>
+  </view>
+
+  <view wx:if="{{items.length === 0}}" class="empty-state"><text>暂无结算申请</text></view>
+
+  <view class="card settle-card" wx:for="{{items}}" wx:key="id">
+    <view class="settle-head">
+      <view class="settle-head-left">
+        <text class="settle-type {{item.target_type}}">{{item.target_type === 'rider' ? '🛵 骑手' : '🏪 商家'}}</text>
+        <text class="settle-status {{item.status}}">{{item.status === 'paid' ? '已打款' : '审核中'}}</text>
+      </view>
+      <text class="settle-id">#{{item.id}}</text>
+    </view>
+
+    <view class="settle-body">
+      <view class="info-row">
+        <text class="ir-label">{{item.target_type === 'rider' ? '骑手' : '店铺'}}</text>
+        <text class="ir-val">{{item.target_name}}</text>
+      </view>
+      <view class="info-row">
+        <text class="ir-label">手机号</text>
+        <text class="ir-val">{{item.target_phone}}</text>
+      </view>
+      <view class="info-row">
+        <text class="ir-label">申请金额</text>
+        <text class="ir-val price">¥{{item.amount}}</text>
+      </view>
+      <view class="info-row" wx:if="{{item.fee > 0}}">
+        <text class="ir-label">平台抽成</text>
+        <text class="ir-val fee">−¥{{item.fee}}</text>
+      </view>
+      <view class="info-row highlight">
+        <text class="ir-label">净收入</text>
+        <text class="ir-val green">¥{{item.net_amount}}</text>
+      </view>
+      <view class="info-row">
+        <text class="ir-label">申请时间</text>
+        <text class="ir-val">{{item.created_at.slice(0, 16)}}</text>
+      </view>
+      <view class="info-row" wx:if="{{item.paid_at}}">
+        <text class="ir-label">打款时间</text>
+        <text class="ir-val">{{item.paid_at.slice(0, 16)}}</text>
+      </view>
+    </view>
+
+    <view class="settle-foot" wx:if="{{item.status === 'pending'}}">
+      <view class="btn-success btn-block" bindtap="onApprove" data-id="{{item.id}}">✓ 确认打款</view>
+    </view>
+  </view>
+</view>

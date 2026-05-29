@@ -27,7 +27,8 @@ Page({
     ws.connect()
     // 监听订单状态变化
     ws.on('*', (data) => {
-      if (!data.order || data.order.id !== this.orderId) return
+      const orderId = data.order && (data.order.id || data.order.order_id)
+      if (!orderId || orderId !== this.orderId) return
       if (data.event === 'rider_location') {
         const rlat = data.lat || (data.order && data.order.lat)
         const rlng = data.lng || (data.order && data.order.lng)
@@ -75,7 +76,7 @@ Page({
         destLng: destLng,
       })
 
-      const liveStatuses = ['pending_accept', 'preparing', 'ready', 'delivering']
+      const liveStatuses = ['pending', 'pending_accept', 'preparing', 'ready', 'delivering']
       if (liveStatuses.includes(order.status)) {
         this.connectWS()
       }

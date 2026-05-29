@@ -12,6 +12,7 @@ Page({
     editModalValue: '',
     editModalMode: 'add',
     editingCatId: 0,
+    inputFocus: false,
   },
 
   onShow() {
@@ -81,8 +82,9 @@ Page({
         editModalTitle: '编辑分类名称',
         editModalValue: cat.name,
         editingCatId: cat.id,
+        inputFocus: true,
       })
-    }, 300)
+    }, 350)
   },
 
   onEditModalInput(e) {
@@ -90,8 +92,10 @@ Page({
   },
 
   onEditModalCancel() {
-    this.setData({ showEditModal: false, editModalValue: '' })
+    this.setData({ showEditModal: false, editModalValue: '', inputFocus: false })
   },
+
+  noop() {},
 
   async onEditModalConfirm() {
     const { editModalMode, editModalValue, editingCatId } = this.data
@@ -100,7 +104,7 @@ Page({
       wx.showToast({ title: '请输入名称', icon: 'none' })
       return
     }
-    this.setData({ showEditModal: false, editModalValue: '' })
+    this.setData({ showEditModal: false, editModalValue: '', inputFocus: false })
     try {
       if (editModalMode === 'edit') {
         await api.put(`/api/merchant/menu/categories/${editingCatId}`, { name, sort_order: 0 })
@@ -181,7 +185,8 @@ Page({
         editModalTitle: '添加分类',
         editModalValue: '',
         editingCatId: 0,
+        inputFocus: true,
       })
-    }, 300)
+    }, 350)
   },
 })

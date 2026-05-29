@@ -1,8 +1,14 @@
 <view class="container" wx:if="{{dashboard}}">
+  <!-- 新订单提醒条 -->
+  <view class="new-order-bar" wx:if="{{newOrderDot}}" bindtap="goOrders">
+    <text class="no-dot"></text>
+    <text class="no-text">有新订单进来，点击查看</text>
+  </view>
+
   <!-- 欢迎横幅 -->
   <view class="welcome-banner">
     <view class="welcome-text">
-      <text class="welcome-hi">管理员 👋</text>
+      <text class="welcome-hi">{{roleTitle}} 👋</text>
       <text class="welcome-sub">以下是平台经营概况</text>
     </view>
     <view class="welcome-quick">
@@ -102,6 +108,127 @@
     </view>
   </view>
 
+  <!-- 配送模式 -->
+  <view class="card delivery-card">
+    <view class="delivery-hdr">
+      <view class="delivery-hdr-left">
+        <text class="delivery-title">🛵 配送模式</text>
+        <text class="delivery-sub">{{deliveryMode === 'active' ? '可接收本分区配送订单' : deliveryMode === 'busy' ? '配送中...' : '关闭'}}</text>
+      </view>
+      <switch checked="{{deliveryMode !== 'inactive' && deliveryMode !== 'standby'}}" bindchange="toggleDelivery" color="#6C5CE7" />
+    </view>
+
+    <!-- 配送中 -->
+    <view class="active-delivery" wx:if="{{deliveryMode === 'busy' && activeOrder}}">
+      <view class="ad-banner">
+        <text class="ad-label">🚀 配送中</text>
+        <text class="ad-order-no">{{activeOrder.order_no}}</text>
+        <text class="ad-info">{{activeOrder.store_count}} 店 · ¥{{activeOrder.total_price}}</text>
+      </view>
+      <view class="ad-actions">
+        <view class="ad-btn deliver" bindtap="deliverOrder">确认送达</view>
+      </view>
+    </view>
+
+    <!-- 待接单列表 -->
+    <view class="pending-section" wx:if="{{deliveryMode === 'active' && pendingOrders.length > 0}}">
+      <text class="pending-title">待接配送订单 ({{pendingTotal}})</text>
+      <view class="pending-item" wx:for="{{pendingOrders}}" wx:key="id">
+        <view class="pi-info">
+          <text class="pi-no">{{item.order_no}}</text>
+          <text class="pi-detail">{{item.store_count || (item.sub_orders ? item.sub_orders.length : 0)}} 店</text>
+          <text class="pi-price">¥{{item.total_price}}</text>
+        </view>
+        <view class="pi-accept" bindtap="acceptOrder" data-id="{{item.id}}">接单</view>
+      </view>
+    </view>
+
+    <view class="pending-empty" wx:if="{{deliveryMode === 'active' && pendingOrders.length === 0}}">
+      <text>暂无待配送订单</text>
+    </view>
+
+    <!-- 收入概览 -->
+    <view class="delivery-stats" wx:if="{{deliveryMode !== 'inactive'}}">
+      <view class="ds-item">
+        <text class="ds-val">¥{{deliveryWallet.today_income || 0}}</text>
+        <text class="ds-label">今日配送收入</text>
+      </view>
+      <view class="ds-item">
+        <text class="ds-val">{{deliveryWallet.total_orders || 0}}</text>
+        <text class="ds-label">累计配送单</text>
+      </view>
+      <view class="ds-item">
+        <text class="ds-val">¥{{deliveryWallet.balance || 0}}</text>
+        <text class="ds-label">账户余额</text>
+      </view>
+      <view class="ds-withdraw" bindtap="showWithdraw" wx:if="{{deliveryWallet.balance >= 10}}">
+        <text>提现</text>
+      </view>
+    </view>
+
+    <!-- 配送记录 -->
+    <view class="delivery-section-sub" wx:if="{{deliveryMode !== 'inactive'}}">
+      <view class="dss-header" bindtap="toggleDeliveryOrders">
+        <text class="dss-title">📦 我的配送记录 ({{deliveryOrdersTotal}})</text>
+        <text class="dss-arrow">{{showDeliveryOrders ? '▲' : '▼'}}</text>
+      </view>
+      <view wx:if="{{showDeliveryOrders}}">
+        <view wx:if="{{deliveryOrders.length === 0}}" class="pending-empty">
+          <text>暂无配送记录</text>
+        </view>
+        <view class="dss-item" wx:for="{{deliveryOrders}}" wx:key="id">
+          <view class="dss-row">
+            <text class="dss-order-no">{{item.order_no}}</text>
+            <text class="dss-status {{item.status}}">{{item.status === 'completed' ? '已送达' : item.status === 'partial' ? '部分完成' : item.status === 'delivering' ? '配送中' : item.status}}</text>
+          </view>
+          <view class="dss-row sub">
+            <text>{{item.store_count || (item.sub_orders ? item.sub_orders.length : 0)}} 店</text>
+            <text>¥{{item.total_price}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 提现记录 -->
+    <view class="delivery-section-sub" wx:if="{{deliveryMode !== 'inactive'}}">
+      <view class="dss-header" bindtap="toggleWithdrawals">
+        <text class="dss-title">💳 提现记录 ({{withdrawalsTotal}})</text>
+        <text class="dss-arrow">{{showWithdrawals ? '▲' : '▼'}}</text>
+      </view>
+      <view wx:if="{{showWithdrawals}}">
+        <view wx:if="{{withdrawals.length === 0}}" class="pending-empty">
+          <text>暂无提现记录</text>
+        </view>
+        <view class="dss-item" wx:for="{{withdrawals}}" wx:key="id">
+          <view class="dss-row">
+            <text class="dss-amount">¥{{item.amount}}</text>
+            <text class="dss-status {{item.status}}">{{item.status === 'paid' ? '已打款' : item.status === 'pending' ? '审核中' : item.status}}</text>
+          </view>
+          <view class="dss-row sub">
+            <text>{{item.period}} 周期</text>
+            <text>{{item.created_at ? item.created_at.slice(0, 10) : ''}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 提现弹窗 -->
+  <view class="mask" wx:if="{{showWithdrawForm}}" catchtap="closeWithdraw"></view>
+  <view class="withdraw-dialog" wx:if="{{showWithdrawForm}}">
+    <text class="wd-title">申请提现</text>
+    <text class="wd-balance">可提现余额 ¥{{deliveryWallet.balance || 0}}</text>
+    <view class="wd-input-wrap">
+      <text class="wd-yuan">¥</text>
+      <input class="wd-input" type="digit" placeholder="请输入提现金额" value="{{withdrawAmount}}" bindinput="onWithdrawInput" focus />
+    </view>
+    <text class="wd-hint">最低提现 ¥10，提交后由超级管理员审批</text>
+    <view class="wd-btns">
+      <button class="wd-btn cancel" bindtap="closeWithdraw">取消</button>
+      <button class="wd-btn confirm" bindtap="submitWithdraw" loading="{{withdrawing}}" disabled="{{!withdrawAmount || withdrawAmount < 10}}">提交申请</button>
+    </view>
+  </view>
+
   <!-- 快捷操作 -->
   <view class="quick-section">
     <text class="section-title">🔧 快捷管理</text>
@@ -122,6 +249,30 @@
         <text class="quick-icon">📊</text>
         <text class="quick-txt">全部订单</text>
       </view>
+      <view class="quick-item" hover-class="quick-hover" bindtap="goSettlements">
+        <text class="quick-icon">💳</text>
+        <text class="quick-txt">结算审批</text>
+      </view>
+      <navigator url="/pages/customers/customers" class="quick-item" hover-class="quick-hover">
+        <text class="quick-icon">👥</text>
+        <text class="quick-txt">用户管理</text>
+      </navigator>
+      <navigator url="/pages/notifications/notifications" class="quick-item" hover-class="quick-hover">
+        <text class="quick-icon">📢</text>
+        <text class="quick-txt">推送通知</text>
+      </navigator>
+      <navigator url="/pages/admins/admins" class="quick-item" hover-class="quick-hover" wx:if="{{isSuperAdmin}}">
+        <text class="quick-icon">👑</text>
+        <text class="quick-txt">管理员管理</text>
+      </navigator>
+    </view>
+  </view>
+
+  <!-- 退出登录 -->
+  <view class="logout-card">
+    <text class="logout-info">{{roleTitle}} · 138****{{dashboard ? (roleTitle === '超级管理员' ? '0000' : '0001') : ''}}</text>
+    <view class="logout-btn" bindtap="handleLogout">
+      <text>退出登录</text>
     </view>
   </view>
 </view>

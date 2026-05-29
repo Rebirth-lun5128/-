@@ -1,0 +1,59 @@
+<view class="container">
+  <view class="head-bar">
+    <text class="head-title">管理员管理</text>
+    <button class="btn-create" bindtap="openCreate" wx:if="{{isSuperAdmin}}">+ 新建</button>
+  </view>
+
+  <view wx:if="{{items.length === 0 && !loading}}" class="empty">暂无管理员</view>
+
+  <view class="admin-item" wx:for="{{items}}" wx:key="id">
+    <view class="ai-left">
+      <text class="ai-name">{{item.nickname || '未设置'}}</text>
+      <text class="ai-phone">{{item.phone}}</text>
+      <view class="ai-tags">
+        <text class="ai-role {{item.role}}">{{item.role === 'super_admin' ? '超级管理员' : '分区管理员'}}</text>
+        <text class="ai-status {{item.status === 1 ? 'on' : 'off'}}">{{item.status === 1 ? '启用' : '禁用'}}</text>
+      </view>
+    </view>
+    <view class="ai-right" wx:if="{{isSuperAdmin}}">
+      <text class="ai-action" bindtap="toggleStatus" data-id="{{item.id}}" data-status="{{item.status}}">
+        {{item.status === 1 ? '禁用' : '启用'}}
+      </text>
+      <text class="ai-action danger" bindtap="deleteAdmin" data-id="{{item.id}}">删除</text>
+    </view>
+  </view>
+
+  <!-- 创建弹窗 -->
+  <view class="mask" wx:if="{{showCreate}}" bindtap="closeCreate"></view>
+  <view class="dialog" wx:if="{{showCreate}}">
+    <text class="dialog-title">新建管理员</text>
+    <view class="form-item">
+      <text class="form-label">手机号</text>
+      <input class="form-input" placeholder="手机号用于登录" maxlength="11" value="{{phone}}" bindinput="onPhoneInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">密码</text>
+      <input class="form-input" placeholder="登录密码" password value="{{password}}" bindinput="onPwdInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">昵称</text>
+      <input class="form-input" placeholder="管理员昵称" value="{{nickname}}" bindinput="onNameInput" />
+    </view>
+    <view class="form-item">
+      <text class="form-label">角色</text>
+      <picker mode="selector" range="{{['分区管理员','超级管理员']}}" value="{{role === 'super_admin' ? 1 : 0}}" bindchange="onRoleChange">
+        <view class="form-picker">{{roleLabel}}</view>
+      </picker>
+    </view>
+    <view class="form-item" wx:if="{{role === 'district_admin'}}">
+      <text class="form-label">所属分区</text>
+      <picker mode="selector" range="{{districts}}" range-key="name" bindchange="onDistrictChange">
+        <view class="form-picker">{{districtName || '请选择分区'}}</view>
+      </picker>
+    </view>
+    <view class="dialog-btns">
+      <button class="btn-cancel" bindtap="closeCreate">取消</button>
+      <button class="btn-save" bindtap="submitCreate" loading="{{submitting}}" disabled="{{!phone || !password}}">创建</button>
+    </view>
+  </view>
+</view>

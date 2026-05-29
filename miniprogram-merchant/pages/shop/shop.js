@@ -20,7 +20,6 @@ Page({
       stall_photo: '',
       id_card_photo: '',
       min_price: '',
-      delivery_fee: '',
       delivery_time: '30分钟',
       notice: '',
       status: 'closed',
@@ -57,7 +56,6 @@ Page({
           stall_photo: shop.stall_photo || '',
           id_card_photo: shop.id_card_photo || '',
           min_price: shop.min_price ? String(shop.min_price) : '',
-          delivery_fee: shop.delivery_fee ? String(shop.delivery_fee) : '',
           delivery_time: shop.delivery_time || '30分钟',
           notice: shop.notice || '',
           status: shop.status || 'closed',
@@ -129,7 +127,6 @@ Page({
       stall_photo: f.stall_photo,
       id_card_photo: f.id_card_photo,
       min_price: f.min_price ? parseFloat(f.min_price) : 0,
-      delivery_fee: f.delivery_fee ? parseFloat(f.delivery_fee) : 0,
       delivery_time: f.delivery_time,
       notice: f.notice,
       status: f.status,
@@ -145,5 +142,21 @@ Page({
         wx.showToast({ title: '保存成功', icon: 'success' })
       }
     } catch (e) { }
+  },
+
+  onLogout() {
+    wx.showModal({
+      title: '退出登录',
+      content: '退出后需重新登录，确定退出吗？',
+      success: (res) => {
+        if (res.confirm) {
+          wx.removeStorageSync('merchant_token')
+          wx.removeStorageSync('merchant_info')
+          app.globalData.token = ''
+          app.globalData.shopInfo = null
+          wx.reLaunch({ url: '/pages/login/login' })
+        }
+      }
+    })
   },
 })

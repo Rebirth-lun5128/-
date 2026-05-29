@@ -46,8 +46,8 @@ Page({
       return
     }
     try {
-      const res = await api.post(`/api/merchant/shop/withdraw?amount=${amount}`)
-      wx.showToast({ title: res.message || '提现成功', icon: 'success' })
+      const res = await api.post('/api/merchant/shop/withdraw', { amount })
+      wx.showToast({ title: res.message || '申请已提交', icon: 'success' })
       this.setData({ showWithdraw: false, withdrawAmount: '' })
       this.loadData()
     } catch (e) { }

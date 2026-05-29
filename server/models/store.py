@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from database import Base
+from models.district import District
 
 
 class Store(Base):
@@ -28,6 +29,7 @@ class Store(Base):
     delivery_fee = Column(DECIMAL(10, 2), default=0)           # [deprecated] 配送费改由 District 管理
     delivery_surcharge = Column(DECIMAL(10, 2), default=0)     # 配送附加费(元)，管理端设置
     commission_rate = Column(DECIMAL(4, 3), default=0.120)     # 抽成比例 0~1，默认12%
+    combinable_districts = Column(JSON, nullable=True)           # 可合单的分区 ID 列表, null/[]=仅本区
     delivery_time = Column(String(20), default="30分钟")
     business_hours = Column(JSON, nullable=True)
     notice = Column(String(200), default="")
@@ -42,10 +44,15 @@ class Store(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     owner = relationship("User", back_populates="store")
+    district = relationship(District, lazy="joined")
     categories = relationship("StoreCategory", back_populates="store", lazy="dynamic",
                               order_by="StoreCategory.sort_order")
     products = relationship("Product", back_populates="store", lazy="dynamic")
     orders = relationship("Order", back_populates="store")
+
+    @property
+    def district_name(self):
+        return self.district.name if self.district else ""
 
 
 class StoreCategory(Base):

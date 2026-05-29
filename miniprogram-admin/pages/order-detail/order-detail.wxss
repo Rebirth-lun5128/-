@@ -94,6 +94,17 @@
   line-height: 1.5;
 }
 
+/* 备注 */
+.remark-text {
+  font-size: 26rpx;
+  color: #555;
+  background: #fff8e1;
+  padding: 16rpx 20rpx;
+  border-radius: 12rpx;
+  display: block;
+  border-left: 4rpx solid #f39c12;
+}
+
 /* 信息行 */
 .info-row {
   display: flex;

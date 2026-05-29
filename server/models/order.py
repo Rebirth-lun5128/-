@@ -132,6 +132,20 @@ class OrderReview(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class OrderMessage(Base):
+    """订单留言 — 骑手与用户之间的沟通"""
+    __tablename__ = "order_messages"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    combined_order_id = Column(Integer, ForeignKey("combined_orders.id", ondelete="CASCADE"), nullable=False)
+    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    sender_role = Column(String(10), nullable=False, default="user")  # user / rider
+    content = Column(String(500), default="")
+    created_at = Column(DateTime, server_default=func.now())
+
+    combined_order = relationship("CombinedOrder", lazy="joined")
+
+
 # ============================================================
 # 旧模型 — 保留兼容，标记 deprecated
 # ============================================================

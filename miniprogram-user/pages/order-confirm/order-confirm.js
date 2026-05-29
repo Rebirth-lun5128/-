@@ -206,15 +206,17 @@ Page({
   async submitSingleOrder() {
     try {
       const body = {
-        store_id: this.data.storeIds[0],
         address_id: this.data.address.id,
-        items: this.data.storeGroups[0].items.map(item => ({
-          product_id: item.product_id,
-          name: item.name,
-          image: item.image || '',
-          price: item.price,
-          quantity: item.quantity,
-        })),
+        sub_orders: [{
+          store_id: this.data.storeIds[0],
+          items: this.data.storeGroups[0].items.map(item => ({
+            product_id: item.product_id,
+            name: item.name,
+            image: item.image || '',
+            price: item.price,
+            quantity: item.quantity,
+          })),
+        }],
         remark: this.data.remark,
       }
       if (this.data.selectedCouponId) {

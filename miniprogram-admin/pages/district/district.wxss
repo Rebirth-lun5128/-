@@ -13,170 +13,113 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16rpx;
+  margin-bottom: 14rpx;
 }
 .dc-name-row {
   display: flex;
   align-items: center;
   gap: 10rpx;
 }
-.dc-icon {
-  font-size: 30rpx;
-}
-.dc-name {
-  font-size: 30rpx;
-  font-weight: 700;
-  color: #222;
-}
+.dc-icon { font-size: 30rpx; }
+.dc-name { font-size: 30rpx; font-weight: 700; color: #222; }
+.dc-status { font-size: 20rpx; padding: 4rpx 14rpx; border-radius: 12rpx; }
+.dc-status.on { background: #E8F5E9; color: #2E7D32; }
+.dc-status.off { background: #f5f5f5; color: #999; }
 .dc-edit {
-  font-size: 24rpx;
-  color: var(--primary);
-  font-weight: 600;
-  padding: 6rpx 18rpx;
-  border-radius: 20rpx;
-  background: #f5f3ff;
+  font-size: 24rpx; color: var(--primary); font-weight: 600;
+  padding: 6rpx 18rpx; border-radius: 20rpx; background: #f5f3ff;
 }
 
 /* 覆盖小区标签 */
-.dc-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10rpx;
-  margin-bottom: 16rpx;
-}
+.dc-tags { display: flex; flex-wrap: wrap; gap: 10rpx; margin-bottom: 14rpx; }
 .dc-tag {
-  font-size: 22rpx;
-  color: #6C5CE7;
-  background: #f5f3ff;
-  padding: 6rpx 16rpx;
-  border-radius: 14rpx;
-  border: 1rpx solid #e8e2ff;
+  font-size: 22rpx; color: #6C5CE7; background: #f5f3ff;
+  padding: 6rpx 16rpx; border-radius: 14rpx; border: 1rpx solid #e8e2ff;
 }
-.dc-empty {
-  font-size: 24rpx;
-  color: #ccc;
-  margin-bottom: 12rpx;
-  display: block;
-}
-
-.dc-divider {
-  height: 1rpx;
-  background: #f0f0f0;
-  margin-bottom: 16rpx;
-}
+.dc-empty { font-size: 24rpx; color: #ccc; margin-bottom: 10rpx; display: block; }
+.dc-divider { height: 1rpx; background: #f0f0f0; margin-bottom: 14rpx; }
+.dc-notice { font-size: 22rpx; color: #999; display: block; margin-top: 10rpx; }
 
 /* 元信息 */
-.dc-meta {
-  display: flex;
-  gap: 32rpx;
-}
-.dc-meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4rpx;
-}
-.dc-meta-val {
-  font-size: 28rpx;
-  font-weight: 700;
-  color: #333;
-}
-.dc-meta-val.notice {
-  font-size: 24rpx;
-  font-weight: 500;
-  color: #999;
-}
-.dc-meta-label {
-  font-size: 22rpx;
-  color: #bbb;
+.dc-meta { display: flex; gap: 32rpx; }
+.dc-meta-item { display: flex; flex-direction: column; gap: 4rpx; }
+.dc-meta-val { font-size: 28rpx; font-weight: 700; color: #333; }
+.dc-meta-val.peak { color: #E17055; }
+.dc-meta-label { font-size: 22rpx; color: #bbb; }
+
+/* 高峰时段 */
+.dc-peak-info { margin-top: 12rpx; }
+.peak-label { font-size: 22rpx; color: #E17055; background: #FFF3ED; padding: 6rpx 14rpx; border-radius: 10rpx; }
+
+/* 满减规则 */
+.dc-rules { margin-top: 12rpx; display: flex; flex-wrap: wrap; align-items: center; gap: 8rpx; }
+.rules-label { font-size: 22rpx; color: #666; font-weight: 600; margin-right: 4rpx; }
+.rule-tag {
+  font-size: 20rpx; color: #00B894; background: #E8F5E9;
+  padding: 4rpx 14rpx; border-radius: 10rpx;
 }
 
 /* 空状态 */
-.empty-icon {
-  font-size: 60rpx;
-  display: block;
-  margin-bottom: 12rpx;
-}
+.empty-icon { font-size: 60rpx; display: block; margin-bottom: 12rpx; }
 
 /* === 表单卡片 === */
-.form-card {
-  margin-top: 10rpx;
-}
-.form-head {
-  display: flex;
-  align-items: center;
-  gap: 10rpx;
-  margin-bottom: 28rpx;
-}
-.form-head-icon {
-  font-size: 30rpx;
-}
-.form-head-title {
-  font-size: 30rpx;
-  font-weight: 700;
-  color: #333;
-}
+.form-card { margin-top: 10rpx; }
+.form-head { display: flex; align-items: center; gap: 10rpx; margin-bottom: 28rpx; }
+.form-head-icon { font-size: 30rpx; }
+.form-head-title { font-size: 30rpx; font-weight: 700; color: #333; flex: 1; }
+.form-section-title { font-size: 26rpx; font-weight: 600; color: #333; margin-bottom: 16rpx; }
 
-.form-item {
-  margin-bottom: 22rpx;
-}
-.fi-label {
-  display: block;
-  font-size: 26rpx;
-  color: #666;
-  margin-bottom: 10rpx;
-}
-.required {
-  color: #d63031;
-}
+.form-item { margin-bottom: 22rpx; }
+.fi-label { display: block; font-size: 26rpx; color: #666; margin-bottom: 10rpx; }
+.required { color: #d63031; }
 .fi-input {
-  width: 100%;
-  background: #f8f9fc;
-  border-radius: 14rpx;
-  padding: 20rpx 22rpx;
-  font-size: 28rpx;
-  color: #333;
-  box-sizing: border-box;
-  border: 2rpx solid transparent;
-  transition: border-color 0.2s;
+  width: 100%; background: #f8f9fc; border-radius: 14rpx;
+  padding: 20rpx 22rpx; font-size: 28rpx; color: #333;
+  box-sizing: border-box; border: 2rpx solid transparent; transition: border-color 0.2s;
 }
-.fi-input:focus {
-  border-color: var(--primary);
-  background: #fff;
-}
+.fi-input:focus { border-color: var(--primary); background: #fff; }
 
-.form-row {
-  display: flex;
-  gap: 16rpx;
+.form-row { display: flex; gap: 16rpx; }
+.form-item.half { flex: 1; }
+.form-picker {
+  width: 100%; background: #f8f9fc; border-radius: 14rpx;
+  padding: 20rpx 22rpx; font-size: 28rpx; color: #333; box-sizing: border-box;
 }
-.form-item.half {
-  flex: 1;
-}
+.switch-label { font-size: 26rpx; color: #666; margin-left: 16rpx; vertical-align: middle; }
 
 /* 按钮 */
-.form-actions {
-  margin-top: 28rpx;
-  display: flex;
-  flex-direction: column;
-  gap: 14rpx;
-}
+.form-actions { margin-top: 28rpx; display: flex; flex-direction: column; gap: 14rpx; }
 .form-actions .btn-primary {
-  width: 100%;
-  text-align: center;
-  padding: 22rpx 0;
-  font-size: 30rpx;
-  font-weight: 700;
-  border-radius: 16rpx;
-  background: linear-gradient(135deg, #6C5CE7, #a29bfe);
-  color: #fff;
+  width: 100%; text-align: center; padding: 22rpx 0; font-size: 30rpx;
+  font-weight: 700; border-radius: 16rpx;
+  background: linear-gradient(135deg, #6C5CE7, #a29bfe); color: #fff;
   box-shadow: 0 6rpx 20rpx rgba(108,92,231,0.25);
 }
 .btn-cancel {
-  width: 100%;
-  text-align: center;
-  padding: 22rpx 0;
-  font-size: 28rpx;
-  font-weight: 600;
-  border-radius: 16rpx;
-  background: #f5f5f5;
-  color: #999;
+  width: 100%; text-align: center; padding: 22rpx 0; font-size: 28rpx;
+  font-weight: 600; border-radius: 16rpx; background: #f5f5f5; color: #999;
 }
+.btn-primary {
+  width: 100%; text-align: center; padding: 20rpx 0; font-size: 28rpx;
+  font-weight: 700; border-radius: 16rpx;
+  background: linear-gradient(135deg, #6C5CE7, #a29bfe); color: #fff;
+  box-shadow: 0 6rpx 20rpx rgba(108,92,231,0.25);
+}
+
+/* === 满减规则 === */
+.rules-card { margin-top: 20rpx; }
+.add-rule-btn { font-size: 24rpx; color: #6C5CE7; font-weight: 600; }
+.empty-hint { text-align: center; padding: 30rpx 0; color: #ccc; font-size: 24rpx; }
+
+.rule-item { margin-bottom: 16rpx; }
+.rule-row { display: flex; align-items: center; gap: 8rpx; flex-wrap: wrap; }
+.rule-type-picker {
+  padding: 12rpx 16rpx; background: #f8f9fc; border-radius: 10rpx;
+  font-size: 24rpx; color: #333; white-space: nowrap;
+}
+.rule-conn { font-size: 24rpx; color: #999; }
+.rule-input {
+  width: 100rpx; height: 60rpx; background: #f8f9fc; border-radius: 10rpx;
+  padding: 0 14rpx; font-size: 24rpx; text-align: center; box-sizing: border-box;
+}
+.rule-del { font-size: 22rpx; color: #E17055; margin-top: 8rpx; display: inline-block; }

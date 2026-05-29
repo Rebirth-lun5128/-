@@ -66,6 +66,15 @@
     </view>
   </view>
 
+  <!-- 用户备注 -->
+  <view class="card od-section" wx:if="{{order.remark}}">
+    <view class="section-head">
+      <text class="section-icon">📝</text>
+      <text class="section-title">用户备注</text>
+    </view>
+    <text class="remark-text">{{order.remark}}</text>
+  </view>
+
   <!-- 子单列表 -->
   <view class="od-section" wx:for="{{order.sub_orders}}" wx:key="id" wx:for-item="sub">
     <view class="card sub-card">

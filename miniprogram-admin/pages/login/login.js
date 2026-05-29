@@ -31,6 +31,12 @@ Page({
       })
       app.globalData.token = res.token
       wx.setStorageSync('admin_token', res.token)
+      if (res.user) {
+        app.globalData.role = res.user.role
+        app.globalData.districtId = res.user.district_id || null
+        wx.setStorageSync('admin_role', res.user.role)
+        wx.setStorageSync('admin_district_id', res.user.district_id || null)
+      }
       wx.showToast({ title: '登录成功', icon: 'success' })
       setTimeout(() => {
         wx.switchTab({ url: '/pages/index/index' })

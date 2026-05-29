@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from auth import require_user
 from database import get_db
 from models.store import Store
+from models.district import District
 from schemas.store import StoreOut, StoreDetailOut, StoreListOut
 
 router = APIRouter(prefix="/api/user/stores", tags=["用户端-店铺"])
@@ -35,6 +36,13 @@ def list_stores(
     total = query.count()
     items = query.order_by(Store.monthly_sales.desc()).offset((page - 1) * page_size).limit(page_size).all()
     return StoreListOut(total=total, items=[StoreOut.model_validate(r) for r in items])
+
+
+@router.get("/districts/list")
+def list_districts(db: Session = Depends(get_db)):
+    """用户端可用分区列表"""
+    districts = db.query(District).filter(District.status == 1).order_by(District.id).all()
+    return [{"id": d.id, "name": d.name} for d in districts]
 
 
 @router.get("/{store_id}", response_model=StoreDetailOut)

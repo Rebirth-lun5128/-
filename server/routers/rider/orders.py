@@ -1,6 +1,7 @@
 from datetime import datetime, date
+from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -9,11 +10,12 @@ from auth import require_rider
 from database import get_db
 from models.user import User
 from models.rider import Rider
-from models.order import CombinedOrder, SubOrder, SubOrderTimeline
+from models.order import CombinedOrder, SubOrder, SubOrderTimeline, OrderMessage
 from models.region import Settlement, SystemConfig
 from schemas.order import (
     CombinedOrderOut, CombinedOrderDetailOut, CombinedOrderListOut,
     SubOrderOut, SubOrderDetailOut, SubOrderItemOut, SubOrderTimelineOut,
+    OrderMessageOut, OrderMessageCreate,
 )
 from websocket import manager
 
@@ -257,11 +259,16 @@ def wallet(user: User = Depends(require_rider), db: Session = Depends(get_db)):
     rider = _get_rider(user, db)
     today = date.today()
 
-    today_income = db.query(func.coalesce(func.sum(CombinedOrder.total_price), 0)).filter(
+    # 今日骑手收入 = 今日完成单数 × 每单收入
+    today_count = db.query(func.count(CombinedOrder.id)).filter(
         CombinedOrder.rider_id == rider.id,
         CombinedOrder.status.in_(["completed", "partial"]),
         func.date(CombinedOrder.completed_at) == today,
     ).scalar() or 0
+
+    rider_cfg = db.query(SystemConfig).filter(SystemConfig.config_key == "rider_per_order").first()
+    rider_earning = float(rider_cfg.config_value) if rider_cfg else 5.0
+    today_income = today_count * rider_earning
 
     recent = db.query(CombinedOrder).filter(
         CombinedOrder.rider_id == rider.id,
@@ -269,6 +276,7 @@ def wallet(user: User = Depends(require_rider), db: Session = Depends(get_db)):
     ).order_by(CombinedOrder.completed_at.desc()).limit(5).all()
 
     return {
+        "status": rider.status or "offline",
         "balance": float(rider.balance),
         "total_orders": rider.total_orders,
         "rating": float(rider.rating),
@@ -287,7 +295,7 @@ def wallet(user: User = Depends(require_rider), db: Session = Depends(get_db)):
 
 @router.post("/withdraw")
 def withdraw(
-    amount: float = Query(..., gt=0),
+    amount: float = Body(..., gt=0, embed=True),
     user: User = Depends(require_rider),
     db: Session = Depends(get_db),
 ):
@@ -295,13 +303,53 @@ def withdraw(
     if amount > float(rider.balance):
         raise HTTPException(status_code=400, detail="余额不足")
     if amount < 1:
-        raise HTTPException(status_code=400, detail="提现金额不能少于1元")
-    rider.balance = float(rider.balance) - amount
+        raise HTTPException(status_code=400, detail="结算金额不能少于1元")
+
+    # 创建结算申请记录，等待管理员线下打款后确认
+    from models.region import Settlement
+    settlement = Settlement(
+        target_type="rider",
+        target_id=rider.id,
+        amount=amount,
+        fee=0,
+        net_amount=amount,
+        status="pending",
+    )
+    db.add(settlement)
     db.commit()
+
     return {
-        "message": f"已提现 ¥{amount:.2f} 到微信零钱",
-        "withdraw_amount": amount,
-        "remain_balance": float(rider.balance),
+        "message": f"已提交 ¥{amount:.2f} 结算申请，等待管理员处理",
+        "settlement_id": settlement.id,
+        "amount": amount,
+    }
+
+
+@router.get("/settlements")
+def list_settlements(
+    user: User = Depends(require_rider),
+    db: Session = Depends(get_db),
+):
+    """骑手查看自己的结算申请记录"""
+    rider = _get_rider(user, db)
+    from models.region import Settlement
+    records = db.query(Settlement).filter(
+        Settlement.target_type == "rider",
+        Settlement.target_id == rider.id,
+    ).order_by(Settlement.created_at.desc()).limit(20).all()
+
+    return {
+        "items": [
+            {
+                "id": r.id,
+                "amount": float(r.amount),
+                "net_amount": float(r.net_amount),
+                "status": r.status,
+                "created_at": str(r.created_at),
+                "paid_at": str(r.paid_at) if r.paid_at else None,
+            }
+            for r in records
+        ]
     }
 
 
@@ -372,3 +420,65 @@ def update_location(
         )
 
     return {"message": "位置已更新"}
+
+
+# ---- 订单留言 ----
+@router.get("/{order_id}/messages", response_model=List[OrderMessageOut])
+def get_order_messages(
+    order_id: int,
+    user: User = Depends(require_rider),
+    db: Session = Depends(get_db),
+):
+    """查看订单留言"""
+    rider = _get_rider(user, db)
+    order = db.query(CombinedOrder).filter(
+        CombinedOrder.id == order_id,
+        CombinedOrder.rider_id == rider.id,
+    ).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    msgs = db.query(OrderMessage).filter(
+        OrderMessage.combined_order_id == order_id
+    ).order_by(OrderMessage.created_at).all()
+    return [OrderMessageOut.model_validate(m) for m in msgs]
+
+
+@router.post("/{order_id}/messages", response_model=OrderMessageOut)
+def send_order_message(
+    order_id: int,
+    body: OrderMessageCreate,
+    user: User = Depends(require_rider),
+    db: Session = Depends(get_db),
+):
+    """骑手发送留言"""
+    rider = _get_rider(user, db)
+    order = db.query(CombinedOrder).filter(
+        CombinedOrder.id == order_id,
+        CombinedOrder.rider_id == rider.id,
+    ).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    if order.status in ("completed", "cancelled"):
+        raise HTTPException(status_code=400, detail="订单已结束，不能留言")
+
+    msg = OrderMessage(
+        combined_order_id=order_id,
+        sender_id=user.id,
+        sender_role="rider",
+        content=body.content,
+    )
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+
+    # WebSocket 推送给用户
+    manager.push_order_event_sync(
+        "new_message", {
+            "order_id": order_id, "order_no": order.order_no,
+            "sender_role": "rider", "content": body.content,
+            "rider_name": rider.real_name,
+        },
+        user_id=order.user_id,
+    )
+
+    return OrderMessageOut.model_validate(msg)

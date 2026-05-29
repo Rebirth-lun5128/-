@@ -39,7 +39,25 @@
         </el-table-column>
         <el-table-column prop="phone" label="电话" width="130" />
         <el-table-column prop="stall_location" label="摊位位置" min-width="110" />
-        <el-table-column prop="category" label="分类" width="90" align="center" />
+        <el-table-column label="类型" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag size="small" round>{{ storeTypeLabel(row.store_type) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="分区" width="130" align="center">
+          <template #default="{ row }">
+            <el-tag type="" effect="plain" round size="small">{{ row.district_name || '未分配' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="跨区合单" width="110" align="center">
+          <template #default="{ row }">
+            <el-tag
+              v-if="row.combinable_districts && row.combinable_districts.length > 0"
+              type="success" effect="plain" round size="small"
+            >{{ row.combinable_districts.length }} 个区</el-tag>
+            <span v-else class="text-muted">仅本区</span>
+          </template>
+        </el-table-column>
 
         <!-- 抽成比例 - 显式可点击 -->
         <el-table-column label="抽成比例" width="150" align="center">
@@ -95,7 +113,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" min-width="240" fixed="right">
+        <el-table-column label="操作" min-width="280" fixed="right">
           <template #default="{ row }">
             <div v-if="row.verify_status === 'unverified'" class="action-group">
               <el-button size="small" type="success" @click="verify(row.id, 'verified', '现场核验')" round>
@@ -108,14 +126,19 @@
                 <el-icon><Close /></el-icon> 拒绝
               </el-button>
             </div>
-            <el-button
-              v-else size="small"
-              :type="row.status === 'open' ? 'danger' : 'success'"
-              @click="toggleStatus(row.id, row.status === 'open' ? 'closed' : 'open')"
-              round
-            >
-              {{ row.status === 'open' ? '强制关店' : '恢复营业' }}
-            </el-button>
+            <template v-else>
+              <el-button size="small" type="warning" @click="openEdit(row)" round>
+                <el-icon><EditPen /></el-icon>
+              </el-button>
+              <el-button
+                size="small"
+                :type="row.status === 'open' ? 'danger' : 'success'"
+                @click="toggleStatus(row.id, row.status === 'open' ? 'closed' : 'open')"
+                round
+              >
+                {{ row.status === 'open' ? '强制关店' : '恢复营业' }}
+              </el-button>
+            </template>
           </template>
         </el-table-column>
       </el-table>
@@ -132,6 +155,44 @@
         />
       </div>
     </el-card>
+
+    <!-- 编辑店铺弹窗 -->
+    <el-dialog v-model="editDialogVisible" title="编辑店铺设置" width="500px" destroy-on-close>
+      <el-form label-width="100px" v-if="editRow">
+        <el-form-item label="店铺名称">
+          <span class="form-static">{{ editRow.name }}</span>
+        </el-form-item>
+        <el-form-item label="店铺类型">
+          <el-select v-model="editForm.store_type" placeholder="选择店铺类型">
+            <el-option label="夜市摊位" value="stall" />
+            <el-option label="私房菜" value="home_kitchen" />
+            <el-option label="平台自营" value="self_operated" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="所属分区">
+          <el-select v-model="editForm.district_id" placeholder="选择分区" clearable>
+            <el-option v-for="d in districts" :key="d.id" :label="d.name" :value="d.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="可合单分区">
+          <el-select
+            v-model="editForm.combinable_districts"
+            multiple
+            placeholder="选择可跨区合单的分区（可选）"
+            collapse-tags
+            collapse-tags-tooltip
+            style="width:100%"
+          >
+            <el-option v-for="d in districts" :key="d.id" :label="d.name" :value="d.id" />
+          </el-select>
+          <div class="form-hint">留空 = 仅本区合单；勾选后可与所选分区的店铺合并下单</div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveEdit" :loading="saving">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -230,7 +291,57 @@ async function toggleStatus(id, status) {
   } catch (e) { /* ignore */ }
 }
 
+// ===== 店铺编辑弹窗 =====
+const districts = ref([])
+const editDialogVisible = ref(false)
+const editRow = ref(null)
+const editForm = ref({ district_id: null, combinable_districts: [] })
+const saving = ref(false)
+
+async function loadDistricts() {
+  try {
+    const res = await http.get('/admin/districts')
+    districts.value = Array.isArray(res) ? res : (res.items || [])
+  } catch (e) { /* ignore */ }
+}
+
+function storeTypeLabel(type) {
+  const map = { stall: '夜市摊位', home_kitchen: '私房菜', self_operated: '平台自营' }
+  return map[type] || type || '未知'
+}
+
+function openEdit(row) {
+  editRow.value = row
+  editForm.value = {
+    store_type: row.store_type || 'stall',
+    district_id: row.district_id || null,
+    combinable_districts: row.combinable_districts ? [...row.combinable_districts] : [],
+  }
+  editDialogVisible.value = true
+}
+
+async function saveEdit() {
+  saving.value = true
+  try {
+    await http.put(`/admin/stores/${editRow.value.id}`, {
+      store_type: editForm.value.store_type,
+      district_id: editForm.value.district_id,
+      combinable_districts: editForm.value.combinable_districts,
+    })
+    editRow.value.store_type = editForm.value.store_type
+    editRow.value.district_id = editForm.value.district_id
+    editRow.value.combinable_districts = editForm.value.combinable_districts
+    // refresh district name display
+    const d = districts.value.find(d => d.id === editForm.value.district_id)
+    if (d) editRow.value.district_name = d.name
+    else editRow.value.district_name = ''
+    editDialogVisible.value = false
+    ElMessage.success('已保存')
+  } catch (e) { /* ignore */ } finally { saving.value = false }
+}
+
 loadData()
+loadDistricts()
 </script>
 
 <style scoped>
@@ -289,6 +400,10 @@ loadData()
   margin-top: 20px;
 }
 .total-hint { font-size: 13px; color: #999; }
+
+.form-static { font-weight: 600; color: #333; }
+.form-hint { font-size: 12px; color: #999; margin-top: 4px; }
+.text-muted { color: #ccc; font-size: 12px; }
 
 @media (max-width: 767px) {
   .card-hdr { flex-wrap: wrap; gap: 10px; }

@@ -7,55 +7,65 @@
     <view class="btn-primary go-home-btn" bindtap="goHome">去逛逛</view>
   </view>
 
-  <!-- 购物车列表 -->
+  <!-- 有商品 -->
   <view wx:else>
-    <view
-      class="cart-group"
-      wx:for="{{restaurants}}"
-      wx:key="store_id"
-      wx:for-item="restaurant"
-    >
-      <!-- 餐厅名 -->
-      <view class="cart-restaurant">
-        <text class="restaurant-name">{{restaurant.store_name}}</text>
-        <text class="clear-btn" bindtap="clearRestaurant" data-rid="{{restaurant.store_id}}">清空</text>
-      </view>
-
-      <!-- 菜品列表 -->
-      <view
-        class="cart-item"
-        wx:for="{{restaurant.items}}"
-        wx:key="product_id"
-        wx:for-item="item"
-      >
-        <image class="cart-item-img" src="{{item.image || '/images/default-food.png'}}" mode="aspectFill" />
-        <view class="cart-item-info">
-          <text class="cart-item-name">{{item.name}}</text>
-          <text class="cart-item-price">¥{{item.price}}</text>
-        </view>
-        <view class="cart-item-actions">
-          <view class="qty-btn" bindtap="reduceItem" data-rid="{{restaurant.store_id}}" data-item-id="{{item.product_id}}">-</view>
-          <text class="qty-num">{{item.quantity}}</text>
-          <view class="qty-btn" bindtap="addItem" data-rid="{{restaurant.store_id}}" data-item-id="{{item.product_id}}">+</view>
-        </view>
-        <view class="remove-btn" bindtap="removeItem" data-rid="{{restaurant.store_id}}" data-item-id="{{item.product_id}}">✕</view>
-      </view>
-
-      <!-- 小计 & 结算 -->
-      <view class="cart-footer">
-        <text class="subtotal-label">小计</text>
-        <text class="subtotal-price">¥{{restaurant.subtotal}}</text>
-        <view class="btn-primary checkout-btn" bindtap="goCheckout" data-rid="{{restaurant.store_id}}">去结算</view>
-      </view>
+    <!-- 跨区提示 -->
+    <view class="cross-warning" wx:if="{{crossDistrict}}">
+      <text class="cross-warn-icon">⚠️</text>
+      <text class="cross-warn-text">已选店铺跨越不同分区，需分开结算。请取消部分店铺后重试。</text>
     </view>
 
-    <!-- 合并结算按钮（多店铺时显示） -->
-    <view wx:if="{{restaurants.length > 1}}" class="combined-footer">
-      <view class="combined-info">
-        <text class="combined-label">已选 {{restaurants.length}} 家店铺</text>
-        <text class="combined-price">合计 ¥{{totalPrice}}</text>
+    <!-- 按分区展示 -->
+    <view class="district-group" wx:for="{{districts}}" wx:key="district_id" wx:for-item="district">
+      <view class="district-header">
+        <text class="district-name">{{district.district_name}}</text>
+        <text class="district-info">{{district.stores.length}}家店</text>
       </view>
-      <view class="btn-primary combined-btn" bindtap="goCombinedCheckout">合并结算（只收一份配送费）</view>
+
+      <!-- 分区下的店铺 -->
+      <view class="cart-group {{store.checked ? 'checked' : ''}}" wx:for="{{district.stores}}" wx:key="store_id" wx:for-item="store">
+        <!-- 店铺头部（含勾选框） -->
+        <view class="cart-restaurant">
+          <view class="check-box" bindtap="toggleStore" data-sid="{{store.store_id}}">
+            <view class="check-icon {{store.checked ? 'on' : ''}}">
+              <text wx:if="{{store.checked}}">✓</text>
+            </view>
+          </view>
+          <text class="restaurant-name">{{store.store_name}}</text>
+          <text class="clear-btn" bindtap="clearStore" data-rid="{{store.store_id}}">清空</text>
+        </view>
+
+        <!-- 商品列表 -->
+        <view class="cart-item" wx:for="{{store.items}}" wx:key="product_id" wx:for-item="item">
+          <image class="cart-item-img" src="{{item.image || '/images/default-food.png'}}" mode="aspectFill" />
+          <view class="cart-item-info">
+            <text class="cart-item-name">{{item.name}}</text>
+            <text class="cart-item-price">¥{{item.price}}</text>
+          </view>
+          <view class="cart-item-actions">
+            <view class="qty-btn" bindtap="reduceItem" data-rid="{{store.store_id}}" data-item-id="{{item.product_id}}">-</view>
+            <text class="qty-num">{{item.quantity}}</text>
+            <view class="qty-btn" bindtap="addItem" data-rid="{{store.store_id}}" data-item-id="{{item.product_id}}">+</view>
+          </view>
+          <view class="remove-btn" bindtap="removeItem" data-rid="{{store.store_id}}" data-item-id="{{item.product_id}}">✕</view>
+        </view>
+
+        <view class="cart-footer">
+          <text class="subtotal-label">小计</text>
+          <text class="subtotal-price">¥{{store.subtotal}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部结算栏 -->
+  <view class="submit-bar" wx:if="{{!isEmpty}}">
+    <view class="submit-left">
+      <text class="submit-count">已选{{selectedCount}}家店</text>
+      <text class="submit-total">¥{{selectedTotal || '0.00'}}</text>
+    </view>
+    <view class="submit-btn {{crossDistrict || selectedIds.length === 0 ? 'disabled' : ''}}" bindtap="submitSelected">
+      <text>{{crossDistrict ? '跨区需分开结算' : (selectedIds.length === 0 ? '请勾选店铺' : (selectedIds.length > 1 ? '合并结算' : '去结算'))}}</text>
     </view>
   </view>
 </view>

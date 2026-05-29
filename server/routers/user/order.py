@@ -12,12 +12,13 @@ from models.user import User, UserAddress
 from models.store import Store, Product
 from models.rider import Rider
 from models.district import District
-from models.order import CombinedOrder, SubOrder, SubOrderItem, SubOrderTimeline, OrderReview, OrderModification
+from models.order import CombinedOrder, SubOrder, SubOrderItem, SubOrderTimeline, OrderReview, OrderModification, OrderMessage
 from models.coupon import Coupon, UserCoupon
 from schemas.order import (
     CombinedOrderCreate, CombinedOrderOut, CombinedOrderDetailOut, CombinedOrderListOut,
     SubOrderOut, SubOrderDetailOut, SubOrderItemOut, SubOrderTimelineOut,
     ReviewCreate, ReviewOut, ModificationCreate, ModificationOut,
+    OrderMessageOut, OrderMessageCreate,
 )
 from schemas.payment import PayParamsOut
 from payment import create_jsapi_order, apply_refund
@@ -151,7 +152,8 @@ def create_order(
         ).first()
         if not store:
             raise HTTPException(status_code=400, detail=f"店铺(ID={sub_in.store_id})不可用")
-        if store.district_id != district.id:
+        combinable = store.combinable_districts or []
+        if store.district_id != district.id and district.id not in combinable:
             raise HTTPException(status_code=400, detail=f"店铺'{store.name}'不在同一分区，无法合单")
 
         sub_items_total = 0
@@ -290,13 +292,17 @@ def pay_order(
         order.status = "pending"
         order.paid_at = datetime.now()
         for sub in order.sub_orders:
-            _add_sub_timeline(sub.id, "pending_accept", "已支付，等待商家接单", db)
+            sub.status = "ready"
+            _add_sub_timeline(sub.id, "ready", "已支付，等待配送员接单", db)
         db.commit()
         db.refresh(order)
         merchant_ids = {sub.store.user_id for sub in order.sub_orders if sub.store}
         summary = _combined_order_out(order)
         for mid in merchant_ids:
             manager.push_order_event_sync("order_paid", summary, merchant_user_id=mid)
+        # 推送新订单通知给管理员/配送端
+        manager.push_order_event_sync("new_order", summary, broadcast_role="admin")
+        manager.push_order_event_sync("new_delivery", summary, broadcast_role="rider")
 
     return result
 
@@ -627,3 +633,65 @@ def list_order_modifications(
             r.store_name = sub.store.name if sub and sub.store else ""
         results.append(r)
     return results
+
+
+# ---- 订单留言 ----
+@router.get("/{order_id}/messages", response_model=List[OrderMessageOut])
+def get_order_messages(
+    order_id: int,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """查看订单留言"""
+    order = db.query(CombinedOrder).filter(
+        CombinedOrder.id == order_id,
+        CombinedOrder.user_id == user.id,
+    ).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    msgs = db.query(OrderMessage).filter(
+        OrderMessage.combined_order_id == order_id
+    ).order_by(OrderMessage.created_at).all()
+    return [OrderMessageOut.model_validate(m) for m in msgs]
+
+
+@router.post("/{order_id}/messages", response_model=OrderMessageOut)
+def send_order_message(
+    order_id: int,
+    body: OrderMessageCreate,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """用户发送留言"""
+    order = db.query(CombinedOrder).filter(
+        CombinedOrder.id == order_id,
+        CombinedOrder.user_id == user.id,
+    ).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    if order.status in ("completed", "cancelled"):
+        raise HTTPException(status_code=400, detail="订单已结束，不能留言")
+
+    msg = OrderMessage(
+        combined_order_id=order_id,
+        sender_id=user.id,
+        sender_role="user",
+        content=body.content,
+    )
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+
+    # WebSocket 推送给骑手
+    if order.rider_id:
+        rider = db.query(Rider).filter(Rider.id == order.rider_id).first()
+        if rider:
+            manager.push_order_event_sync(
+                "new_message", {
+                    "order_id": order_id, "order_no": order.order_no,
+                    "sender_role": "user", "content": body.content,
+                },
+                rider_user_id=rider.user_id,
+            )
+
+    return OrderMessageOut.model_validate(msg)

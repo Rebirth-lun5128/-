@@ -240,6 +240,34 @@
   padding: 20rpx 50rpx;
 }
 
+/* 合单提示条 */
+.combined-banner {
+  background: linear-gradient(135deg, #EDE7FF, #E0F7FA);
+  border: 2rpx solid #6C5CE7;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 20rpx 24rpx;
+}
+.combined-banner-icon {
+  font-size: 36rpx;
+}
+.combined-banner-text {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #6C5CE7;
+}
+
+/* 店铺标签 */
+.shop-tag {
+  font-size: 20rpx;
+  color: #6C5CE7;
+  background: #EDE7FF;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  margin-left: 12rpx;
+}
+
 /* 多店铺合并 */
 .shop-name {
   font-size: 30rpx;

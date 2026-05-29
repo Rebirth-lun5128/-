@@ -39,7 +39,7 @@
         </view>
         <view class="order-body-row">
           <text class="obr-label">骑手</text>
-          <text class="obr-val">{{item.rider_name || '未分配'}}</text>
+          <text class="obr-val">{{item.status === 'cancelled' ? '—' : (item.rider_name || '未分配')}}</text>
         </view>
       </view>
       <view class="order-foot">

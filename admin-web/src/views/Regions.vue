@@ -63,6 +63,13 @@
             <span v-else class="fee-na">暂未设置</span>
           </template>
         </el-table-column>
+        <el-table-column label="操作" width="80" fixed="right" align="center">
+          <template #default="{ row }">
+            <el-button size="small" type="primary" @click.stop="openEditDialog(row)" round>
+              <el-icon><EditPen /></el-icon>
+            </el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
 
@@ -193,6 +200,39 @@
       <div v-else class="empty-hint">暂未设置满减规则，点击「添加规则」开始配置</div>
     </el-card>
 
+    <!-- 编辑分区信息 -->
+    <el-dialog
+      v-model="showEdit"
+      title="编辑分区信息"
+      width="500px"
+      :close-on-click-modal="false"
+      destroy-on-close
+    >
+      <el-form label-width="110px" v-if="editForm">
+        <el-form-item label="分区名称">
+          <el-input v-model="editForm.name" placeholder="分区名称" maxlength="50" />
+        </el-form-item>
+        <el-form-item label="覆盖小区">
+          <el-input v-model="editForm.coverage" placeholder="用逗号分隔，如: 阳光花园,翠苑新村" />
+        </el-form-item>
+        <el-form-item label="配送范围 (km)">
+          <el-input-number v-model="editForm.delivery_range" :min="1" :max="50" style="width:160px" />
+        </el-form-item>
+        <el-form-item label="分区公告">
+          <el-input v-model="editForm.notice" placeholder="公告内容" maxlength="200" />
+        </el-form-item>
+        <el-form-item label="启用状态">
+          <el-switch v-model="editForm.status" :active-value="1" :inactive-value="0" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showEdit = false" round>取消</el-button>
+        <el-button type="primary" @click="saveEdit" :loading="editSaving" round>
+          <el-icon><Check /></el-icon> 保存
+        </el-button>
+      </template>
+    </el-dialog>
+
     <!-- 新增分区 -->
     <el-dialog
       v-model="showCreate"
@@ -230,6 +270,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
+import { EditPen } from '@element-plus/icons-vue'
 import http from '../api'
 
 const regions = ref([])
@@ -242,6 +283,43 @@ const ruleList = ref([])
 const showCreate = ref(false)
 const creating = ref(false)
 const createForm = reactive({ name: '', delivery_fee: 0 })
+
+const showEdit = ref(false)
+const editSaving = ref(false)
+const editForm = ref(null)
+let editingDistrictId = null
+
+function openEditDialog(row) {
+  editingDistrictId = row.id
+  editForm.value = {
+    name: row.name || '',
+    coverage: (row.coverage || []).join('、'),
+    delivery_range: row.delivery_range || 3,
+    notice: row.notice || '',
+    status: row.status ?? 1,
+  }
+  showEdit.value = true
+}
+
+async function saveEdit() {
+  if (!editForm.value.name.trim()) { ElMessage.warning('请输入分区名称'); return }
+  editSaving.value = true
+  try {
+    const coverage = editForm.value.coverage
+      ? JSON.stringify(editForm.value.coverage.split(/[,，、\s]+/).filter(Boolean))
+      : '[]'
+    await http.put(`/admin/districts/${editingDistrictId}`, {
+      name: editForm.value.name.trim(),
+      coverage,
+      delivery_range: editForm.value.delivery_range,
+      notice: editForm.value.notice || '',
+      status: editForm.value.status,
+    })
+    ElMessage.success('分区信息已更新')
+    showEdit.value = false
+    loadRegions()
+  } catch (e) { /* ignore */ } finally { editSaving.value = false }
+}
 
 async function loadRegions() {
   loading.value = true

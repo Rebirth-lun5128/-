@@ -285,6 +285,13 @@
   display: flex;
   gap: 10rpx;
 }
+.district-tag {
+  font-size: 22rpx;
+  color: #6C5CE7;
+  background: #F4F2FF;
+  padding: 3rpx 12rpx;
+  border-radius: 8rpx;
+}
 .min-price-tag {
   font-size: 22rpx;
   color: #FF6B35;

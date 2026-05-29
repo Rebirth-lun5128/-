@@ -231,3 +231,19 @@ class OrderDetailOut(OrderOut):
     """[deprecated]"""
     timeline: List[TimelineOut] = []
     review: Optional[dict] = None
+
+
+class OrderMessageOut(BaseModel):
+    """订单留言"""
+    id: int
+    combined_order_id: int
+    sender_id: int
+    sender_role: str
+    content: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OrderMessageCreate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=500)

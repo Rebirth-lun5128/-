@@ -47,12 +47,12 @@
 
   <!-- 编辑/添加分类弹窗 -->
   <view class="edit-modal-mask" wx:if="{{showEditModal}}" catchtap="onEditModalCancel">
-    <view class="edit-modal-box" catchtap="">
+    <view class="edit-modal-box" catchtap="noop">
       <text class="edit-modal-title">{{editModalTitle}}</text>
-      <input class="edit-modal-input" value="{{editModalValue}}" placeholder="请输入分类名称" bindinput="onEditModalInput" focus />
+      <input class="edit-modal-input" value="{{editModalValue}}" placeholder="请输入分类名称" bindinput="onEditModalInput" focus="{{inputFocus}}" adjust-position="{{false}}" />
       <view class="edit-modal-btns">
-        <button class="edit-modal-btn cancel" bindtap="onEditModalCancel">取消</button>
-        <button class="edit-modal-btn confirm" bindtap="onEditModalConfirm">确定</button>
+        <view class="edit-modal-btn cancel" bindtap="onEditModalCancel">取消</view>
+        <view class="edit-modal-btn confirm" bindtap="onEditModalConfirm">确定</view>
       </view>
     </view>
   </view>

@@ -77,10 +77,6 @@
       <input type="digit" placeholder="0" value="{{form.min_price}}" bindinput="onInput" data-field="min_price" />
     </view>
     <view class="form-item">
-      <text class="label">配送费 (元)</text>
-      <input type="digit" placeholder="0" value="{{form.delivery_fee}}" bindinput="onInput" data-field="delivery_fee" />
-    </view>
-    <view class="form-item">
       <text class="label">预计时间</text>
       <input placeholder="如: 30分钟" value="{{form.delivery_time}}" bindinput="onInput" data-field="delivery_time" />
     </view>
@@ -109,4 +105,6 @@
   </view>
 
   <view class="btn-primary" bindtap="onSubmit">{{isRegister ? '提交入驻' : '保存设置'}}</view>
+
+  <view class="btn-logout" wx:if="{{!isRegister}}" bindtap="onLogout">退出登录</view>
 </view>

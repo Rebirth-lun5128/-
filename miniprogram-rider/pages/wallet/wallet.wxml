@@ -1,7 +1,7 @@
 <view class="page" wx:if="{{wallet}}">
   <!-- 余额卡片 -->
   <view class="balance-card">
-    <text class="balance-label">可提现余额</text>
+    <text class="balance-label">可结算余额</text>
     <text class="balance-num">¥{{wallet.balance}}</text>
     <view class="balance-stats">
       <text>今日收入 ¥{{wallet.today_income || 0}}</text>
@@ -10,12 +10,12 @@
     </view>
   </view>
 
-  <!-- 提现按钮 -->
+  <!-- 申请结算 -->
   <view class="withdraw-section">
     <button class="btn-withdraw" bindtap="doWithdraw" loading="{{withdrawing}}" disabled="{{wallet.balance <= 0}}">
-      {{wallet.balance > 0 ? '提现到微信零钱' : '暂无余额可提'}}
+      {{wallet.balance > 0 ? '申请结算' : '暂无余额可结算'}}
     </button>
-    <text class="withdraw-tip">提现到微信零钱，实时到账</text>
+    <text class="withdraw-tip">提交申请后，管理员将线下打款</text>
   </view>
 
   <!-- 收入统计 -->
@@ -50,6 +50,23 @@
       <view class="income-right">
         <text class="income-amount">+¥5</text>
         <text class="income-time">{{item.completed_at}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 结算记录 -->
+  <view class="card" wx:if="{{settlements && settlements.length > 0}}">
+    <text class="section-title">结算记录</text>
+    <view class="income-item" wx:for="{{settlements}}" wx:key="id">
+      <view class="income-left">
+        <text class="income-store">申请结算</text>
+        <text class="income-no">{{item.created_at}}</text>
+      </view>
+      <view class="income-right">
+        <text class="income-amount" style="color:{{item.status === 'paid' ? '#07C160' : '#FF9800'}}">¥{{item.amount}}
+          <text style="font-size:22rpx;color:#999">（{{item.status === 'paid' ? '已打款' : '审核中'}}）</text>
+        </text>
+        <text class="income-time" wx:if="{{item.paid_at}}">打款时间: {{item.paid_at}}</text>
       </view>
     </view>
   </view>

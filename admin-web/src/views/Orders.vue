@@ -212,6 +212,12 @@
             </div>
           </div>
 
+          <!-- 用户备注 -->
+          <div v-if="detail.remark" class="detail-block">
+            <div class="detail-block-title">用户备注</div>
+            <div class="remark-box">{{ detail.remark }}</div>
+          </div>
+
           <!-- 子订单 -->
           <div v-for="(sub, si) in detail.sub_orders" :key="sub.id" class="detail-block">
             <div class="sub-head">
@@ -476,6 +482,10 @@ loadOrders()
 .addr-name { font-weight: 700; color: #333; }
 .addr-phone { color: #666; }
 .addr-detail { color: #999; font-size: 13px; }
+.remark-box {
+  background: #fff8e1; border-left: 4px solid #f39c12;
+  padding: 12px 16px; border-radius: 6px; color: #555; font-size: 14px;
+}
 
 .sub-head {
   display: flex; justify-content: space-between; align-items: center;

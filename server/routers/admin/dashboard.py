@@ -11,11 +11,12 @@ from database import get_db
 from models.user import User
 from models.store import Store
 from models.rider import Rider
-from models.order import Order, CombinedOrder, SubOrder, SubOrderItem, OrderModification, SubOrderTimeline
+from models.order import Order, CombinedOrder, SubOrder, SubOrderItem, OrderModification, SubOrderTimeline, OrderMessage
 from models.district import District
 from models.region import SystemConfig
 from models.coupon import Coupon, UserCoupon
 from websocket import manager
+from schemas.store import StoreUpdate, DistrictUpdate
 
 router = APIRouter(prefix="/api/admin", tags=["管理后台"])
 
@@ -119,6 +120,9 @@ def list_stores(
                 "verify_note": r.verify_note, "created_at": str(r.created_at),
                 "commission_rate": float(r.commission_rate or 0.12),
                 "delivery_surcharge": float(r.delivery_surcharge or 0),
+                "district_id": r.district_id,
+                "district_name": r.district.name if r.district else "",
+                "combinable_districts": r.combinable_districts or [],
             }
             for r in items
         ],
@@ -140,6 +144,9 @@ def verify_store(
     store = db.query(Store).filter(Store.id == store_id).first()
     if not store:
         raise HTTPException(status_code=404, detail="店铺不存在")
+    # 分区管理员只能操作自己分区
+    if user.role == "district_admin" and store.district_id != user.district_id:
+        raise HTTPException(status_code=403, detail="无权操作其他分区的店铺")
 
     store.verify_status = verify_status
     store.verify_method = verify_method
@@ -148,6 +155,42 @@ def verify_store(
         store.status = "open"
     db.commit()
     return {"message": f"核验{verify_status}", "method": verify_method}
+
+
+@router.put("/stores/{store_id}")
+def update_store(
+    store_id: int,
+    body: StoreUpdate,
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    """更新店铺设置（分区、跨区合单等）"""
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="店铺不存在")
+    # 分区管理员只能编辑自己分区
+    if user.role == "district_admin" and store.district_id != user.district_id:
+        raise HTTPException(status_code=403, detail="无权编辑其他分区的店铺")
+
+    if body.district_id is not None:
+        store.district_id = body.district_id
+    if body.combinable_districts is not None:
+        store.combinable_districts = body.combinable_districts
+    if body.store_type is not None:
+        store.store_type = body.store_type
+    if body.min_price is not None:
+        store.min_price = body.min_price
+    if body.delivery_time is not None:
+        store.delivery_time = body.delivery_time
+    if body.notice is not None:
+        store.notice = body.notice
+
+    db.commit()
+    return {
+        "message": "已更新",
+        "district_id": store.district_id,
+        "combinable_districts": store.combinable_districts,
+    }
 
 
 @router.put("/stores/{store_id}/toggle-status")
@@ -210,6 +253,9 @@ def audit_rider(
     rider = db.query(Rider).filter(Rider.id == rider_id).first()
     if not rider:
         raise HTTPException(status_code=404, detail="骑手不存在")
+    # 分区管理员只能审核自己分区骑手
+    if user.role == "district_admin" and rider.district_id != user.district_id:
+        raise HTTPException(status_code=403, detail="无权审核其他分区的骑手")
     rider.audit_status = audit_status
     db.commit()
     return {"message": f"审核{audit_status}"}
@@ -407,7 +453,7 @@ def finance_overview(
 # ---- 分区管理 ----
 @router.get("/districts")
 def list_districts(user: User = Depends(require_any_admin), db: Session = Depends(get_db)):
-    districts = db.query(District).filter(District.status == 1).order_by(District.id).all()
+    districts = db.query(District).order_by(District.id).all()
     return [
         {"id": d.id, "name": d.name, "admin_id": d.admin_id,
          "coverage": d.coverage, "delivery_fee": d.delivery_fee,
@@ -446,33 +492,27 @@ def create_district(
 @router.put("/districts/{district_id}")
 def update_district(
     district_id: int,
-    name: str = Query(default=None),
-    coverage: str = Query(default=None),
-    delivery_fee: int = Query(default=None),
-    delivery_range: int = Query(default=None),
-    notice: str = Query(default=None),
-    admin_id: int = Query(default=None),
-    status: int = Query(default=None),
+    body: DistrictUpdate,
     user: User = Depends(require_any_admin),
     db: Session = Depends(get_db),
 ):
     district = db.query(District).filter(District.id == district_id).first()
     if not district:
         raise HTTPException(status_code=404, detail="分区不存在")
-    if name is not None:
-        district.name = name
-    if coverage is not None:
-        district.coverage = json.loads(coverage) if coverage else []
-    if delivery_fee is not None:
-        district.delivery_fee = delivery_fee
-    if delivery_range is not None:
-        district.delivery_range = delivery_range
-    if notice is not None:
-        district.notice = notice
-    if admin_id is not None:
-        district.admin_id = admin_id
-    if status is not None:
-        district.status = status
+    if body.name is not None:
+        district.name = body.name
+    if body.coverage is not None:
+        district.coverage = json.loads(body.coverage) if body.coverage else []
+    if body.delivery_fee is not None:
+        district.delivery_fee = body.delivery_fee
+    if body.delivery_range is not None:
+        district.delivery_range = body.delivery_range
+    if body.notice is not None:
+        district.notice = body.notice
+    if body.admin_id is not None:
+        district.admin_id = body.admin_id
+    if body.status is not None:
+        district.status = body.status
     db.commit()
     return {"message": "分区已更新"}
 
@@ -557,6 +597,48 @@ def toggle_admin_status(
     admin.status = 0 if admin.status == 1 else 1
     db.commit()
     return {"message": f"已{'启用' if admin.status == 1 else '禁用'}"}
+
+
+@router.put("/admins/{user_id}")
+def update_admin(
+    user_id: int,
+    nickname: str = Body(default=None),
+    district_id: int = Body(default=None),
+    password: str = Body(default=None),
+    user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """编辑管理员信息"""
+    admin = db.query(User).filter(
+        User.id == user_id, User.role.in_(["super_admin", "district_admin"])
+    ).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="管理员不存在")
+    if nickname is not None:
+        admin.nickname = nickname
+    if district_id is not None:
+        admin.district_id = district_id
+    if password:
+        admin.hashed_password = hash_password(password)
+    db.commit()
+    return {"message": "已更新"}
+
+
+@router.delete("/admins/{user_id}")
+def delete_admin(
+    user_id: int,
+    user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """删除管理员"""
+    admin = db.query(User).filter(
+        User.id == user_id, User.role.in_(["super_admin", "district_admin"])
+    ).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="管理员不存在")
+    db.delete(admin)
+    db.commit()
+    return {"message": "已删除"}
 
 
 # ---- 订单统计 ----
@@ -668,7 +750,12 @@ def list_coupons(
     user: User = Depends(require_any_admin),
     db: Session = Depends(get_db),
 ):
-    coupons = db.query(Coupon).order_by(Coupon.created_at.desc()).all()
+    query = db.query(Coupon)
+    if user.role == "district_admin":
+        query = query.filter(
+            (Coupon.district_id == user.district_id) | (Coupon.district_id == None)
+        )
+    coupons = query.order_by(Coupon.created_at.desc()).all()
     return [
         {
             "id": c.id, "name": c.name, "coupon_type": c.coupon_type,
@@ -934,20 +1021,120 @@ def visit_stats(days: int = Query(default=7, le=30), db: Session = Depends(get_d
     }
 
 
+# ---- 结算审批 ----
+@router.get("/settlements")
+def list_settlements(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=50),
+    status: str = Query(default=""),
+    target_type: str = Query(default=""),
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    """管理员查看结算申请列表"""
+    from models.region import Settlement
+    query = db.query(Settlement)
+    if status:
+        query = query.filter(Settlement.status == status)
+    if target_type:
+        query = query.filter(Settlement.target_type == target_type)
+
+    total = query.count()
+    items = query.order_by(Settlement.created_at.desc()).offset(
+        (page - 1) * page_size
+    ).limit(page_size).all()
+
+    result_items = []
+    for s in items:
+        target_name = ""
+        target_phone = ""
+        if s.target_type == "rider":
+            rider = db.query(Rider).filter(Rider.id == s.target_id).first()
+            if rider:
+                target_name = rider.real_name
+                target_phone = rider.phone or ""
+        elif s.target_type == "store":
+            store = db.query(Store).filter(Store.id == s.target_id).first()
+            if store:
+                target_name = store.name
+                target_phone = store.phone or ""
+
+        result_items.append({
+            "id": s.id,
+            "target_type": s.target_type,
+            "target_id": s.target_id,
+            "target_name": target_name,
+            "target_phone": target_phone,
+            "amount": float(s.amount),
+            "net_amount": float(s.net_amount),
+            "fee": float(s.fee),
+            "status": s.status,
+            "period": s.period,
+            "created_at": str(s.created_at),
+            "paid_at": str(s.paid_at) if s.paid_at else None,
+        })
+
+    return {"total": total, "items": result_items}
+
+
+@router.put("/settlements/{settlement_id}/approve")
+def approve_settlement(
+    settlement_id: int,
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    """管理员确认结算（已线下打款），扣减骑手/商家余额"""
+    from models.region import Settlement
+    from datetime import datetime as dt
+
+    settlement = db.query(Settlement).filter(Settlement.id == settlement_id).first()
+    if not settlement:
+        raise HTTPException(status_code=404, detail="结算申请不存在")
+    if settlement.status != "pending":
+        raise HTTPException(status_code=400, detail="该申请已处理")
+
+    # 扣减余额
+    if settlement.target_type == "rider":
+        rider = db.query(Rider).filter(Rider.id == settlement.target_id).first()
+        if rider:
+            if float(rider.balance) < float(settlement.amount):
+                raise HTTPException(status_code=400, detail="骑手余额不足（可能已被其他结算扣减）")
+            rider.balance = float(rider.balance) - float(settlement.amount)
+    elif settlement.target_type == "store":
+        store = db.query(Store).filter(Store.id == settlement.target_id).first()
+        if store and hasattr(store, 'balance'):
+            if float(store.balance) < float(settlement.amount):
+                raise HTTPException(status_code=400, detail="商家余额不足")
+            store.balance = float(store.balance) - float(settlement.amount)
+
+    settlement.status = "paid"
+    settlement.paid_at = dt.now()
+    db.commit()
+
+    return {"message": f"已确认结算 ¥{float(settlement.amount):.2f}", "settlement_id": settlement.id}
+
+
 # ---- 用户列表 ----
 @router.get("/customers")
 def list_customers(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=50),
     keyword: str = Query(default=""),
+    district_id: int = Query(default=None),
+    user: User = Depends(require_any_admin),
     db: Session = Depends(get_db),
 ):
-    """列出平台注册用户"""
+    """列出平台注册用户（可按分区筛选）"""
     query = db.query(User).filter(User.role == "user")
     if keyword:
         query = query.filter(
             User.nickname.contains(keyword) | User.phone.contains(keyword)
         )
+    # 分区管理员只能看自己分区
+    if user.role == "district_admin":
+        query = query.filter(User.district_id == user.district_id)
+    elif district_id:
+        query = query.filter(User.district_id == district_id)
     total = query.count()
     items = query.order_by(User.created_at.desc()).offset(
         (page - 1) * page_size
@@ -959,6 +1146,108 @@ def list_customers(
             "nickname": u.nickname or "",
             "avatar": u.avatar or "",
             "phone": u.phone or "",
+            "district_id": u.district_id,
             "created_at": str(u.created_at),
         } for u in items],
     }
+
+
+# ---- 推送通知 ----
+@router.get("/notifications")
+def list_notifications(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=50),
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    """查看已发送的通知"""
+    from models.notification import Notification
+    query = db.query(Notification)
+    if user.role == "district_admin":
+        query = query.filter(
+            (Notification.district_id == user.district_id) |
+            (Notification.district_id == None)
+        )
+    total = query.count()
+    items = query.order_by(Notification.created_at.desc()).offset(
+        (page - 1) * page_size
+    ).limit(page_size).all()
+    return {
+        "total": total,
+        "items": [{
+            "id": n.id,
+            "title": n.title,
+            "content": n.content,
+            "district_id": n.district_id,
+            "target_role": n.target_role,
+            "admin_id": n.admin_id,
+            "created_at": str(n.created_at),
+        } for n in items],
+    }
+
+
+@router.post("/notifications/send")
+async def send_notification(
+    title: str = Body(...),
+    content: str = Body(default=""),
+    target_role: str = Body(default="user"),
+    district_id: int = Body(default=None),
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    """发送推送通知"""
+    from models.notification import Notification
+
+    if user.role == "district_admin":
+        district_id = user.district_id
+
+    notification = Notification(
+        title=title,
+        content=content,
+        district_id=district_id,
+        target_role=target_role,
+        admin_id=user.id,
+    )
+    db.add(notification)
+    db.commit()
+    db.refresh(notification)
+
+    # WebSocket 推送给目标用户
+    payload = {
+        "type": "admin_notification",
+        "id": notification.id,
+        "title": title,
+        "content": content,
+    }
+    if target_role == "all":
+        await manager.broadcast(payload)
+    else:
+        await manager.send_to_role(target_role, payload)
+
+    return {
+        "message": "通知已发送",
+        "id": notification.id,
+        "target_role": target_role,
+        "district_id": district_id,
+    }
+
+
+# ---- 订单留言（只读） ----
+@router.get("/orders/{order_id}/messages")
+def admin_get_order_messages(
+    order_id: int,
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    """管理员查看订单留言"""
+    msgs = db.query(OrderMessage).filter(
+        OrderMessage.combined_order_id == order_id
+    ).order_by(OrderMessage.created_at).all()
+    return [{
+        "id": m.id,
+        "combined_order_id": m.combined_order_id,
+        "sender_id": m.sender_id,
+        "sender_role": m.sender_role,
+        "content": m.content,
+        "created_at": str(m.created_at),
+    } for m in msgs]

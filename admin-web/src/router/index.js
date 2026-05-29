@@ -47,6 +47,36 @@ const routes = [
         component: () => import('../views/System.vue'),
         meta: { title: '系统配置', role: 'super_admin' },
       },
+      {
+        path: 'customers',
+        name: 'Customers',
+        component: () => import('../views/Customers.vue'),
+        meta: { title: '客户管理' },
+      },
+      {
+        path: 'notifications',
+        name: 'Notifications',
+        component: () => import('../views/Notifications.vue'),
+        meta: { title: '推送通知' },
+      },
+      {
+        path: 'products',
+        name: 'Products',
+        component: () => import('../views/ProductManagement.vue'),
+        meta: { title: '商品管理' },
+      },
+      {
+        path: 'settlements',
+        name: 'Settlements',
+        component: () => import('../views/Settlements.vue'),
+        meta: { title: '结算审批' },
+      },
+      {
+        path: 'admins',
+        name: 'Admins',
+        component: () => import('../views/Admins.vue'),
+        meta: { title: '管理员管理', role: 'super_admin' },
+      },
     ],
   },
 ]

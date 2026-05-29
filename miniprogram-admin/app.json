@@ -10,7 +10,11 @@
     "pages/order-detail/order-detail",
     "pages/district/district",
     "pages/coupons/coupons",
-    "pages/coupon-edit/coupon-edit"
+    "pages/coupon-edit/coupon-edit",
+    "pages/settlements/settlements",
+    "pages/products/products",
+    "pages/notifications/notifications",
+    "pages/admins/admins"
   ],
   "window": {
     "backgroundTextStyle": "light",
