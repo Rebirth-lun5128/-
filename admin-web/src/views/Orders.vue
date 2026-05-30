@@ -197,6 +197,10 @@
                 <span class="info-label">创建时间</span>
                 <span class="info-val">{{ detail.created_at }}</span>
               </div>
+              <div class="info-item" v-if="detail.delivery_photo">
+                <span class="info-label">配送凭证</span>
+                <el-image :src="detail.delivery_photo" style="max-width:200px;max-height:200px;border-radius:8px" fit="contain" :preview-src-list="[detail.delivery_photo]" />
+              </div>
             </div>
           </div>
 

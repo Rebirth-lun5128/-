@@ -228,6 +228,43 @@ def mark_delivered(order_id: int, user: User = Depends(require_rider), db: Sessi
     return result
 
 
+@router.put("/{order_id}/delivery-photo")
+def upload_delivery_photo(
+    order_id: int,
+    photo_url: str = Body(..., embed=True),
+    user: User = Depends(require_rider),
+    db: Session = Depends(get_db),
+):
+    """骑手拍照上传送达凭证"""
+    rider = db.query(Rider).filter(Rider.user_id == user.id).first()
+    if not rider:
+        raise HTTPException(status_code=403, detail="仅骑手可操作")
+    order = db.query(CombinedOrder).filter(
+        CombinedOrder.id == order_id, CombinedOrder.rider_id == rider.id
+    ).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    if order.status not in ("delivering", "completed", "partial"):
+        raise HTTPException(status_code=400, detail="当前状态不可上传照片")
+
+    order.delivery_photo = photo_url
+    db.commit()
+
+    # 推送给用户和管理端
+    manager.push_order_event_sync(
+        "delivery_photo_uploaded",
+        {"order_id": order.id, "delivery_photo": photo_url},
+        user_id=order.user_id,
+    )
+    manager.push_order_event_sync(
+        "delivery_photo_uploaded",
+        {"order_id": order.id, "delivery_photo": photo_url},
+        broadcast_role="admin",
+    )
+
+    return {"message": "送达照片已上传", "delivery_photo": photo_url}
+
+
 @router.get("/my")
 def my_orders(
     page: int = Query(default=1, ge=1),

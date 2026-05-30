@@ -328,6 +328,12 @@ const canModify = computed(() => {
       </div>
     </div>
 
+    <!-- 配送照片 -->
+    <div class="bg-white mt-2 p-3" v-if="order.delivery_photo">
+      <div class="font-bold text-sm mb-2">📸 配送凭证</div>
+      <van-image :src="order.delivery_photo" fit="contain" style="max-height:300px" />
+    </div>
+
     <!-- 操作按钮 -->
     <div class="p-3 flex" style="gap:10px" v-if="needPay(order.status)">
       <van-button block round plain type="danger" @click="cancelOrder">取消订单</van-button>

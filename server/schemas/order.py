@@ -104,6 +104,7 @@ class CombinedOrderOut(BaseModel):
     picked_at: Optional[datetime] = None
     delivered_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+    delivery_photo: str = ""
     created_at: datetime
     sub_orders: List[SubOrderOut] = []
     rider_name: str = ""

@@ -121,6 +121,12 @@
     <text class="action-warn">此操作不可撤销，请谨慎执行</text>
   </view>
 
+  <!-- 配送照片 -->
+  <view class="card" wx:if="{{order.delivery_photo}}">
+    <text class="section-title">📸 配送凭证</text>
+    <image class="delivery-photo-img" src="{{order.delivery_photo}}" mode="widthFix" />
+  </view>
+
   <view class="end-hint">— 订单详情 —</view>
 </view>
 

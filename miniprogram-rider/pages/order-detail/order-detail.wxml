@@ -8,9 +8,10 @@
 
   <!-- 收货信息 -->
   <view class="card">
-    <text class="section-title">收货信息</text>
+    <text class="section-title">📍 收货信息</text>
     <text class="contact">{{order.address_snapshot.contact_name}} {{order.address_snapshot.contact_phone}}</text>
     <text class="addr">{{order.address_snapshot.province || ''}}{{order.address_snapshot.city || ''}}{{order.address_snapshot.district || ''}}{{order.address_snapshot.detail}}</text>
+    <view class="nav-btn" bindtap="openNavigation" wx:if="{{order.status === 'delivering'}}">🧭 导航到收货点</view>
   </view>
 
   <!-- 各子单 -->
@@ -62,6 +63,17 @@
     <view class="fee-row total">
       <text>实付金额</text>
       <text class="price final">¥{{order.total_price}}</text>
+    </view>
+  </view>
+
+  <!-- 配送拍照 -->
+  <view class="card" wx:if="{{order.status === 'delivering' || order.status === 'completed' || order.status === 'partial'}}">
+    <text class="section-title">📸 配送凭证</text>
+    <view wx:if="{{order.delivery_photo}}" class="delivery-photo">
+      <image class="photo-img" src="{{order.delivery_photo}}" mode="widthFix" />
+    </view>
+    <view wx:if="{{!order.delivery_photo && order.status === 'delivering'}}" class="photo-btn" bindtap="takePhoto">
+      📷 拍照上传送达凭证
     </view>
   </view>
 

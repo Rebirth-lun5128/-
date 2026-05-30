@@ -38,6 +38,7 @@ class CombinedOrder(Base):
     picked_at = Column(DateTime, nullable=True)
     delivered_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
+    delivery_photo = Column(String(500), default="")
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

@@ -99,6 +99,12 @@
     <view class="fee-row total"><text>实付金额</text><text class="price">¥{{order.total_price}}</text></view>
   </view>
 
+  <!-- 配送照片 -->
+  <view class="card" wx:if="{{order.delivery_photo}}">
+    <text class="section-title">📸 配送凭证</text>
+    <image class="delivery-photo-img" src="{{order.delivery_photo}}" mode="widthFix" />
+  </view>
+
   <!-- 订单信息 -->
   <view class="card">
     <view class="info-row"><text>订单编号</text><text>{{order.order_no}}</text></view>
