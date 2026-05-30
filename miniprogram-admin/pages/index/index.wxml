@@ -44,6 +44,12 @@
       <text class="kpi-label">今日交易额</text>
       <text class="kpi-arrow">→</text>
     </view>
+    <navigator url="/pages/admins/admins" class="kpi-card" hover-class="kpi-hover" style="--bg: linear-gradient(135deg, #636e72, #2d3436)" wx:if="{{isSuperAdmin}}">
+      <text class="kpi-icon">👑</text>
+      <text class="kpi-value">{{dashboard.total_admins || '管理'}}</text>
+      <text class="kpi-label">管理员管理</text>
+      <text class="kpi-arrow">→</text>
+    </navigator>
   </view>
 
   <!-- 访问量卡片 -->

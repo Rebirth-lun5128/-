@@ -32,6 +32,9 @@ def dashboard(user: User = Depends(require_any_admin), db: Session = Depends(get
     total_stores = db.query(func.count(Store.id)).scalar() or 0
     verified_stores = db.query(func.count(Store.id)).filter(Store.verify_status == "verified").scalar() or 0
     total_riders = db.query(func.count(Rider.id)).scalar() or 0
+    total_admins = db.query(func.count(User.id)).filter(
+        User.role.in_(["district_admin", "super_admin"])
+    ).scalar() or 0
 
     today_orders = db.query(func.count(Order.id)).filter(
         func.date(Order.created_at) == today,
@@ -71,6 +74,7 @@ def dashboard(user: User = Depends(require_any_admin), db: Session = Depends(get
         "verified_merchants": verified_stores,
         "verified_stores": verified_stores,  # 兼容旧字段
         "total_riders": total_riders,
+        "total_admins": total_admins,
         "today_orders": today_orders,
         "today_revenue": float(today_revenue),
         "today_platform_fee": round(today_fee, 2),
