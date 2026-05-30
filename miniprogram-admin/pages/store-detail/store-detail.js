@@ -1,4 +1,5 @@
 const api = require('../../utils/api')
+const { getApiBase } = require('../../utils/config')
 
 Page({
   data: {
@@ -36,7 +37,8 @@ Page({
       if (store) {
         store.commission_rate_display = ((store.commission_rate || 0.12) * 100).toFixed(1)
         store.created_at_display = (store.created_at || '').slice(0, 10)
-        this.setData({ store, qrCodeUrl: store.qr_code || '' })
+        const qrPath = store.qr_code || ''
+        this.setData({ store, qrCodeUrl: qrPath ? (getApiBase() + qrPath) : '' })
       }
     } catch (e) { }
   },
@@ -201,7 +203,8 @@ Page({
     this.setData({ qrLoading: true })
     try {
       const res = await api.post(`/api/admin/stores/${this.data.storeId}/qrcode`)
-      this.setData({ qrCodeUrl: res.qr_code || '', qrLoading: false })
+      const qrPath = res.qr_code || ''
+      this.setData({ qrCodeUrl: qrPath ? (getApiBase() + qrPath) : '', qrLoading: false })
       wx.showToast({ title: '二维码已生成', icon: 'success' })
     } catch {
       this.setData({ qrLoading: false })
