@@ -13,6 +13,8 @@ class Settlement(Base):
     amount = Column(DECIMAL(10, 2), nullable=False)
     fee = Column(DECIMAL(10, 2), default=0)
     net_amount = Column(DECIMAL(10, 2), nullable=False)
+    district_fee = Column(DECIMAL(10, 2), default=0)
+    district_id = Column(Integer, nullable=True)
     period = Column(String(20), default="")
     status = Column(SQLEnum("pending", "paid"), default="pending")
     paid_at = Column(DateTime, nullable=True)

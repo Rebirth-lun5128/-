@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, date
 from typing import List
 
@@ -192,18 +193,59 @@ def mark_delivered(order_id: int, user: User = Depends(require_rider), db: Sessi
             continue
         sub.status = "completed"
 
-        rate = float(sub.commission_rate)
         items_total = float(sub.items_total)
-        platform_fee = round(items_total * rate, 2)
-        merchant_net = round(items_total - platform_fee, 2)
 
+        # 阶梯佣金计算
+        rate = float(sub.commission_rate)  # 兜底默认
+        district_rate = 0.0
+        try:
+            # 查询店铺当月累计销售额
+            monthly_sales = db.query(func.coalesce(func.sum(SubOrder.items_total), 0)).filter(
+                SubOrder.store_id == sub.store_id,
+                SubOrder.status == "completed",
+                func.strftime('%Y-%m', SubOrder.updated_at) == func.strftime('%Y-%m', 'now'),
+            ).scalar() or 0
+            # 匹配平台阶梯
+            ct_cfg = db.query(SystemConfig).filter(SystemConfig.config_key == "commission_tiers").first()
+            if ct_cfg:
+                tiers = json.loads(ct_cfg.config_value) if ct_cfg.config_value else []
+                tier_rate = None
+                for t in tiers:
+                    t_min = float(t.get("min", 0))
+                    t_max = float(t.get("max", -1))
+                    if monthly_sales >= t_min and (t_max < 0 or monthly_sales < t_max):
+                        tier_rate = float(t.get("rate", 0))
+                        break
+                if tier_rate is not None:
+                    rate = tier_rate
+            # 匹配分区阶梯
+            dct_cfg = db.query(SystemConfig).filter(SystemConfig.config_key == "district_commission_tiers").first()
+            if dct_cfg:
+                dtiers = json.loads(dct_cfg.config_value) if dct_cfg.config_value else []
+                for t in dtiers:
+                    t_min = float(t.get("min", 0))
+                    t_max = float(t.get("max", -1))
+                    if monthly_sales >= t_min and (t_max < 0 or monthly_sales < t_max):
+                        district_rate = float(t.get("rate", 0))
+                        break
+        except Exception:
+            pass
+
+        platform_fee = round(items_total * rate, 2)
+        district_fee = round(items_total * district_rate, 2)
+        merchant_net = round(items_total - platform_fee - district_fee, 2)
+
+        store_district_id = sub.store.district_id if sub.store else None
         db.add(Settlement(
             target_type="store", target_id=sub.store_id,
             amount=items_total, fee=platform_fee, net_amount=merchant_net,
+            district_fee=district_fee, district_id=store_district_id,
             period=period, status="pending",
         ))
         _add_sub_timeline(sub.id, "completed",
-                          f"骑手已送达 | 商品¥{items_total:.2f} 平台扣¥{platform_fee:.2f} 商家得¥{merchant_net:.2f}", db)
+                          f"骑手已送达 | 商品¥{items_total:.2f} 平台扣¥{platform_fee:.2f}"
+                          + (f" 分区扣¥{district_fee:.2f}" if district_fee > 0 else "")
+                          + f" 商家得¥{merchant_net:.2f}", db)
         timeline_msgs.append(f"{sub.store_name_snapshot}: ¥{items_total:.2f}")
 
     # 检查是否有部分取消

@@ -105,7 +105,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   DataAnalysis, Shop, Van, Document, Location,
-  Setting, SwitchButton, Fold, Expand, Operation, Goods, User, Bell, Avatar
+  Setting, SwitchButton, Fold, Expand, Operation, Goods, User, Bell, Avatar, Money
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -176,6 +176,7 @@ const menuItems = [
   { path: '/districts',  label: '分区管理', icon: Location,      color: 'linear-gradient(135deg, #74b9ff, #0984e3)' },
   { path: '/products',   label: '商品管理', icon: Goods,         color: 'linear-gradient(135deg, #fd79a8, #e84393)' },
   { path: '/settlements',label: '结算审批', icon: Operation,     color: 'linear-gradient(135deg, #fdcb6e, #e17055)' },
+  { path: '/commission', label: '佣金设置', icon: Money,         color: 'linear-gradient(135deg, #00b894, #00cec9)' },
   { path: '/admins',     label: '管理员管理', icon: Avatar,       color: 'linear-gradient(135deg, #636e72, #2d3436)' },
   { path: '/system',     label: '系统配置', icon: Setting,       color: 'linear-gradient(135deg, #a29bfe, #6c5ce7)' },
 ]

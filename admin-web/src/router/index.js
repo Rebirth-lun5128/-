@@ -72,6 +72,12 @@ const routes = [
         meta: { title: '结算审批' },
       },
       {
+        path: 'commission',
+        name: 'Commission',
+        component: () => import('../views/CommissionSettings.vue'),
+        meta: { title: '佣金设置', role: 'super_admin' },
+      },
+      {
         path: 'admins',
         name: 'Admins',
         component: () => import('../views/Admins.vue'),

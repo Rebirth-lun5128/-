@@ -21,6 +21,8 @@ def seed():
             ("rider_per_order", "5", "骑手每单收入(元)"),
             ("auto_cancel_minutes", "15", "未支付自动取消时间(分钟)"),
             ("peak_delivery_fee_enabled", "0", "高峰期配送费开关"),
+            ("commission_tiers", '[{"min":0,"max":3000,"rate":0.15},{"min":3000,"max":10000,"rate":0.12},{"min":10000,"max":-1,"rate":0.08}]', "平台佣金阶梯"),
+            ("district_commission_tiers", '[{"min":0,"max":5000,"rate":0.03},{"min":5000,"max":-1,"rate":0.02}]', "分区佣金阶梯"),
         ]
         for key, value, desc in configs:
             if not db.query(SystemConfig).filter(SystemConfig.config_key == key).first():

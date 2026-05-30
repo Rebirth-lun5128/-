@@ -1,4 +1,5 @@
 """管理后台 — 分区管理员内置配送模式"""
+import json
 from datetime import datetime, date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
@@ -223,19 +224,54 @@ def mark_delivered(order_id: int, user: User = Depends(require_any_admin), db: S
         if sub.status == "cancelled":
             continue
         sub.status = "completed"
-        rate = float(sub.commission_rate)
         items_total = float(sub.items_total)
-        platform_fee = round(items_total * rate, 2)
-        merchant_net = round(items_total - platform_fee, 2)
 
+        # 阶梯佣金计算
+        rate = float(sub.commission_rate)
+        district_rate = 0.0
+        try:
+            monthly_sales = db.query(func.coalesce(func.sum(SubOrder.items_total), 0)).filter(
+                SubOrder.store_id == sub.store_id,
+                SubOrder.status == "completed",
+                func.strftime('%Y-%m', SubOrder.updated_at) == func.strftime('%Y-%m', 'now'),
+            ).scalar() or 0
+            ct_cfg = db.query(SystemConfig).filter(SystemConfig.config_key == "commission_tiers").first()
+            if ct_cfg:
+                tiers = json.loads(ct_cfg.config_value) if ct_cfg.config_value else []
+                for t in tiers:
+                    t_min = float(t.get("min", 0))
+                    t_max = float(t.get("max", -1))
+                    if monthly_sales >= t_min and (t_max < 0 or monthly_sales < t_max):
+                        rate = float(t.get("rate", 0))
+                        break
+            dct_cfg = db.query(SystemConfig).filter(SystemConfig.config_key == "district_commission_tiers").first()
+            if dct_cfg:
+                dtiers = json.loads(dct_cfg.config_value) if dct_cfg.config_value else []
+                for t in dtiers:
+                    t_min = float(t.get("min", 0))
+                    t_max = float(t.get("max", -1))
+                    if monthly_sales >= t_min and (t_max < 0 or monthly_sales < t_max):
+                        district_rate = float(t.get("rate", 0))
+                        break
+        except Exception:
+            pass
+
+        platform_fee = round(items_total * rate, 2)
+        district_fee = round(items_total * district_rate, 2)
+        merchant_net = round(items_total - platform_fee - district_fee, 2)
+
+        store_district_id = sub.store.district_id if sub.store else None
         db.add(Settlement(
             target_type="store", target_id=sub.store_id,
             amount=items_total, fee=platform_fee, net_amount=merchant_net,
+            district_fee=district_fee, district_id=store_district_id,
             period=period, status="pending",
         ))
         db.add(SubOrderTimeline(
             sub_order_id=sub.id, status="completed",
-            description=f"管理员已送达 | 商品¥{items_total:.2f} 平台扣¥{platform_fee:.2f} 商家得¥{merchant_net:.2f}",
+            description=f"管理员已送达 | 商品¥{items_total:.2f} 平台扣¥{platform_fee:.2f}"
+            + (f" 分区扣¥{district_fee:.2f}" if district_fee > 0 else "")
+            + f" 商家得¥{merchant_net:.2f}",
         ))
 
     if any(s.status == "cancelled" for s in order.sub_orders):

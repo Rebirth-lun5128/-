@@ -1312,3 +1312,75 @@ def admin_get_order_messages(
         "content": m.content,
         "created_at": str(m.created_at),
     } for m in msgs]
+
+
+# ---- 佣金阶梯 ----
+
+def _get_tiered_rate(tiers: list, monthly_sales: float) -> float:
+    """根据阶梯配置匹配抽成比例，未配置返回 None"""
+    if not tiers:
+        return None
+    for t in tiers:
+        t_min = float(t.get("min", 0))
+        t_max = float(t.get("max", -1))
+        if monthly_sales >= t_min and (t_max < 0 or monthly_sales < t_max):
+            return float(t.get("rate", 0))
+    return float(tiers[-1].get("rate", 0)) if tiers else None
+
+
+def get_monthly_store_sales(store_id: int, db: Session) -> float:
+    """查询店铺当月累计销售额"""
+    from datetime import datetime
+    now = datetime.now()
+    start = datetime(now.year, now.month, 1)
+    result = db.query(func.coalesce(func.sum(SubOrder.items_total), 0)).filter(
+        SubOrder.store_id == store_id,
+        SubOrder.status.in_(["completed"]),
+        SubOrder.updated_at >= start,
+    ).scalar()
+    return float(result or 0)
+
+
+@router.get("/commission-tiers")
+def get_commission_tiers(user: User = Depends(require_super_admin), db: Session = Depends(get_db)):
+    """获取平台和分区佣金阶梯"""
+    ct = db.query(SystemConfig).filter(SystemConfig.config_key == "commission_tiers").first()
+    dct = db.query(SystemConfig).filter(SystemConfig.config_key == "district_commission_tiers").first()
+    return {
+        "commission_tiers": json.loads(ct.config_value) if ct else [],
+        "district_commission_tiers": json.loads(dct.config_value) if dct else [],
+    }
+
+
+@router.put("/commission-tiers")
+def set_commission_tiers(
+    tiers: list = Body(...),
+    user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """更新平台佣金阶梯"""
+    ct = db.query(SystemConfig).filter(SystemConfig.config_key == "commission_tiers").first()
+    if ct:
+        ct.config_value = json.dumps(tiers)
+    else:
+        db.add(SystemConfig(config_key="commission_tiers", config_value=json.dumps(tiers),
+                           description="平台佣金阶梯配置"))
+    db.commit()
+    return {"message": "已保存", "commission_tiers": tiers}
+
+
+@router.put("/commission-tiers/district")
+def set_district_commission_tiers(
+    tiers: list = Body(...),
+    user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """更新分区佣金阶梯"""
+    dct = db.query(SystemConfig).filter(SystemConfig.config_key == "district_commission_tiers").first()
+    if dct:
+        dct.config_value = json.dumps(tiers)
+    else:
+        db.add(SystemConfig(config_key="district_commission_tiers", config_value=json.dumps(tiers),
+                           description="分区管理员佣金阶梯配置"))
+    db.commit()
+    return {"message": "已保存", "district_commission_tiers": tiers}
