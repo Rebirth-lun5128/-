@@ -33,9 +33,11 @@ Page({
 
   onShow() {
     if (!app.checkLogin()) return
+    // 兜底：如果 globalData 还没恢复（onLaunch 未完成），直接从 storage 读
+    const role = app.globalData.role || wx.getStorageSync('admin_role') || ''
     this.setData({
-      roleTitle: app.globalData.role === 'district_admin' ? '分区管理员' : '超级管理员',
-      isSuperAdmin: app.isSuperAdmin(),
+      roleTitle: role === 'district_admin' ? '分区管理员' : '超级管理员',
+      isSuperAdmin: role === 'super_admin',
     })
     this.loadDashboard()
     this.loadStats()
