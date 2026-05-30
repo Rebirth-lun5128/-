@@ -130,6 +130,9 @@
               <el-button size="small" type="warning" @click="openEdit(row)" round>
                 <el-icon><EditPen /></el-icon>
               </el-button>
+              <el-button size="small" type="info" @click="openQR(row)" round>
+                <el-icon><Picture /></el-icon> 二维码
+              </el-button>
               <el-button
                 size="small"
                 :type="row.status === 'open' ? 'danger' : 'success'"
@@ -192,6 +195,30 @@
         <el-button @click="editDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="saveEdit" :loading="saving">保存</el-button>
       </template>
+    </el-dialog>
+
+    <!-- 二维码弹窗 -->
+    <el-dialog v-model="qrDialogVisible" title="店铺二维码" width="420px" destroy-on-close center>
+      <div v-if="qrLoading" style="text-align:center;padding:40px">
+        <el-icon class="is-loading" size="32"><Loading /></el-icon>
+        <p style="margin-top:12px;color:#999">生成中...</p>
+      </div>
+      <div v-else-if="qrCodeUrl" style="text-align:center">
+        <img :src="qrCodeUrl" style="width:260px;height:260px;border:8px solid #fff;box-shadow:0 2px 16px rgba(0,0,0,0.12)" />
+        <p style="margin-top:12px;color:#666;font-size:13px">
+          {{ qrStoreName }}
+        </p>
+        <p style="color:#999;font-size:12px;margin-top:4px">
+          用户扫码直接进入店铺页面
+        </p>
+        <el-button type="primary" size="small" round style="margin-top:12px" @click="generateQR(qrStoreId)">
+          重新生成
+        </el-button>
+      </div>
+      <div v-else style="text-align:center;padding:40px">
+        <p style="color:#999;margin-bottom:16px">尚未生成二维码</p>
+        <el-button type="primary" @click="generateQR(qrStoreId)">生成二维码</el-button>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -338,6 +365,35 @@ async function saveEdit() {
     editDialogVisible.value = false
     ElMessage.success('已保存')
   } catch (e) { /* ignore */ } finally { saving.value = false }
+}
+
+// ===== 二维码 =====
+const qrDialogVisible = ref(false)
+const qrStoreId = ref(null)
+const qrStoreName = ref('')
+const qrCodeUrl = ref('')
+const qrLoading = ref(false)
+
+async function openQR(row) {
+  qrDialogVisible.value = true
+  qrStoreId.value = row.id
+  qrStoreName.value = row.name
+  qrCodeUrl.value = row.qr_code || ''
+  if (!qrCodeUrl.value) {
+    await generateQR(row.id)
+  }
+}
+
+async function generateQR(storeId) {
+  qrLoading.value = true
+  try {
+    const res = await http.post(`/admin/stores/${storeId}/qrcode`)
+    qrCodeUrl.value = res.qr_code
+    // 更新表格行数据
+    const row = items.value.find(r => r.id === storeId)
+    if (row) row.qr_code = res.qr_code
+    ElMessage.success('二维码已生成')
+  } catch { } finally { qrLoading.value = false }
 }
 
 loadData()

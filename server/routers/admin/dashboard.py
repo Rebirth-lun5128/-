@@ -697,6 +697,67 @@ def set_store_delivery_surcharge(
     return {"message": f"配送附加费已设为 ¥{surcharge}", "delivery_surcharge": surcharge}
 
 
+# ---- 店铺二维码 ----
+
+@router.get("/stores/{store_id}/qrcode")
+def get_store_qrcode(store_id: int, user: User = Depends(require_any_admin), db: Session = Depends(get_db)):
+    """获取店铺二维码信息"""
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="店铺不存在")
+    content = {"store_id": store.id, "name": store.name,
+               "path": f"pages/restaurant/restaurant?id={store.id}"}
+    return {
+        "store_id": store.id,
+        "store_name": store.name,
+        "qr_code": store.qr_code or "",
+        "content": content,
+    }
+
+
+@router.post("/stores/{store_id}/qrcode")
+def generate_store_qrcode(store_id: int, user: User = Depends(require_any_admin), db: Session = Depends(get_db)):
+    """生成/重新生成店铺二维码"""
+    import json
+    import uuid
+    import qrcode
+    from config import settings
+
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="店铺不存在")
+
+    content = {"store_id": store.id, "name": store.name,
+               "path": f"pages/restaurant/restaurant?id={store.id}"}
+    content_str = json.dumps(content, ensure_ascii=False)
+
+    # 生成 QR 码
+    qr = qrcode.QRCode(box_size=10, border=4)
+    qr.add_data(content_str)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    # 保存到 uploads 目录
+    import os
+    from pathlib import Path
+    filename = f"qr_store_{store.id}_{uuid.uuid4().hex[:8]}.png"
+    upload_dir = Path(settings.UPLOAD_DIR)
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    filepath = upload_dir / filename
+    img.save(str(filepath), "PNG")
+
+    # 更新数据库
+    store.qr_code = f"/uploads/{filename}"
+    db.commit()
+
+    return {
+        "store_id": store.id,
+        "store_name": store.name,
+        "qr_code": store.qr_code,
+        "content": content,
+    }
+
+
 # ---- 分区配送费高级设置 ----
 @router.put("/districts/{district_id}/delivery-fee-settings")
 def set_district_delivery_fee(

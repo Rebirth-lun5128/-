@@ -135,6 +135,23 @@
     </view>
   </view>
 
+  <!-- 二维码 -->
+  <view class="card" wx:if="{{store.verify_status === 'verified'}}">
+    <text class="section-title">📱 店铺二维码</text>
+    <view class="qr-section" wx:if="{{qrLoading}}">
+      <text class="text-gray">生成中...</text>
+    </view>
+    <view class="qr-section" wx:elif="{{qrCodeUrl}}">
+      <image class="qr-img" src="{{qrCodeUrl}}" mode="aspectFit" />
+      <text class="text-gray mt-2">用户扫码直接进入店铺</text>
+      <view class="btn-primary mt-2" bindtap="generateQR">重新生成</view>
+    </view>
+    <view class="qr-section" wx:else>
+      <text class="text-gray">尚未生成二维码</text>
+      <view class="btn-primary mt-2" bindtap="generateQR">生成二维码</view>
+    </view>
+  </view>
+
   <!-- 店铺控制 -->
   <view class="card" wx:if="{{store.verify_status === 'verified'}}">
     <text class="section-title">🛠 店铺控制</text>

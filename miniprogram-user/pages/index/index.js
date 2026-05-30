@@ -126,6 +126,27 @@ Page({
     wx.navigateTo({ url: '/pages/coupons/coupons' })
   },
 
+  onScanTap() {
+    wx.scanCode({
+      success: (res) => {
+        try {
+          const data = JSON.parse(res.result)
+          if (data.store_id) {
+            wx.navigateTo({ url: `/pages/restaurant/restaurant?id=${data.store_id}` })
+          }
+        } catch {
+          // 如果不是 JSON，尝试作为 URL 解析
+          const match = res.result.match(/store_id[=:](\d+)/)
+          if (match) {
+            wx.navigateTo({ url: `/pages/restaurant/restaurant?id=${match[1]}` })
+          } else {
+            wx.showToast({ title: '无法识别的二维码', icon: 'none' })
+          }
+        }
+      },
+    })
+  },
+
   onBannerTap(e) {
     const type = e.currentTarget.dataset.type
     switch (type) {

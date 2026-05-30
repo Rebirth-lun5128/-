@@ -37,6 +37,11 @@
   font-size: 28rpx;
   color: #333;
 }
+.scan-icon {
+  font-size: 36rpx;
+  margin-left: 16rpx;
+  padding: 8rpx;
+}
 
 /* ====== Hero 轮播 ====== */
 .hero-section {

@@ -105,6 +105,7 @@ class StoreOut(BaseModel):
     id_card_photo: str
     combinable_districts: Optional[List[int]] = None
     district_name: str = ""
+    qr_code: str = ""
 
     model_config = ConfigDict(from_attributes=True)
 

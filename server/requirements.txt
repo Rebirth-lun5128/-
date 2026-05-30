@@ -10,3 +10,5 @@ pydantic[email]==2.5.2
 alembic==1.13.1
 redis==5.0.1
 httpx==0.25.2
+qrcode[pil]==7.4.2
+Pillow==10.2.0

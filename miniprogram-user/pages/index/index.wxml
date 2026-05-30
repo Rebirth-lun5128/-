@@ -9,6 +9,7 @@
   <view class="search-bar">
     <text class="search-icon">🔍</text>
     <input class="search-input" placeholder="搜索店铺或菜品" bindconfirm="onSearch" confirm-type="search" />
+    <text class="scan-icon" bindtap="onScanTap">📷</text>
   </view>
 
   <!-- Hero 轮播广告区 -->
