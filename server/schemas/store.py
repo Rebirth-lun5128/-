@@ -95,6 +95,7 @@ class StoreOut(BaseModel):
     monthly_sales: int
     min_price: float
     delivery_fee: float
+    effective_delivery_fee: float = 0  # 实际配送费（从分区读取，元）
     delivery_time: str
     business_hours: Optional[dict]
     notice: str

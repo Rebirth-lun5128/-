@@ -57,7 +57,7 @@ async function loadDeliveryFee() {
     for (const sid of storeIds.value) {
       try {
         const store = await api.get(`/api/user/stores/${sid}`, {}, { silent: true })
-        const fee = parseFloat(store.delivery_fee) || 0
+        const fee = parseFloat(store.effective_delivery_fee || store.delivery_fee) || 0
         totalOriginal += fee
         totalFee += fee
       } catch {}

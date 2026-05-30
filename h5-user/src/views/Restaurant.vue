@@ -94,7 +94,7 @@ function goToConfirm() {
         <div class="flex items-center mt-1">
           <span class="text-primary text-sm">★ {{ restaurant.rating || 4.5 }}</span>
           <span class="text-sm text-gray ml-2">月售{{ restaurant.monthly_sales || 0 }}</span>
-          <span class="text-sm text-gray ml-2">¥{{ restaurant.delivery_fee || 0 }}配送</span>
+          <span class="text-sm text-gray ml-2">¥{{ restaurant.effective_delivery_fee || restaurant.delivery_fee || 0 }}配送</span>
           <span class="text-xs text-gray ml-2" v-if="restaurant.district_name">{{ restaurant.district_name }}</span>
         </div>
       </div>

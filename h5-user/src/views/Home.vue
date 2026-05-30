@@ -141,7 +141,7 @@ function typeLabel(type) {
 }
 
 function freeDelivery(s) {
-  const fee = parseFloat(s.delivery_fee) || 0
+  const fee = parseFloat(s.effective_delivery_fee || s.delivery_fee) || 0
   return fee <= 0
 }
 </script>

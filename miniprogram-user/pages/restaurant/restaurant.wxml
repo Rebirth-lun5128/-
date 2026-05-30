@@ -11,7 +11,7 @@
       </view>
       <view class="restaurant-tags">
         <text class="tag">¥{{restaurant.min_price}}起送</text>
-        <text class="tag">配送¥{{restaurant.delivery_fee}}</text>
+        <text class="tag">配送¥{{restaurant.effective_delivery_fee || restaurant.delivery_fee}}</text>
       </view>
       <view class="restaurant-notice" wx:if="{{restaurant.notice}}">{{restaurant.notice}}</view>
     </view>

@@ -55,6 +55,13 @@ class Store(Base):
     def district_name(self):
         return self.district.name if self.district else ""
 
+    @property
+    def effective_delivery_fee(self):
+        """实际配送费（从分区读取，分→元），替代废弃的 delivery_fee"""
+        if self.district and self.district.delivery_fee:
+            return float(self.district.delivery_fee) / 100.0
+        return float(self.delivery_fee or 0)
+
 
 class StoreCategory(Base):
     __tablename__ = "store_categories"

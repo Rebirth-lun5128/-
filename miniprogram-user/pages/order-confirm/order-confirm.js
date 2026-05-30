@@ -70,7 +70,7 @@ Page({
   async loadRestaurant(id) {
     try {
       const res = await api.get(`/api/user/stores/${id}`)
-      const deliveryFee = parseFloat(res.delivery_fee) || 0
+      const deliveryFee = parseFloat(res.effective_delivery_fee || res.delivery_fee) || 0
       this.setData({ restaurant: res, deliveryFee })
       this.calcTotal()
     } catch (e) {}
@@ -82,7 +82,7 @@ Page({
     try {
       const res = await api.get(`/api/user/stores/${this.data.storeIds[0]}`)
       this.setData({
-        deliveryFee: parseFloat(res.delivery_fee) || 0,
+        deliveryFee: parseFloat(res.effective_delivery_fee || res.delivery_fee) || 0,
         restaurant: res,
       })
       this.calcTotal()
