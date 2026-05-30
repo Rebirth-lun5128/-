@@ -20,6 +20,21 @@ import {
   Icon,
   Toast,
   Dialog,
+  Swipe,
+  SwipeItem,
+  PullRefresh,
+  Checkbox,
+  ActionSheet,
+  RadioGroup,
+  Radio,
+  Rate,
+  Uploader,
+  Notify,
+  Skeleton,
+  Card,
+  Tag,
+  Stepper,
+  SubmitBar,
 } from 'vant'
 import 'vant/lib/index.css'
 import './assets/styles/global.css'
@@ -43,4 +58,19 @@ app.use(TabbarItem)
 app.use(Icon)
 app.use(Toast)
 app.use(Dialog)
+app.use(Swipe)
+app.use(SwipeItem)
+app.use(PullRefresh)
+app.use(Checkbox)
+app.use(ActionSheet)
+app.use(RadioGroup)
+app.use(Radio)
+app.use(Rate)
+app.use(Uploader)
+app.use(Notify)
+app.use(Skeleton)
+app.use(Card)
+app.use(Tag)
+app.use(Stepper)
+app.use(SubmitBar)
 app.mount('#app')
