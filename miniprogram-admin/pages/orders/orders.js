@@ -16,6 +16,11 @@ Page({
     // 修改审核
     modStatus: 'pending_review',
     modifications: [],
+
+    // 拒绝弹窗
+    showRejectDialog: false,
+    rejectModId: null,
+    rejectComment: '',
   },
 
   onLoad(options) {
@@ -128,18 +133,25 @@ Page({
 
   rejectMod(e) {
     const id = e.currentTarget.dataset.id
-    wx.showModal({
-      title: '拒绝申请',
-      content: '确定拒绝该修改申请吗？',
-      editable: false,
-      success: async (res) => {
-        if (!res.confirm) return
-        try {
-          await api.put(`/api/admin/orders/modifications/${id}/reject`)
-          wx.showToast({ title: '已拒绝', icon: 'success' })
-          this.loadModifications()
-        } catch (e) {}
-      },
-    })
+    this.setData({ showRejectDialog: true, rejectModId: id, rejectComment: '' })
+  },
+
+  onRejectCommentInput(e) {
+    this.setData({ rejectComment: e.detail.value })
+  },
+
+  closeRejectDialog() {
+    this.setData({ showRejectDialog: false })
+  },
+
+  async confirmReject() {
+    const id = this.data.rejectModId
+    const comment = this.data.rejectComment.trim()
+    try {
+      await api.put(`/api/admin/orders/modifications/${id}/reject`, null, { comment: comment || undefined })
+      wx.showToast({ title: '已拒绝', icon: 'success' })
+      this.setData({ showRejectDialog: false })
+      this.loadModifications()
+    } catch (e) {}
   },
 })

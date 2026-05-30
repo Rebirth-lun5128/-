@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showDialog } from 'vant'
 import { api } from '../utils/api'
@@ -53,6 +53,7 @@ async function loadOrder() {
       } catch {}
     }
   } catch {}
+  loadModifications()
 }
 
 function handleWS(data) {
@@ -68,6 +69,9 @@ function handleWS(data) {
       riderLng.value = lng
     }
     return
+  }
+  if (data.event === 'modification_reviewed' || data.event === 'modification_requested') {
+    loadModifications()
   }
   loadOrder()
 }
@@ -118,6 +122,100 @@ function openMapApp() {
 }
 
 const reviewTagsList = ['味道好', '分量足', '包装好', '性价比高', '送餐快']
+
+// ==================== 改动申请 ====================
+const modTypes = [
+  { type: 'cancel', label: '退单申请', icon: '↩️', desc: '不想要了，申请取消订单' },
+  { type: 'refund', label: '退款申请', icon: '💰', desc: '已支付，申请退款' },
+  { type: 'address_change', label: '修改地址', icon: '📍', desc: '修改收货地址信息' },
+  { type: 'other', label: '其他申请', icon: '💬', desc: '其他需要调整的地方' },
+]
+const showModSheet = ref(false)
+const showModDialog = ref(false)
+const modType = ref('')
+const modSubId = ref(null)
+const modReason = ref('')
+const modContactName = ref('')
+const modContactPhone = ref('')
+const modAddressDetail = ref('')
+const modifications = ref([])
+const modPending = ref(false)
+const submittingMod = ref(false)
+
+async function loadModifications() {
+  try {
+    const mods = await api.get(`/api/user/orders/${orderId}/modifications`, {}, { silent: true })
+    modifications.value = mods || []
+    modPending.value = modifications.value.some(m => m.status === 'pending_review')
+  } catch {}
+}
+
+function modTypeLabel(type) {
+  const map = { cancel: '退单申请', refund: '退款申请', address_change: '修改地址', other: '其他申请' }
+  return map[type] || type
+}
+function modStatusLabel(s) {
+  const map = { pending_review: '待审核', approved: '已通过', rejected: '已拒绝' }
+  return map[s] || s
+}
+function modStatusColor(s) {
+  const map = { pending_review: '#FF9800', approved: '#4CAF50', rejected: '#999' }
+  return map[s] || '#999'
+}
+
+function selectModType(type) {
+  showModSheet.value = false
+  modType.value = type
+  if (type === 'address_change') {
+    const addr = order.value?.address_snapshot || {}
+    modContactName.value = addr.contact_name || ''
+    modContactPhone.value = addr.contact_phone || ''
+    modAddressDetail.value = addr.detail || addr.address || ''
+  }
+  modReason.value = ''
+  modSubId.value = null
+  setTimeout(() => { showModDialog.value = true }, 200)
+}
+
+async function submitMod() {
+  if (!modReason.value.trim()) {
+    showToast({ message: '请填写申请理由', type: 'fail' })
+    return
+  }
+  submittingMod.value = true
+  try {
+    if (modType.value === 'address_change') {
+      await api.post(`/api/user/orders/${orderId}/request-modification`, {
+        type: modType.value,
+        reason: modReason.value.trim(),
+        new_address: {
+          contact_name: modContactName.value,
+          contact_phone: modContactPhone.value,
+          detail: modAddressDetail.value,
+        },
+      })
+    } else {
+      const subId = modSubId.value || (subOrders.value.length === 1 ? subOrders.value[0].id : null)
+      if (!subId) {
+        showToast({ message: '请选择要修改的店铺', type: 'fail' })
+        submittingMod.value = false
+        return
+      }
+      await api.post(`/api/user/orders/sub/${subId}/request-modification`, {
+        type: modType.value,
+        reason: modReason.value.trim(),
+      })
+    }
+    showToast({ message: '申请已提交，等待审核', type: 'success' })
+    showModDialog.value = false
+    loadModifications()
+  } catch {} finally { submittingMod.value = false }
+}
+
+const canModify = computed(() => {
+  const s = order.value?.status
+  return ['pending', 'pending_accept', 'preparing', 'ready'].includes(s)
+})
 </script>
 
 <template>
@@ -239,6 +337,64 @@ const reviewTagsList = ['味道好', '分量足', '包装好', '性价比高', '
       <van-button block round plain type="danger" @click="cancelOrder">取消订单</van-button>
     </div>
 
-    <div style="height:60px" />
+    <!-- 申请修改按钮 -->
+    <div class="p-3" v-if="canModify">
+      <van-button block round plain type="primary" @click="showModSheet = true">
+        {{ modPending ? '已有待审核申请' : '申请修改' }}
+      </van-button>
+    </div>
+
+    <!-- 改动申请记录 -->
+    <div class="bg-white mt-2 p-3" v-if="modifications.length > 0">
+      <div class="font-bold text-sm mb-2">📝 改动申请记录</div>
+      <div v-for="mod in modifications" :key="mod.id"
+        class="py-3" style="border-bottom:1px solid #f0f0f0">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-sm">{{ modTypeLabel(mod.type) }}</span>
+          <span class="text-xs font-bold" :style="{ color: modStatusColor(mod.status) }">{{ modStatusLabel(mod.status) }}</span>
+        </div>
+        <div class="text-xs text-gray mt-1">理由：{{ mod.reason }}</div>
+        <div class="text-xs mt-1" style="color:#FF9800" v-if="mod.review_comment">审核意见：{{ mod.review_comment }}</div>
+        <div class="text-xs mt-1" style="color:#ccc">{{ mod.created_at }}</div>
+      </div>
+    </div>
+
+    <div style="height:80px" />
+
+    <!-- ====== 修改类型 ActionSheet ====== -->
+    <van-action-sheet v-model:show="showModSheet" title="选择修改类型" :actions="modTypes.map(t=>({name:t.icon+' '+t.label+' - '+t.desc,type:t.type}))" @select="(a)=>{selectModType(a.type)}" cancel-text="取消" />
+
+    <!-- ====== 修改申请弹窗 ====== -->
+    <van-popup v-model:show="showModDialog" position="bottom" round :style="{ maxHeight: '65%' }">
+      <div class="p-4">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-lg">申请修改</h3>
+          <span class="text-sm text-gray" style="cursor:pointer" @click="showModDialog = false">✕</span>
+        </div>
+
+        <!-- 子单选择（多店合单 & 非地址修改） -->
+        <div class="mb-3" v-if="subOrders.length > 1 && modType !== 'address_change'">
+          <div class="text-sm text-gray mb-1">选择店铺</div>
+          <van-radio-group v-model="modSubId" direction="horizontal">
+            <van-radio v-for="sub in subOrders" :key="sub.id" :name="sub.id">{{ sub.store_name || sub.store_name_snapshot }}</van-radio>
+          </van-radio-group>
+        </div>
+
+        <!-- 地址修改表单 -->
+        <div v-if="modType === 'address_change'">
+          <div class="text-xs text-gray mb-2">当前地址：{{ order.address_snapshot.contact_name }} {{ order.address_snapshot.contact_phone }} {{ order.address_snapshot.detail || order.address_snapshot.address }}</div>
+          <van-field v-model="modContactName" label="新联系人" placeholder="收货人姓名" />
+          <van-field v-model="modContactPhone" label="新电话" placeholder="收货人电话" />
+          <van-field v-model="modAddressDetail" label="新地址" placeholder="详细地址" />
+        </div>
+
+        <!-- 理由 -->
+        <van-field v-model="modReason" type="textarea" rows="3" maxlength="300" placeholder="请详细说明修改原因..." class="mt-3" />
+
+        <van-button block round type="primary" color="#2196F3" :loading="submittingMod" class="mt-4" @click="submitMod" style="height:44px">
+          提交申请
+        </van-button>
+      </div>
+    </van-popup>
   </div>
 </template>

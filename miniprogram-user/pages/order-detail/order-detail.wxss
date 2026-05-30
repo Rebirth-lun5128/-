@@ -219,3 +219,103 @@
   border-radius: 16rpx;
   margin-top: 20rpx;
 }
+
+/* ====== 改动申请 ====== */
+.modify-btn {
+  text-align: center;
+  padding: 0 32rpx;
+  margin-top: 20rpx;
+}
+.btn-outline {
+  padding: 24rpx 0;
+  font-size: 30rpx;
+  color: #2196F3;
+  background: #E3F2FD;
+  border-radius: 16rpx;
+  border: 2rpx solid #90CAF9;
+}
+
+.modifications-section {
+  margin-top: 20rpx;
+}
+.mod-item {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.mod-item:last-child { border-bottom: none; }
+.mod-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.mod-type { font-size: 28rpx; font-weight: 600; color: #333; }
+.mod-status { font-size: 24rpx; font-weight: 600; }
+.mod-reason { display: block; font-size: 24rpx; color: #666; margin-top: 8rpx; }
+.mod-comment { display: block; font-size: 24rpx; color: #FF9800; margin-top: 4rpx; }
+.mod-time { display: block; font-size: 22rpx; color: #999; margin-top: 6rpx; }
+
+/* ActionSheet */
+.action-sheet {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: #fff; border-radius: 24rpx 24rpx 0 0;
+  z-index: 301; padding-bottom: env(safe-area-inset-bottom);
+}
+.sheet-title {
+  text-align: center; font-size: 28rpx; color: #999;
+  padding: 28rpx; border-bottom: 1rpx solid #f0f0f0;
+}
+.sheet-option {
+  display: flex; align-items: center; padding: 24rpx 32rpx;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+.sheet-option:active { background: #f9f9f9; }
+.opt-icon { font-size: 36rpx; margin-right: 20rpx; }
+.opt-label { display: block; font-size: 30rpx; color: #333; font-weight: 600; }
+.opt-desc { display: block; font-size: 24rpx; color: #999; margin-top: 4rpx; }
+.sheet-cancel {
+  text-align: center; padding: 28rpx; color: #999;
+  font-size: 30rpx; border-top: 12rpx solid #f5f5f5;
+}
+
+/* 修改申请弹窗 */
+.mod-dialog {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: #fff; border-radius: 24rpx 24rpx 0 0;
+  z-index: 301; max-height: 70vh; display: flex; flex-direction: column;
+}
+.dialog-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 28rpx; border-bottom: 1rpx solid #f0f0f0;
+  font-size: 32rpx; font-weight: 700; color: #333;
+}
+.dialog-close { font-size: 24rpx; color: #999; padding: 8rpx; }
+.dialog-body { flex: 1; padding: 24rpx 28rpx; overflow-y: auto; }
+.dialog-footer {
+  display: flex; gap: 20rpx; padding: 20rpx 28rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.form-item { margin-bottom: 22rpx; }
+.form-label { display: block; font-size: 26rpx; color: #666; margin-bottom: 10rpx; }
+.form-static { display: block; font-size: 26rpx; color: #999; background: #f8f9fc; padding: 16rpx 20rpx; border-radius: 14rpx; }
+.form-input {
+  width: 100%; background: #f8f9fc; border-radius: 14rpx;
+  padding: 16rpx 20rpx; font-size: 28rpx; color: #333; box-sizing: border-box;
+}
+.form-textarea {
+  width: 100%; background: #f8f9fc; border-radius: 14rpx;
+  padding: 16rpx 20rpx; font-size: 28rpx; color: #333; box-sizing: border-box;
+  min-height: 140rpx;
+}
+.form-picker {
+  background: #f8f9fc; border-radius: 14rpx;
+  padding: 16rpx 20rpx; font-size: 28rpx; color: #666; box-sizing: border-box;
+}
+
+.btn-cancel, .btn-save {
+  flex: 1; text-align: center; padding: 22rpx 0; border-radius: 44rpx;
+  font-size: 28rpx; font-weight: 600;
+}
+.btn-cancel { background: #f5f5f5; color: #666; }
+.btn-save { background: linear-gradient(135deg, #2196F3, #64B5F6); color: #fff; }

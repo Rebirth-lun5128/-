@@ -113,4 +113,17 @@
 
     <view wx:if="{{modifications.length > 0}}" class="end-hint">— 已加载全部 —</view>
   </block>
+
+  <!-- 拒绝理由弹窗 -->
+  <view class="mask" wx:if="{{showRejectDialog}}" catchtap="closeRejectDialog"></view>
+  <view class="reject-dialog" wx:if="{{showRejectDialog}}">
+    <view class="dialog-header">拒绝申请</view>
+    <view class="dialog-body">
+      <textarea class="dialog-textarea" placeholder="输入拒绝理由（选填）" value="{{rejectComment}}" bindinput="onRejectCommentInput" maxlength="200" />
+    </view>
+    <view class="dialog-footer">
+      <view class="btn-cancel" bindtap="closeRejectDialog">取消</view>
+      <view class="btn-danger" bindtap="confirmReject">确定拒绝</view>
+    </view>
+  </view>
 </view>

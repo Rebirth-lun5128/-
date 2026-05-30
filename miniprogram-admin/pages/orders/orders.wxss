@@ -194,3 +194,23 @@
   background: linear-gradient(135deg, #d63031, #ff7675);
   color: #fff;
 }
+
+/* 拒绝理由弹窗 */
+.reject-dialog {
+  position: fixed; top: 30%; left: 10%; right: 10%;
+  background: #fff; border-radius: 20rpx; z-index: 301;
+  overflow: hidden;
+}
+.dialog-header {
+  text-align: center; font-size: 32rpx; font-weight: 700;
+  color: #333; padding: 28rpx; border-bottom: 1rpx solid #f0f0f0;
+}
+.dialog-body { padding: 24rpx 28rpx; }
+.dialog-textarea {
+  width: 100%; background: #f8f9fc; border-radius: 14rpx;
+  padding: 16rpx 20rpx; font-size: 28rpx; min-height: 140rpx;
+  box-sizing: border-box;
+}
+.dialog-footer {
+  display: flex; gap: 16rpx; padding: 16rpx 28rpx 28rpx;
+}
