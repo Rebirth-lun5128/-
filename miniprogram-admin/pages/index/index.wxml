@@ -50,6 +50,12 @@
       <text class="kpi-label">管理员管理</text>
       <text class="kpi-arrow">→</text>
     </navigator>
+    <navigator url="/pages/commission/commission" class="kpi-card" hover-class="kpi-hover" style="--bg: linear-gradient(135deg, #00b894, #00cec9)" wx:if="{{isSuperAdmin}}">
+      <text class="kpi-icon">💰</text>
+      <text class="kpi-value">阶梯</text>
+      <text class="kpi-label">佣金设置</text>
+      <text class="kpi-arrow">→</text>
+    </navigator>
   </view>
 
   <!-- 访问量卡片 -->
@@ -270,6 +276,10 @@
       <navigator url="/pages/admins/admins" class="quick-item" hover-class="quick-hover" wx:if="{{isSuperAdmin}}">
         <text class="quick-icon">👑</text>
         <text class="quick-txt">管理员管理</text>
+      </navigator>
+      <navigator url="/pages/commission/commission" class="quick-item" hover-class="quick-hover" wx:if="{{isSuperAdmin}}">
+        <text class="quick-icon">💰</text>
+        <text class="quick-txt">佣金设置</text>
       </navigator>
     </view>
   </view>

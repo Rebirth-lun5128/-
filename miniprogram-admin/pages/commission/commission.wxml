@@ -1,0 +1,66 @@
+<scroll-view class="page" scroll-y>
+  <!-- 平台佣金阶梯 -->
+  <view class="card">
+    <text class="section-title">🏛️ 平台佣金阶梯</text>
+    <text class="section-hint">按店铺月累计销售额分档，未配置时使用店铺默认抽成</text>
+
+    <view class="tier-row header">
+      <text class="tier-cell" style="flex:1">下限¥</text>
+      <text class="tier-cell" style="flex:1">上限¥</text>
+      <text class="tier-cell" style="flex:0.8">抽成%</text>
+      <text class="tier-cell" style="flex:0.4"></text>
+    </view>
+
+    <view class="tier-row" wx:for="{{platformTiers}}" wx:key="index">
+      <input class="tier-input" style="flex:1" type="digit" value="{{item.min}}" data-index="{{index}}" bindinput="onPlatformMin" />
+      <input class="tier-input" style="flex:1" type="digit" value="{{item.max}}" data-index="{{index}}" bindinput="onPlatformMax" placeholder="无上限" />
+      <input class="tier-input" style="flex:0.8" type="digit" value="{{item.rate}}" data-index="{{index}}" bindinput="onPlatformRate" />
+      <text class="tier-del" data-index="{{index}}" bindtap="removePlatformTier">✕</text>
+    </view>
+
+    <view class="btn-row">
+      <view class="btn-outline" bindtap="addPlatformTier">+ 添加阶梯</view>
+      <view class="btn-save" bindtap="savePlatform" wx:if="{{!savingPlatform}}">保存</view>
+      <view class="btn-save disabled" wx:else>保存中...</view>
+    </view>
+  </view>
+
+  <!-- 分区佣金阶梯 -->
+  <view class="card">
+    <text class="section-title">🗺️ 分区管理佣金阶梯</text>
+    <text class="section-hint">分区管理员从辖区店铺销售额中获得的提成</text>
+
+    <view class="tier-row header">
+      <text class="tier-cell" style="flex:1">下限¥</text>
+      <text class="tier-cell" style="flex:1">上限¥</text>
+      <text class="tier-cell" style="flex:0.8">提成%</text>
+      <text class="tier-cell" style="flex:0.4"></text>
+    </view>
+
+    <view class="tier-row" wx:for="{{districtTiers}}" wx:key="index">
+      <input class="tier-input" style="flex:1" type="digit" value="{{item.min}}" data-index="{{index}}" bindinput="onDistrictMin" />
+      <input class="tier-input" style="flex:1" type="digit" value="{{item.max}}" data-index="{{index}}" bindinput="onDistrictMax" placeholder="无上限" />
+      <input class="tier-input" style="flex:0.8" type="digit" value="{{item.rate}}" data-index="{{index}}" bindinput="onDistrictRate" />
+      <text class="tier-del" data-index="{{index}}" bindtap="removeDistrictTier">✕</text>
+    </view>
+
+    <view class="btn-row">
+      <view class="btn-outline" bindtap="addDistrictTier">+ 添加阶梯</view>
+      <view class="btn-save" bindtap="saveDistrict" wx:if="{{!savingDistrict}}">保存</view>
+      <view class="btn-save disabled" wx:else>保存中...</view>
+    </view>
+  </view>
+
+  <!-- 预览 -->
+  <view class="card">
+    <text class="section-title">🔍 费率预览</text>
+    <view class="preview-row">
+      <text class="preview-label">月销售额 ¥</text>
+      <input class="preview-input" type="digit" value="{{previewSales}}" bindinput="onPreviewInput" />
+      <view class="btn-outline" bindtap="calcPreview" style="margin-left:12rpx">计算</view>
+    </view>
+    <text class="preview-result" wx:if="{{previewResult}}">{{previewResult}}</text>
+  </view>
+
+  <view style="height:40rpx" />
+</scroll-view>
