@@ -113,7 +113,9 @@
       "Bash(C:/Users/Administrator/AppData/Local/Programs/Python/Python312/python *)",
       "Bash(ls /c/Python* /c/Users/Administrator/AppData/Local/Programs/Python/)",
       "Read(//c/Program Files/**)",
-      "Bash(find /c -name \"python.exe\" -type f)"
+      "Bash(find /c -name \"python.exe\" -type f)",
+      "Bash(git restore *)",
+      "Bash(ipconfig)"
     ]
   },
   "hooks": {

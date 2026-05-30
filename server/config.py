@@ -1,9 +1,10 @@
 import os
+import secrets
 
 
 class Settings:
     APP_NAME: str = "外卖平台"
-    DEBUG: bool = True
+    DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
 
     # 数据库 — 开发阶段使用 SQLite，生产换 MySQL
     # MySQL: mysql+pymysql://root:root@localhost:3306/food_delivery?charset=utf8mb4
@@ -12,10 +13,15 @@ class Settings:
         "sqlite:///./food_delivery.db",
     )
 
-    # JWT
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "change-me-in-production-please")
+    # JWT — 生产环境必须设置 SECRET_KEY 环境变量
+    SECRET_KEY: str = os.getenv(
+        "SECRET_KEY",
+        "change-me-in-production-please" if DEBUG else "",
+    )
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
+        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(60 * 24 * 7))
+    )  # 默认7天，生产建议15-60分钟 + refresh token
 
     # 微信小程序
     WECHAT_APPID: str = os.getenv("WECHAT_APPID", "")
@@ -34,8 +40,26 @@ class Settings:
     # Redis (可选 - 用于限流器和缓存)
     REDIS_URL: str = os.getenv("REDIS_URL", "")
 
+    # CORS 白名单（逗号分隔）
+    CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")
+
     # 分页
     PAGE_SIZE_DEFAULT: int = 10
 
 
 settings = Settings()
+
+# 生产环境安全检查
+if not settings.DEBUG:
+    if settings.SECRET_KEY == "change-me-in-production-please":
+        raise RuntimeError(
+            "生产环境必须设置 SECRET_KEY 环境变量！\n"
+            "示例: export SECRET_KEY=$(python -c 'import secrets; print(secrets.token_hex(32))')"
+        )
+    if settings.DATABASE_URL.startswith("sqlite"):
+        import warnings
+        warnings.warn(
+            "生产环境检测到 SQLite 数据库，建议切换到 MySQL。\n"
+            "设置 DATABASE_URL=mysql+pymysql://user:pass@host:3306/food_delivery?charset=utf8mb4",
+            RuntimeWarning,
+        )

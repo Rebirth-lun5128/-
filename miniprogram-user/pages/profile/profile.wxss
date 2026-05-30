@@ -156,3 +156,10 @@
   color: #999;
   font-size: 28rpx;
 }
+.delete-account-btn {
+  text-align: center;
+  padding: 20rpx;
+  color: #E53935;
+  font-size: 24rpx;
+  opacity: 0.7;
+}

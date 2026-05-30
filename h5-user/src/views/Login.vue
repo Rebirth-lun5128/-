@@ -10,8 +10,13 @@ const route = useRoute()
 const phone = ref('')
 const password = ref('')
 const loading = ref(false)
+const agreed = ref(false)
 
 async function handleLogin() {
+  if (!agreed.value) {
+    showToast({ message: '请先阅读并同意用户协议和隐私政策', type: 'fail' })
+    return
+  }
   if (!phone.value.trim()) {
     showToast({ message: '请输入手机号', type: 'fail' })
     return
@@ -45,10 +50,17 @@ async function handleLogin() {
           left-icon="lock" @keyup.enter="handleLogin" />
       </van-cell-group>
       <div class="p-3">
-        <van-button type="primary" block round :loading="loading"
+        <van-button type="primary" block round :loading="loading" :disabled="!agreed"
           color="#ff6b35" @click="handleLogin" style="height:44px">
           登录
         </van-button>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;margin-top:16px;font-size:13px;color:#999">
+        <van-checkbox v-model="agreed" style="margin-right:4px" />
+        <span>已阅读并同意</span>
+        <router-link to="/agreement" style="color:#ff6b35;margin:0 2px">《用户服务协议》</router-link>
+        <span>和</span>
+        <router-link to="/privacy" style="color:#ff6b35;margin-left:2px">《隐私政策》</router-link>
       </div>
       <p class="text-center text-sm text-gray mt-2">测试账号：13800000099</p>
     </div>

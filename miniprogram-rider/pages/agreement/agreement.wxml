@@ -1,0 +1,17 @@
+<scroll-view class="page" scroll-y>
+  <view class="content">
+    <text class="title">社区夜市外卖平台 用户服务协议</text>
+    <text class="update">最后更新日期：2026年5月30日</text>
+    <text class="section-title">一、总则</text>
+    <text class="para">欢迎使用社区夜市外卖平台。本协议适用于所有用户，包括普通用户、商家和骑手。</text>
+    <text class="section-title">二、骑手服务条款</text>
+    <text class="para">2.1 骑手需提供真实有效的身份信息完成注册。</text>
+    <text class="para">2.2 骑手应安全、及时地完成配送任务，遵守交通规则。</text>
+    <text class="para">2.3 骑手不得私自联系用户进行平台外交易。</text>
+    <text class="para">2.4 配送费用按照平台规则结算，骑手可通过提现获取收入。</text>
+    <text class="section-title">三、免责声明</text>
+    <text class="para">骑手在配送过程中发生的交通事故等自行承担责任，平台提供相应保险支持。</text>
+    <text class="section-title">四、联系方式</text>
+    <text class="para">如有疑问请联系平台客服。</text>
+  </view>
+</scroll-view>

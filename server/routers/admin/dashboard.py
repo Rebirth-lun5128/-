@@ -8,6 +8,7 @@ from sqlalchemy import func
 
 from auth import require_any_admin, require_super_admin, hash_password
 from database import get_db
+from utils import mask_phone
 from models.user import User
 from models.store import Store
 from models.rider import Rider
@@ -116,7 +117,7 @@ def list_stores(
         "total": total,
         "items": [
             {
-                "id": r.id, "name": r.name, "phone": r.phone,
+                "id": r.id, "name": r.name, "phone": mask_phone(r.phone),
                 "store_type": r.store_type, "address": r.address,
                 "stall_location": r.stall_location, "category": r.category,
                 "rating": float(r.rating), "status": r.status,
@@ -235,7 +236,7 @@ def list_riders(
         "total": total,
         "items": [
             {
-                "id": r.id, "real_name": r.real_name, "phone": r.phone,
+                "id": r.id, "real_name": r.real_name, "phone": mask_phone(r.phone),
                 "status": r.status, "balance": float(r.balance),
                 "total_orders": r.total_orders, "rating": float(r.rating),
                 "audit_status": r.audit_status, "created_at": str(r.created_at),
@@ -354,7 +355,7 @@ def get_order_detail(
         "total_price": float(co.total_price),
         "address_snapshot": co.address_snapshot or {},
         "rider_name": co.rider.real_name if co.rider else "",
-        "rider_phone": co.rider.phone if co.rider else "",
+        "rider_phone": mask_phone(co.rider.phone) if co.rider else "",
         "created_at": str(co.created_at),
         "paid_at": str(co.paid_at) if co.paid_at else None,
         "delivered_at": str(co.delivered_at) if co.delivered_at else None,
@@ -553,7 +554,7 @@ def list_admins(user: User = Depends(require_super_admin), db: Session = Depends
         User.role.in_(["super_admin", "district_admin"])
     ).order_by(User.created_at.desc()).all()
     return [
-        {"id": a.id, "nickname": a.nickname, "phone": a.phone,
+        {"id": a.id, "nickname": a.nickname, "phone": mask_phone(a.phone),
          "role": a.role, "district_id": a.district_id, "status": a.status,
          "created_at": str(a.created_at)}
         for a in admins
@@ -562,11 +563,11 @@ def list_admins(user: User = Depends(require_super_admin), db: Session = Depends
 
 @router.post("/admins")
 def create_admin(
-    phone: str = Query(...),
-    password: str = Query(...),
-    nickname: str = Query(default="管理员"),
-    role: str = Query(default="district_admin"),
-    district_id: int = Query(default=None),
+    phone: str = Body(...),
+    password: str = Body(...),
+    nickname: str = Body(default="管理员"),
+    role: str = Body(default="district_admin"),
+    district_id: int = Body(default=None),
     user: User = Depends(require_super_admin),
     db: Session = Depends(get_db),
 ):
@@ -1117,12 +1118,12 @@ def list_settlements(
             rider = db.query(Rider).filter(Rider.id == s.target_id).first()
             if rider:
                 target_name = rider.real_name
-                target_phone = rider.phone or ""
+                target_phone = mask_phone(rider.phone) or ""
         elif s.target_type == "store":
             store = db.query(Store).filter(Store.id == s.target_id).first()
             if store:
                 target_name = store.name
-                target_phone = store.phone or ""
+                target_phone = mask_phone(store.phone) or ""
 
         result_items.append({
             "id": s.id,
@@ -1210,7 +1211,7 @@ def list_customers(
             "id": u.id,
             "nickname": u.nickname or "",
             "avatar": u.avatar or "",
-            "phone": u.phone or "",
+            "phone": mask_phone(u.phone) or "",
             "district_id": u.district_id,
             "created_at": str(u.created_at),
         } for u in items],

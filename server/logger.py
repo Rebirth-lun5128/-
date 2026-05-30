@@ -1,9 +1,10 @@
 """
-结构化日志 — JSON 格式输出，同时写入文件
+结构化日志 — 控制台文本格式 + 文件按天轮转
 """
 import logging
 import sys
 from pathlib import Path
+from logging.handlers import TimedRotatingFileHandler
 
 
 def setup_logging(level: int = logging.INFO) -> None:
@@ -22,11 +23,18 @@ def setup_logging(level: int = logging.INFO) -> None:
     ))
     root.addHandler(console)
 
-    # 文件: 详细格式，按天轮转需要额外库，这里用单文件
+    # 文件: 按天轮转，保留30天
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
-    file_handler = logging.FileHandler(log_dir / "app.log", encoding="utf-8")
+    file_handler = TimedRotatingFileHandler(
+        log_dir / "app.log",
+        when="midnight",
+        interval=1,
+        backupCount=30,
+        encoding="utf-8",
+    )
     file_handler.setLevel(logging.DEBUG)
+    file_handler.suffix = "%Y-%m-%d"
     file_handler.setFormatter(logging.Formatter(
         "[%(asctime)s] %(levelname)s %(name)s %(pathname)s:%(lineno)d | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",

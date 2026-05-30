@@ -4,6 +4,7 @@ const app = getApp()
 Page({
   data: {
     canLogin: false,
+    agreed: false,
   },
 
   onLoad() {
@@ -13,7 +14,28 @@ Page({
     }
   },
 
+  toggleAgree() {
+    this.setData({ agreed: !this.data.agreed })
+  },
+
+  showAgreement() {
+    wx.navigateTo({ url: '/pages/agreement/agreement' })
+  },
+
+  showPrivacy() {
+    wx.navigateTo({ url: '/pages/privacy/privacy' })
+  },
+
+  checkAgreed() {
+    if (!this.data.agreed) {
+      wx.showToast({ title: '请先阅读并同意用户协议和隐私政策', icon: 'none' })
+      return false
+    }
+    return true
+  },
+
   getPhoneNumber(e) {
+    if (!this.checkAgreed()) return
     // 微信手机号授权 (需企业认证小程序)
     // 开发阶段使用模拟登录
     if (e.detail.errMsg === 'getPhoneNumber:ok') {
@@ -45,6 +67,7 @@ Page({
 
   /** 开发阶段: 绕过微信登录直接模拟 */
   mockLogin() {
+    if (!this.checkAgreed()) return
     const mockCode = 'dev_code_' + Date.now()
     api.post('/api/common/auth/wechat', { code: mockCode }).then(result => {
       wx.setStorageSync('token', result.token)

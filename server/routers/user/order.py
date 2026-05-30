@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from auth import require_user
 from database import get_db
+from ratelimit import general_limiter
 from models.user import User, UserAddress
 from models.store import Store, Product
 from models.rider import Rider
@@ -23,6 +24,7 @@ from schemas.order import (
 from schemas.payment import PayParamsOut
 from payment import create_jsapi_order, apply_refund
 from websocket import manager
+from utils import mask_phone
 
 router = APIRouter(prefix="/api/user/orders", tags=["用户端-订单"])
 
@@ -124,6 +126,7 @@ def create_order(
     body: CombinedOrderCreate,
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
+    _rl=Depends(general_limiter),
 ):
     address = db.query(UserAddress).filter(
         UserAddress.id == body.address_id,
@@ -292,8 +295,8 @@ def pay_order(
         order.status = "pending"
         order.paid_at = datetime.now()
         for sub in order.sub_orders:
-            sub.status = "ready"
-            _add_sub_timeline(sub.id, "ready", "已支付，等待配送员接单", db)
+            sub.status = "pending_accept"
+            _add_sub_timeline(sub.id, "pending_accept", "已支付，等待商家接单", db)
         db.commit()
         db.refresh(order)
         merchant_ids = {sub.store.user_id for sub in order.sub_orders if sub.store}
@@ -392,7 +395,7 @@ def get_rider_location(
         "rider_name": rider.real_name,
         "lat": float(rider.lat),
         "lng": float(rider.lng),
-        "phone": rider.phone,
+        "phone": mask_phone(rider.phone),
     }
 
 

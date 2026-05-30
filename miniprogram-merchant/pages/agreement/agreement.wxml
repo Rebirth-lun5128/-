@@ -1,0 +1,18 @@
+<scroll-view class="page" scroll-y>
+  <view class="content">
+    <text class="title">社区夜市外卖平台 用户服务协议</text>
+    <text class="update">最后更新日期：2026年5月30日</text>
+    <text class="section-title">一、总则</text>
+    <text class="para">1.1 欢迎使用社区夜市外卖平台（以下简称"本平台"）。本协议适用于所有用户，包括普通用户、商家和骑手。</text>
+    <text class="para">1.2 在您使用本平台服务前，请仔细阅读本协议。您通过点击"同意"按钮或实际使用本平台服务，即表示您已充分阅读、理解并接受本协议的全部条款。</text>
+    <text class="section-title">二、商家服务条款</text>
+    <text class="para">2.1 商家入驻需提供真实有效的经营信息和资质证明。</text>
+    <text class="para">2.2 商家应确保所提供的商品信息真实准确，不得虚假宣传。</text>
+    <text class="para">2.3 商家应按照食品安全法规要求保证食品质量和安全。</text>
+    <text class="para">2.4 平台按照约定的佣金比例向商家收取服务费用。</text>
+    <text class="section-title">三、免责声明</text>
+    <text class="para">本平台仅提供信息中介服务，商家对自身提供的商品和服务承担全部责任。</text>
+    <text class="section-title">四、联系方式</text>
+    <text class="para">如有疑问请联系平台客服。</text>
+  </view>
+</scroll-view>

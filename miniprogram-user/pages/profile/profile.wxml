@@ -99,4 +99,5 @@
   </view>
 
   <view class="logout-btn" bindtap="logout">退出登录</view>
+  <view class="delete-account-btn" bindtap="deleteAccount">注销账号</view>
 </view>

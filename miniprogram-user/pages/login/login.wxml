@@ -18,9 +18,14 @@
   </view>
 
   <view class="login-tips">
-    <text>登录即表示同意</text>
-    <text class="link">《用户服务协议》</text>
-    <text>和</text>
-    <text class="link">《隐私政策》</text>
+    <view class="tips-checkbox-row">
+      <view class="checkbox {{agreed ? 'checked' : ''}}" bindtap="toggleAgree">
+        <text wx:if="{{agreed}}">✓</text>
+      </view>
+      <text class="tips-text">已阅读并同意</text>
+      <text class="link" bindtap="showAgreement">《用户服务协议》</text>
+      <text class="tips-text">和</text>
+      <text class="link" bindtap="showPrivacy">《隐私政策》</text>
+    </view>
   </view>
 </view>

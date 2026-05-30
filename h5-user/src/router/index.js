@@ -73,6 +73,18 @@ const routes = [
     component: () => import('../views/Coupons.vue'),
     meta: { title: '优惠券', needAuth: true },
   },
+  {
+    path: '/agreement',
+    name: 'Agreement',
+    component: () => import('../views/Agreement.vue'),
+    meta: { title: '用户服务协议' },
+  },
+  {
+    path: '/privacy',
+    name: 'Privacy',
+    component: () => import('../views/Privacy.vue'),
+    meta: { title: '隐私政策' },
+  },
 ]
 
 const router = createRouter({

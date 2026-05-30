@@ -8,7 +8,9 @@
     "pages/shop/shop",
     "pages/settlement/settlement",
     "pages/modifications/modifications",
-    "pages/login/login"
+    "pages/login/login",
+    "pages/agreement/agreement",
+    "pages/privacy/privacy"
   ],
   "window": {
     "backgroundTextStyle": "light",

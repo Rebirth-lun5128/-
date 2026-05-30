@@ -131,3 +131,15 @@ def update_profile(
     db.commit()
     db.refresh(user)
     return UserOut.model_validate(user)
+
+
+@router.delete("/account")
+def delete_account(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """注销当前用户账号（软删除：设置 status=0）"""
+    user.status = 0
+    user.phone = f"deleted_{user.id}_{user.phone}"  # 释放手机号供重新注册
+    db.commit()
+    return {"message": "账号已注销。如有未完成订单，请联系客服处理。"}

@@ -32,10 +32,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title=settings.APP_NAME, docs_url="/docs", lifespan=lifespan)
 
 # ---- 中间件 ----
+# CORS: 生产环境通过 CORS_ORIGINS 环境变量设置白名单
+_cors_origins = settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS != "*" else ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    allow_credentials=True if _cors_origins != ["*"] else False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -95,4 +97,35 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    """健康检查 — 包含数据库连通性检测"""
+    db_ok = True
+    db_error = None
+    try:
+        from sqlalchemy import text
+        from database import SessionLocal
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+    except Exception as e:
+        db_ok = False
+        db_error = str(e)
+
+    redis_ok = True
+    try:
+        from config import settings
+        if settings.REDIS_URL:
+            import redis
+            r = redis.Redis.from_url(settings.REDIS_URL, socket_connect_timeout=2, socket_timeout=2)
+            r.ping()
+    except Exception:
+        redis_ok = False
+
+    status_code = 200 if db_ok else 503
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "ok" if db_ok else "degraded",
+            "db": "ok" if db_ok else f"error: {db_error}",
+            "redis": "ok" if redis_ok else ("unused" if not settings.REDIS_URL else "error"),
+        },
+    )

@@ -28,12 +28,20 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         method = request.method
         path = request.url.path
 
+        # 获取客户端IP
+        client_ip = request.client.host if request.client else "unknown"
+        # 尝试获取认证用户
+        user_id = getattr(getattr(request.state, 'user', None), 'id', '-')
+
         if status >= 500:
-            logger.error("%s %s | %d | %.3fs | %s", method, path, status, elapsed, request_id)
+            logger.error("%s %s | %d | %.3fs | ip=%s uid=%s | %s",
+                         method, path, status, elapsed, client_ip, user_id, request_id)
         elif status >= 400:
-            logger.warning("%s %s | %d | %.3fs | %s", method, path, status, elapsed, request_id)
+            logger.warning("%s %s | %d | %.3fs | ip=%s uid=%s | %s",
+                           method, path, status, elapsed, client_ip, user_id, request_id)
         else:
-            logger.info("%s %s | %d | %.3fs | %s", method, path, status, elapsed, request_id)
+            logger.info("%s %s | %d | %.3fs | ip=%s uid=%s | %s",
+                        method, path, status, elapsed, client_ip, user_id, request_id)
 
         response.headers["X-Request-ID"] = request_id
         return response

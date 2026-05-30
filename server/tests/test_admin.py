@@ -278,7 +278,8 @@ class TestAdminRegions:
     def test_update_region(self, client, auth_header_admin, region):
         """Update an existing region."""
         res = client.put(
-            f"/api/admin/districts/{region.id}?name=更新区域&sort_order=2&status=1",
+            f"/api/admin/districts/{region.id}",
+            json={"name": "更新区域", "status": 1},
             headers=auth_header_admin,
         )
         assert res.status_code == 200
@@ -295,7 +296,8 @@ class TestAdminRegions:
     def test_update_region_requires_super_admin(self, client, auth_header_district_admin, region):
         """District admin can update a region."""
         res = client.put(
-            f"/api/admin/districts/{region.id}?name=test",
+            f"/api/admin/districts/{region.id}",
+            json={"name": "test"},
             headers=auth_header_district_admin,
         )
         assert res.status_code == 200
@@ -370,12 +372,14 @@ class TestAdminAdmins:
     def test_create_admin(self, client, auth_header_admin, region):
         """Create a new district_admin via super_admin."""
         res = client.post(
-            "/api/admin/admins"
-            "?phone=13899999999"
-            "&password=newadmin123"
-            "&nickname=新管理员"
-            "&role=district_admin"
-            "&region_id=1",
+            "/api/admin/admins",
+            json={
+                "phone": "13899999999",
+                "password": "newadmin123",
+                "nickname": "新管理员",
+                "role": "district_admin",
+                "district_id": 1,
+            },
             headers=auth_header_admin,
         )
         assert res.status_code == 200
@@ -386,7 +390,8 @@ class TestAdminAdmins:
     def test_create_admin_default_values(self, client, auth_header_admin):
         """Create admin with only required params (phone, password) uses defaults."""
         res = client.post(
-            "/api/admin/admins?phone=13899999998&password=test123",
+            "/api/admin/admins",
+            json={"phone": "13899999998", "password": "test123"},
             headers=auth_header_admin,
         )
         assert res.status_code == 200
@@ -394,7 +399,8 @@ class TestAdminAdmins:
     def test_create_admin_duplicate_phone_returns_400(self, client, auth_header_admin, test_user_admin):
         """Creating admin with an existing phone number returns 400."""
         res = client.post(
-            "/api/admin/admins?phone=13800000000&password=test123",
+            "/api/admin/admins",
+            json={"phone": "13800000000", "password": "test123"},
             headers=auth_header_admin,
         )
         assert res.status_code == 400
@@ -424,7 +430,8 @@ class TestAdminAdmins:
     def test_create_admin_requires_super_admin(self, client, auth_header_district_admin):
         """Region admin cannot create an admin (returns 403)."""
         res = client.post(
-            "/api/admin/admins?phone=13899999997&password=test123",
+            "/api/admin/admins",
+            json={"phone": "13899999997", "password": "test123"},
             headers=auth_header_district_admin,
         )
         assert res.status_code == 403
@@ -509,7 +516,8 @@ class TestAdminRegionAdminPermissions:
 
     def test_district_admin_can_update_region(self, client, auth_header_district_admin, region):
         res = client.put(
-            f"/api/admin/districts/{region.id}?name=test",
+            f"/api/admin/districts/{region.id}",
+            json={"name": "test"},
             headers=auth_header_district_admin,
         )
         assert res.status_code == 200

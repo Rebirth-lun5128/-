@@ -1,0 +1,16 @@
+<scroll-view class="page" scroll-y>
+  <view class="content">
+    <text class="title">社区夜市外卖平台 隐私政策</text>
+    <text class="update">最后更新日期：2026年5月30日</text>
+    <text class="section-title">一、信息收集</text>
+    <text class="para">我们会收集您的手机号码、店铺信息、经营资质等必要信息用于平台服务。</text>
+    <text class="section-title">二、信息使用</text>
+    <text class="para">您的信息仅用于平台服务提供和运营管理，不会向第三方出售或泄露。</text>
+    <text class="section-title">三、信息保护</text>
+    <text class="para">我们采用加密传输和访问控制等技术手段保护您的信息安全。</text>
+    <text class="section-title">四、您的权利</text>
+    <text class="para">您可以查看、更正您的账户信息，或申请注销账户。</text>
+    <text class="section-title">五、联系方式</text>
+    <text class="para">如有隐私相关问题，请联系平台客服。</text>
+  </view>
+</scroll-view>

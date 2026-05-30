@@ -6,6 +6,7 @@ from database import get_db
 from models.store import Store
 from models.district import District
 from schemas.store import StoreOut, StoreDetailOut, StoreListOut
+from utils import mask_phone
 
 router = APIRouter(prefix="/api/user/stores", tags=["用户端-店铺"])
 
@@ -35,7 +36,10 @@ def list_stores(
 
     total = query.count()
     items = query.order_by(Store.monthly_sales.desc()).offset((page - 1) * page_size).limit(page_size).all()
-    return StoreListOut(total=total, items=[StoreOut.model_validate(r) for r in items])
+    result = [StoreOut.model_validate(r) for r in items]
+    for item in result:
+        item.phone = mask_phone(item.phone or "")
+    return StoreListOut(total=total, items=result)
 
 
 @router.get("/districts/list")
@@ -54,4 +58,6 @@ def get_store(
     if not store:
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="店铺不存在")
-    return StoreDetailOut.model_validate(store)
+    result = StoreDetailOut.model_validate(store)
+    result.phone = mask_phone(result.phone or "")
+    return result

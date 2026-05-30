@@ -20,8 +20,20 @@
     </view>
   </view>
 
-  <button class="btn-primary" bindtap="doLogin">{{isRegister ? '注册' : '登录'}}</button>
+  <button class="btn-primary" bindtap="doLogin" disabled="{{!agreed}}">{{isRegister ? '注册' : '登录'}}</button>
   <view class="toggle" bindtap="toggleMode">
     {{isRegister ? '已有账号？去登录' : '没有账号？去注册'}}
+  </view>
+
+  <view class="login-tips">
+    <view class="tips-checkbox-row">
+      <view class="checkbox {{agreed ? 'checked' : ''}}" bindtap="toggleAgree">
+        <text wx:if="{{agreed}}">✓</text>
+      </view>
+      <text class="tips-text">已阅读并同意</text>
+      <text class="link" bindtap="showAgreement">《用户服务协议》</text>
+      <text class="tips-text">和</text>
+      <text class="link" bindtap="showPrivacy">《隐私政策》</text>
+    </view>
   </view>
 </view>

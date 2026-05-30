@@ -7,10 +7,13 @@ Page({
     status: 'offline',
     pendingOrders: [],
     myOrder: null,
+    loading: true,
+    loadingError: false,
   },
 
   onShow() {
     if (!app.checkLogin()) return
+    this.setData({ loading: true, loadingError: false })
     this.loadStatus()
     this.loadPendingOrders()
     this.loadMyOrder()
@@ -42,11 +45,16 @@ Page({
   },
 
   async loadPendingOrders() {
-    if (this.data.status === 'offline') return
+    if (this.data.status === 'offline') {
+      this.setData({ loading: false })
+      return
+    }
     try {
       const res = await api.get('/api/rider/orders/pending', { page: 1, page_size: 20 })
-      this.setData({ pendingOrders: res.items || [] })
-    } catch (e) { }
+      this.setData({ pendingOrders: res.items || [], loading: false, loadingError: false })
+    } catch (e) {
+      this.setData({ loading: false, loadingError: true })
+    }
   },
 
   async loadMyOrder() {

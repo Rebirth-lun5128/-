@@ -1,0 +1,6 @@
+.page { height: 100vh; background: #fff; }
+.content { padding: 32rpx; padding-bottom: 60rpx; }
+.title { font-size: 36rpx; font-weight: 700; color: #333; display: block; text-align: center; margin-bottom: 12rpx; }
+.update { font-size: 24rpx; color: #999; display: block; text-align: center; margin-bottom: 32rpx; }
+.section-title { font-size: 30rpx; font-weight: 700; color: #333; display: block; margin: 28rpx 0 14rpx; }
+.para { font-size: 28rpx; color: #555; line-height: 1.8; display: block; margin-bottom: 8rpx; text-align: justify; }

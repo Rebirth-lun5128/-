@@ -110,4 +110,26 @@ Page({
       },
     })
   },
+
+  deleteAccount() {
+    wx.showModal({
+      title: '注销账号',
+      content: '注销后您的账户将被禁用，手机号将被释放。\n\n如有未完成订单请先处理完毕。\n\n确定要注销吗？',
+      confirmText: '确认注销',
+      confirmColor: '#E53935',
+      success: async (res) => {
+        if (res.confirm) {
+          try {
+            await api.delete('/api/common/auth/account')
+            wx.showToast({ title: '账号已注销', icon: 'success' })
+            wx.removeStorageSync('token')
+            wx.removeStorageSync('userInfo')
+            app.globalData.token = ''
+            app.globalData.userInfo = null
+            setTimeout(() => wx.navigateTo({ url: '/pages/login/login' }), 1000)
+          } catch (e) {}
+        }
+      },
+    })
+  },
 })

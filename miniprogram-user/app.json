@@ -11,7 +11,9 @@
     "pages/login/login",
     "pages/profile/profile",
     "pages/coupons/coupons",
-    "pages/profile-edit/profile-edit"
+    "pages/profile-edit/profile-edit",
+    "pages/agreement/agreement",
+    "pages/privacy/privacy"
   ],
   "window": {
     "backgroundTextStyle": "light",

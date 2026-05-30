@@ -41,6 +41,16 @@ async function logout() {
   } catch { }
 }
 
+async function deleteAccount() {
+  try {
+    await showDialog({ title: '注销账号', message: '注销后账户将被禁用，手机号将被释放。\n确定要注销吗？' })
+    await api.delete('/api/common/auth/account')
+    showToast({ message: '账号已注销', type: 'success' })
+    authStore.logout()
+    router.replace('/login')
+  } catch { }
+}
+
 function goOrders(status) {
   router.replace('/orders')
   sessionStorage.setItem('orderFilter', status || '')
@@ -99,6 +109,9 @@ const userInfo = () => authStore.userInfo || { nickname: '食客', phone: '', av
 
     <div class="p-3">
       <van-button block round plain type="danger" @click="logout" style="height:44px">退出登录</van-button>
+    </div>
+    <div class="p-2 text-center">
+      <span style="color:#E53935;opacity:0.6;font-size:13px" @click="deleteAccount">注销账号</span>
     </div>
 
     <div style="height:60px" />

@@ -53,3 +53,10 @@
   color: #07C160;
   font-size: 28rpx;
 }
+.login-tips { font-size: 24rpx; color: #999; margin-top: 30rpx; }
+.login-tips .link { color: #07C160; }
+.tips-checkbox-row { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; }
+.checkbox { width: 36rpx; height: 36rpx; border: 2rpx solid #ccc; border-radius: 50%; margin-right: 8rpx; display: flex; align-items: center; justify-content: center; font-size: 22rpx; color: #fff; background: #fff; }
+.checkbox.checked { background: #07C160; border-color: #07C160; }
+.tips-text { font-size: 24rpx; color: #999; }
+.btn-primary[disabled] { opacity: 0.5; }

@@ -1,0 +1,55 @@
+<scroll-view class="page" scroll-y>
+  <view class="content">
+    <text class="title">社区夜市外卖平台 隐私政策</text>
+    <text class="update">最后更新日期：2026年5月30日</text>
+
+    <text class="section-title">一、引言</text>
+    <text class="para">我们深知个人信息对您的重要性，并会全力保护您的个人信息安全。本隐私政策详细说明了我们如何收集、使用、存储和保护您的个人信息。</text>
+
+    <text class="section-title">二、信息收集</text>
+    <text class="para">2.1 注册信息：当您注册账户时，我们会收集您的手机号码，用于账户创建和身份验证。</text>
+    <text class="para">2.2 位置信息：经您授权后，我们会收集您的地理位置信息，用于推荐附近商家和配送服务。</text>
+    <text class="para">2.3 订单信息：包括您的收货地址、订单商品、支付金额等，用于完成交易和配送。</text>
+    <text class="para">2.4 设备信息：包括设备型号、操作系统版本等，用于优化服务体验和问题排查。</text>
+
+    <text class="section-title">三、信息使用</text>
+    <text class="para">3.1 我们使用您的信息来提供、维护和改进平台服务。</text>
+    <text class="para">3.2 您的位置信息仅用于匹配附近商家和配送，不会用于其他目的。</text>
+    <text class="para">3.3 您的手机号码将严格保密，仅用于账户验证和必要的服务通知，不会向第三方出售或泄露。</text>
+    <text class="para">3.4 我们可能会使用汇总的匿名数据进行数据分析和运营优化。</text>
+
+    <text class="section-title">四、信息共享</text>
+    <text class="para">4.1 为完成配送服务，我们会将您的收货地址和联系电话提供给配送骑手。</text>
+    <text class="para">4.2 为完成订单，我们会将订单信息提供给对应的商家。</text>
+    <text class="para">4.3 除上述必要情况外，未经您的明确同意，我们不会将您的个人信息共享给任何第三方。</text>
+    <text class="para">4.4 在法律要求或政府机关依法要求时，我们可能依法提供相关信息。</text>
+
+    <text class="section-title">五、信息存储与保护</text>
+    <text class="para">5.1 您的个人信息存储于安全的服务器上，我们采用加密传输（HTTPS/TLS）和访问控制等技术手段保护数据安全。</text>
+    <text class="para">5.2 我们建立了数据安全管理制度，对员工访问个人信息进行权限控制和审计。</text>
+    <text class="para">5.3 您的账户密码经加密存储，平台工作人员无法查看您的明文密码。</text>
+
+    <text class="section-title">六、您的权利</text>
+    <text class="para">6.1 访问权：您可以在个人中心查看您的基本账户信息。</text>
+    <text class="para">6.2 更正权：您可以在个人中心编辑修改昵称、头像、收货地址等信息。</text>
+    <text class="para">6.3 删除权：您可以申请注销账户，我们将在核实身份后删除您的个人信息（法律法规要求保留的除外）。</text>
+    <text class="para">6.4 撤回同意：您可以在手机系统设置中撤回已授予的权限授权。</text>
+
+    <text class="section-title">七、Cookie与跟踪技术</text>
+    <text class="para">7.1 我们可能使用Cookie或类似技术来提升您的使用体验，如记住登录状态。</text>
+    <text class="para">7.2 您可以通过浏览器设置或手机设置管理Cookie偏好。</text>
+
+    <text class="section-title">八、未成年人保护</text>
+    <text class="para">8.1 本平台主要面向成年人提供服务。如您是未成年人，请在监护人指导下使用本平台。</text>
+    <text class="para">8.2 我们不会主动收集未成年人的个人信息。如发现误收集，将及时删除。</text>
+
+    <text class="section-title">九、政策更新</text>
+    <text class="para">9.1 我们可能会适时更新本隐私政策，更新后将通过平台公告等方式通知您。</text>
+    <text class="para">9.2 重大变更时，我们可能会通过更显著的方式（如弹窗通知）告知您。</text>
+
+    <text class="section-title">十、联系我们</text>
+    <text class="para">如您对本隐私政策有任何疑问、意见或建议，请通过以下方式联系我们：</text>
+    <text class="para">客服电话：请查看平台"关于我们"页面获取最新联系方式</text>
+    <text class="para">我们将在收到您请求后的15个工作日内予以回复。</text>
+  </view>
+</scroll-view>

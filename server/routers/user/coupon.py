@@ -6,6 +6,7 @@ from auth import require_user
 from database import get_db
 from models.user import User
 from models.coupon import Coupon, UserCoupon
+from ratelimit import general_limiter
 
 router = APIRouter(prefix="/api/user/coupons", tags=["用户端-优惠券"])
 
@@ -38,9 +39,12 @@ def list_available(user: User = Depends(require_user), db: Session = Depends(get
 
 
 @router.post("/{coupon_id}/claim")
-def claim_coupon(coupon_id: int, user: User = Depends(require_user), db: Session = Depends(get_db)):
-    """领取优惠券"""
-    coupon = db.query(Coupon).filter(Coupon.id == coupon_id, Coupon.status == 1).first()
+def claim_coupon(coupon_id: int, user: User = Depends(require_user), db: Session = Depends(get_db), _rl=Depends(general_limiter)):
+    """领取优惠券（带行锁防并发超发）"""
+    # 使用 with_for_update 行锁防止并发超发
+    coupon = db.query(Coupon).filter(
+        Coupon.id == coupon_id, Coupon.status == 1
+    ).with_for_update().first()
     if not coupon:
         raise HTTPException(status_code=404, detail="优惠券不存在")
     if coupon.total_count > 0 and coupon.used_count >= coupon.total_count:
