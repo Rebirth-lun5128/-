@@ -15,7 +15,7 @@
   <view class="hero-section">
     <swiper class="hero-swiper" indicator-dots autoplay interval="4000" circular>
       <swiper-item>
-        <view class="hero-slide slide1">
+        <view class="hero-slide slide1" bindtap="onBannerTap" data-type="new_user">
           <view class="hero-content">
             <text class="hero-tag">新人专享</text>
             <text class="hero-title">首单立减 ¥3</text>
@@ -25,7 +25,7 @@
         </view>
       </swiper-item>
       <swiper-item>
-        <view class="hero-slide slide2">
+        <view class="hero-slide slide2" bindtap="onBannerTap" data-type="flash_sale">
           <view class="hero-content">
             <text class="hero-tag">限时特惠</text>
             <text class="hero-title">夜宵全场 9 折</text>
@@ -35,7 +35,7 @@
         </view>
       </swiper-item>
       <swiper-item>
-        <view class="hero-slide slide3">
+        <view class="hero-slide slide3" bindtap="onBannerTap" data-type="invite">
           <view class="hero-content">
             <text class="hero-tag">邀请有礼</text>
             <text class="hero-title">推荐好友得优惠券</text>

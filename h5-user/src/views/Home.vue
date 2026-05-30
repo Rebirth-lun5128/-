@@ -1,14 +1,15 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { showToast } from 'vant'
 import { api } from '../utils/api'
 
 const router = useRouter()
 
 const banners = [
-  { image: '', icon: '🎉', title: '新人专享', desc: '首单立减，立即尝鲜' },
-  { image: '', icon: '🔥', title: '限时特惠', desc: '精选摊位，折扣不断' },
-  { image: '', icon: '💌', title: '邀请有礼', desc: '邀请好友，双方得券' },
+  { image: '', icon: '🎉', title: '新人专享', desc: '首单立减，立即尝鲜', type: 'new_user' },
+  { image: '', icon: '🔥', title: '限时特惠', desc: '精选摊位，折扣不断', type: 'flash_sale' },
+  { image: '', icon: '💌', title: '邀请有礼', desc: '邀请好友，双方得券', type: 'invite' },
 ]
 
 const storeTypes = [
@@ -93,6 +94,26 @@ function onStoreTap(id) {
   router.push(`/restaurant/${id}`)
 }
 
+function onBannerTap(type) {
+  switch (type) {
+    case 'new_user':
+      router.push('/coupons')
+      break
+    case 'flash_sale':
+      // 限时特惠 → 滚动到店铺列表
+      page.value = 1
+      stores.value = []
+      hasMore.value = true
+      loadStores()
+      window.scrollTo({ top: 400, behavior: 'smooth' })
+      break
+    case 'invite':
+      // 邀请有礼 → 弹窗提示
+      showToast({ message: '复制链接分享给好友，双方各得 ¥5 优惠券！', type: 'success', duration: 3000 })
+      break
+  }
+}
+
 function onRefresh() {
   refreshing.value = true
   page.value = 1
@@ -137,8 +158,9 @@ function freeDelivery(s) {
     <div class="mx-2 mt-2 rounded overflow-hidden">
       <van-swipe :autoplay="3000" indicator-color="#ff6b35" style="height:120px">
         <van-swipe-item v-for="(b, i) in banners" :key="i">
-          <div class="flex items-center justify-center h-full"
-            :style="{ background: ['#FFF3E0', '#E3F2FD', '#FCE4EC'][i] }">
+          <div class="flex items-center justify-center h-full" style="cursor:pointer"
+            :style="{ background: ['#FFF3E0', '#E3F2FD', '#FCE4EC'][i] }"
+            @click="onBannerTap(b.type)">
             <span style="font-size:40px;margin-right:12px">{{ b.icon }}</span>
             <div>
               <div class="font-bold text-lg" :style="{ color: ['#E65100', '#1565C0', '#AD1457'][i] }">{{ b.title }}</div>

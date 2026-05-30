@@ -125,4 +125,29 @@ Page({
   goToCoupons() {
     wx.navigateTo({ url: '/pages/coupons/coupons' })
   },
+
+  onBannerTap(e) {
+    const type = e.currentTarget.dataset.type
+    switch (type) {
+      case 'new_user':
+        // 新人专享 → 优惠券页面
+        wx.navigateTo({ url: '/pages/coupons/coupons' })
+        break
+      case 'flash_sale':
+        // 限时特惠 → 搜索"特惠"或展示全部商家
+        this.setData({ keyword: '', activeType: '', page: 1, stores: [], hasMore: true })
+        this.loadStores()
+        wx.pageScrollTo({ scrollTop: 300, duration: 300 })
+        break
+      case 'invite':
+        // 邀请有礼 → 弹出分享引导
+        wx.showModal({
+          title: '邀请有礼',
+          content: '点击右上角「···」分享给好友\n好友注册下单后，双方各得 ¥5 优惠券！',
+          showCancel: false,
+          confirmText: '知道了',
+        })
+        break
+    }
+  },
 })
