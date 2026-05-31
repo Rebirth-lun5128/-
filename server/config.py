@@ -37,6 +37,14 @@ class Settings:
     # 文件上传
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
 
+    # 阿里云 OSS（可选 — 不配则使用本地存储）
+    OSS_ENDPOINT: str = os.getenv("OSS_ENDPOINT", "")
+    OSS_ACCESS_KEY_ID: str = os.getenv("OSS_ACCESS_KEY_ID", "")
+    OSS_ACCESS_KEY_SECRET: str = os.getenv("OSS_ACCESS_KEY_SECRET", "")
+    OSS_BUCKET_NAME: str = os.getenv("OSS_BUCKET_NAME", "")
+    # OSS_URL_BASE: CDN 域名或 OSS 公开域名（如 https://cdn.your-domain.com），留空自动生成
+    OSS_URL_BASE: str = os.getenv("OSS_URL_BASE", "")
+
     # Redis (可选 - 用于限流器和缓存)
     REDIS_URL: str = os.getenv("REDIS_URL", "")
 

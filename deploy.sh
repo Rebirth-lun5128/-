@@ -80,6 +80,12 @@ DATABASE_URL=mysql+pymysql://root:${MYSQL_PASSWORD}@localhost:3306/cc_food?chars
 REDIS_URL=redis://localhost:6379/0
 CORS_ORIGINS=https://${DOMAIN},https://admin.${DOMAIN}
 UPLOAD_DIR=./uploads
+# OSS（可选 — 生产建议配置，防止换服务器丢文件）
+OSS_ENDPOINT=${OSS_ENDPOINT:-}
+OSS_ACCESS_KEY_ID=${OSS_ACCESS_KEY_ID:-}
+OSS_ACCESS_KEY_SECRET=${OSS_ACCESS_KEY_SECRET:-}
+OSS_BUCKET_NAME=${OSS_BUCKET_NAME:-}
+OSS_URL_BASE=${OSS_URL_BASE:-}
 EOF
 log ".env 配置完成"
 
@@ -197,8 +203,10 @@ fi
 # 7. 定时备份 (crontab)
 # ============================================
 log "===== 配置自动备份 ====="
+# 创建日志目录
+mkdir -p "${APP_DIR}/server/logs"
 (crontab -l 2>/dev/null; echo "0 3 * * * cd ${APP_DIR}/server && python3 backup.py >> ${APP_DIR}/server/logs/backup.log 2>&1") | crontab -
-log "每日凌晨3点自动备份已配置"
+log "每日凌晨3点自动备份已配置（数据库 + uploads + 自动上传OSS）"
 
 # ============================================
 # 8. 完成
@@ -227,3 +235,5 @@ echo -e "1. 确保域名 ${DOMAIN} DNS已解析到本服务器"
 echo -e "2. 手动执行 certbot 获取SSL证书: sudo certbot --nginx"
 echo -e "3. 在微信小程序后台配置服务器域名白名单"
 echo -e "4. 修改 MySQL root密码后同步更新 .env"
+echo -e "5. 生产环境建议配置 OSS 环境变量（OSS_ENDPOINT 等），防止换服务器丢文件"
+echo -e "6. 配置 OSS 后图片自动存云端，换服务器无需迁移文件"
