@@ -14,13 +14,17 @@ export function createApi(tokenKey = 'token', redirectPath = '#/login') {
   http.interceptors.response.use(
     (res) => res,
     (err) => {
-      if (!err.config?.silent) {
+      const status = err.response?.status
+      if (status === 401 || status === 403) {
+        // silent 模式下不踢登录，仅静默失败
+        if (!err.config?.silent) {
+          showToast({ message: '登录已过期，请重新登录', type: 'fail' })
+          localStorage.removeItem(tokenKey)
+          window.location.hash = redirectPath
+        }
+      } else if (!err.config?.silent) {
         const msg = err.response?.data?.detail || err.message || '网络错误'
         showToast({ message: msg, type: 'fail' })
-      }
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        localStorage.removeItem(tokenKey)
-        window.location.hash = redirectPath
       }
       return Promise.reject(err)
     },
