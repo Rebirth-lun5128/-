@@ -21,15 +21,20 @@ export function createApi(tokenKey = 'token', redirectPath = '#/login') {
       const isGet = err.config?.method?.toLowerCase() === 'get'
       // GET 请求自动 silent（查询类失败不踢人），显式 silent 也生效
       const silent = !!err.config?.silent || isGet
-      // 是否是 refresh 请求自身（避免死循环）
       const isRefreshRequest = err.config?.url?.includes('/api/common/auth/refresh')
+      const serverMsg = err.response?.data?.detail || ''
 
-      // 401/403 → 尝试自动 refresh
-      if ((status === 401 || status === 403) && !isRefreshRequest) {
+      // 403 权限不足：不需要 refresh（续期也修不了权限），直接显示错误
+      if (status === 403 && !isRefreshRequest) {
+        if (!silent) showToast({ message: serverMsg || '权限不足', type: 'fail' })
+        return Promise.reject(err)
+      }
+
+      // 401 token 过期 → 尝试自动 refresh
+      if (status === 401 && !isRefreshRequest) {
         const storedRefreshToken = localStorage.getItem(refreshTokenKey)
 
         if (storedRefreshToken) {
-          // 并发锁：如果已有 refresh 在进行中，复用它的 Promise
           if (!refreshPromise) {
             refreshPromise = (async () => {
               try {
@@ -41,9 +46,7 @@ export function createApi(tokenKey = 'token', redirectPath = '#/login') {
                 if (newRefresh) localStorage.setItem(refreshTokenKey, newRefresh)
                 return token
               } catch (e) {
-                // 只有 refresh 接口明确返回 401/403 才清除 token（refresh_token 确实无效）
-                // 网络错误等临时故障不清除，保留 token 下次再试
-                if (e.response?.status === 401 || e.response?.status === 403) {
+                if (e.response?.status === 401) {
                   localStorage.removeItem(tokenKey)
                   localStorage.removeItem(refreshTokenKey)
                 }
@@ -56,11 +59,9 @@ export function createApi(tokenKey = 'token', redirectPath = '#/login') {
 
           try {
             const newToken = await refreshPromise
-            // 用新 token 重试原请求
             err.config.headers.Authorization = `Bearer ${newToken}`
             return http.request(err.config)
           } catch {
-            // refresh 失败，非 silent（POST/PUT/DELETE）才踢登录
             if (!silent) {
               showToast({ message: '登录已过期，请重新登录', type: 'fail' })
               window.location.hash = redirectPath
@@ -69,7 +70,6 @@ export function createApi(tokenKey = 'token', redirectPath = '#/login') {
           }
         }
 
-        // 没有 refresh_token，非 silent（POST/PUT/DELETE）才踢登录
         if (!silent) {
           localStorage.removeItem(tokenKey)
           showToast({ message: '登录已过期，请重新登录', type: 'fail' })
@@ -78,10 +78,9 @@ export function createApi(tokenKey = 'token', redirectPath = '#/login') {
         return Promise.reject(err)
       }
 
-      // 其他错误：silent 模式不弹 toast
+      // 其他错误
       if (!silent) {
-        const msg = err.response?.data?.detail || err.message || '网络错误'
-        showToast({ message: msg, type: 'fail' })
+        showToast({ message: serverMsg || err.message || '网络错误', type: 'fail' })
       }
       return Promise.reject(err)
     },
