@@ -185,7 +185,7 @@ class TestUserAddressCRUD:
         res = client.get("/api/user/addresses")
         assert res.status_code == 403
 
-    def test_wrong_role_access(self, client, auth_header_merchant):
-        """Merchant role should be denied (only 'user' role allowed)."""
-        res = client.get("/api/user/addresses", headers=auth_header_merchant)
+    def test_wrong_role_access(self, client, auth_header_admin):
+        """Admin role should be denied (user/merchant/rider allowed)."""
+        res = client.get("/api/user/addresses", headers=auth_header_admin)
         assert res.status_code == 403

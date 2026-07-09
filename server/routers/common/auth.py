@@ -83,27 +83,16 @@ def wechat_login(body: WechatLoginIn, db: Session = Depends(get_db), _rl=Depends
     return _make_login_response(user, db)
 
 
-# 角色名称映射
-_ROLE_NAMES = {"user": "用户", "merchant": "商家", "rider": "骑手", "district_admin": "管理员", "super_admin": "管理员"}
-
 @router.post("/phone", response_model=LoginOut)
 def phone_login(body: PhoneLoginIn, db: Session = Depends(get_db), _rl=Depends(strict_limiter)):
     """
     手机号+密码登录 (用户端/商家端/骑手端/管理后台)
-    校验角色匹配：用户端拒绝商家/骑手账号登录，反之亦然
     """
     user = db.query(User).filter(User.phone == body.phone).first()
     if not user:
         raise HTTPException(status_code=400, detail="手机号未注册")
     if not verify_password(body.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="密码错误")
-
-    # 角色不匹配：提示用户去正确的端登录（管理员不受限）
-    if user.role != body.role and user.role not in ("super_admin", "district_admin"):
-        actual = _ROLE_NAMES.get(user.role, user.role)
-        expected = _ROLE_NAMES.get(body.role, body.role)
-        raise HTTPException(status_code=403, detail=f"这是{actual}账号，请使用{expected}端登录")
-
     return _make_login_response(user, db)
 
 

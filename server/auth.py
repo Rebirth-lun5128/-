@@ -69,7 +69,8 @@ class RoleChecker:
 
 
 # 预定义角色检查器
-require_user = RoleChecker("user")
+# 用户端：所有人（包括商家/骑手）都可以作为消费者下单
+require_user = RoleChecker("user", "merchant", "rider")
 require_merchant = RoleChecker("merchant")
 require_rider = RoleChecker("rider")
 require_district_admin = RoleChecker("district_admin", "super_admin")
