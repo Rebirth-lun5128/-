@@ -118,6 +118,18 @@ const routes = [
     component: () => import('../views/merchant/Menu.vue'),
     meta: { title: '菜品管理' },
   },
+  {
+    path: '/m/shop',
+    name: 'MerchantShop',
+    component: () => import('../views/merchant/Shop.vue'),
+    meta: { title: '店铺入驻' },
+  },
+  {
+    path: '/m/menu-edit/:id?',
+    name: 'MerchantMenuEdit',
+    component: () => import('../views/merchant/MenuEdit.vue'),
+    meta: { title: '编辑菜品' },
+  },
 
   // ===== 骑手端 =====
   {

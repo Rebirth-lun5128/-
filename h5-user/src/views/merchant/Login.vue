@@ -58,11 +58,16 @@ const doSubmit = async () => {
     const res = await merchantApi.post(url, body)
     localStorage.setItem('merchant_token', res.token)
     localStorage.setItem('merchant_phone', phone.value.trim())
-    showToast(isRegister.value ? '注册成功！' : '登录成功')
-    // 检查开店状态并跳转
-    setTimeout(() => {
-      window.location.hash = '#/m/dashboard'
-    }, 500)
+    // 检查是否已入驻店铺
+    let hasShop = false
+    try { await merchantApi.get('/api/merchant/shop'); hasShop = true } catch {}
+    if (!hasShop || isRegister.value) {
+      showToast(isRegister.value ? '注册成功！请入驻店铺' : '请先入驻店铺')
+      setTimeout(() => window.location.hash = '#/m/shop?register=1', 500)
+      return
+    }
+    showToast('登录成功')
+    setTimeout(() => window.location.hash = '#/m/dashboard', 500)
   } catch (err) {
     // 错误信息由 API 拦截器统一展示，此处只重置按钮
   } finally {

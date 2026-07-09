@@ -24,6 +24,7 @@
     <div class="actions">
       <van-button round block type="primary" @click="goOrders('')">📋 查看全部订单</van-button>
       <van-button round block style="margin-top:12px" @click="goMenu">📝 管理菜品</van-button>
+      <van-button round block plain style="margin-top:12px" @click="goShop">🏪 店铺设置</van-button>
     </div>
   </div>
 </template>
@@ -59,6 +60,7 @@ const goOrders = (status) => {
 }
 const goDetail = (id) => { window.location.hash = `#/m/order/${id}` }
 const goMenu = () => { window.location.hash = '#/m/menu' }
+const goShop = () => { window.location.hash = '#/m/shop' }
 const doLogout = () => {
   localStorage.removeItem('merchant_token')
   window.location.hash = '#/m/login'
