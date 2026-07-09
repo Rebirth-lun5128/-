@@ -197,6 +197,14 @@
           </el-select>
           <div class="form-hint">留空 = 仅本区合单；勾选后可与所选分区的店铺合并下单</div>
         </el-form-item>
+        <el-form-item label="店铺评分">
+          <el-input-number v-model="editForm.rating" :min="1" :max="5" :step="0.1" :precision="1" />
+          <span class="form-hint">⭐ 用户端显示的星级（1.0 - 5.0）</span>
+        </el-form-item>
+        <el-form-item label="月售数量">
+          <el-input-number v-model="editForm.monthly_sales" :min="0" :step="1" />
+          <span class="form-hint">用户端显示的月售数字</span>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="editDialogVisible = false">取消</el-button>
@@ -337,7 +345,7 @@ async function deleteStore(id) {
 const districts = ref([])
 const editDialogVisible = ref(false)
 const editRow = ref(null)
-const editForm = ref({ district_id: null, combinable_districts: [] })
+const editForm = ref({ district_id: null, combinable_districts: [], rating: 5.0, monthly_sales: 0 })
 const saving = ref(false)
 
 async function loadDistricts() {
@@ -358,6 +366,8 @@ function openEdit(row) {
     store_type: row.store_type || 'stall',
     district_id: row.district_id || null,
     combinable_districts: row.combinable_districts ? [...row.combinable_districts] : [],
+    rating: parseFloat(row.rating) || 5.0,
+    monthly_sales: parseInt(row.monthly_sales) || 0,
   }
   editDialogVisible.value = true
 }
@@ -369,10 +379,14 @@ async function saveEdit() {
       store_type: editForm.value.store_type,
       district_id: editForm.value.district_id,
       combinable_districts: editForm.value.combinable_districts,
+      rating: editForm.value.rating,
+      monthly_sales: editForm.value.monthly_sales,
     })
     editRow.value.store_type = editForm.value.store_type
     editRow.value.district_id = editForm.value.district_id
     editRow.value.combinable_districts = editForm.value.combinable_districts
+    editRow.value.rating = editForm.value.rating
+    editRow.value.monthly_sales = editForm.value.monthly_sales
     // refresh district name display
     const d = districts.value.find(d => d.id === editForm.value.district_id)
     if (d) editRow.value.district_name = d.name

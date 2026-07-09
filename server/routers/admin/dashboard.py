@@ -206,6 +206,10 @@ def update_store(
         store.delivery_time = body.delivery_time
     if body.notice is not None:
         store.notice = body.notice
+    if body.rating is not None:
+        store.rating = body.rating
+    if body.monthly_sales is not None:
+        store.monthly_sales = body.monthly_sales
 
     db.commit()
     return {

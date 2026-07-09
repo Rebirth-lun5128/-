@@ -135,6 +135,8 @@ class StoreUpdate(BaseModel):
     status: Optional[str] = None
     stall_location: Optional[str] = None
     id_card_photo: Optional[str] = None
+    rating: Optional[float] = None
+    monthly_sales: Optional[int] = None
     stall_photo: Optional[str] = None
 
 
