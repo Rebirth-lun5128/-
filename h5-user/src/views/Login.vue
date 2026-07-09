@@ -79,9 +79,12 @@ function toggleMode() {
         <span>和</span>
         <router-link to="/privacy" style="color:#ff6b35;margin-left:2px">《隐私政策》</router-link>
       </div>
-      <p class="text-center text-sm mt-3" style="color:#ff6b35;cursor:pointer" @click="toggleMode">
-        {{ isRegister ? '已有账号？去登录' : '没有账号？去注册' }}
-      </p>
+      <div style="margin-top:24px;text-align:center">
+        <span style="color:#666;font-size:14px">{{ isRegister ? '已有账号？' : '还没有账号？' }}</span>
+        <span style="color:#ff6b35;font-size:16px;font-weight:bold;cursor:pointer;margin-left:4px" @click="toggleMode">
+          {{ isRegister ? '去登录' : '注册新账号' }}
+        </span>
+      </div>
     </div>
   </div>
 </template>
