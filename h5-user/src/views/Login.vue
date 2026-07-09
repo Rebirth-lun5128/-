@@ -13,23 +13,30 @@ const confirmPwd = ref('')
 const loading = ref(false)
 const agreed = ref(false)
 const isRegister = ref(false)
+const rememberPwd = ref(true)  // 记住密码，默认开启
 
-// 记住上次登录
+// 记住的上次登录信息
 const lastPhone = localStorage.getItem('last_login_phone') || ''
 const lastInfo = (() => {
   try { return JSON.parse(localStorage.getItem('userInfo') || 'null') } catch { return null }
 })()
 const showWelcome = computed(() => !isRegister.value && !!lastPhone)
 
-// 自动填充上次手机号
+// 自动填充：手机号 + 记住的密码
 if (lastPhone && !phone.value) {
   phone.value = lastPhone
+}
+const rememberedPwd = localStorage.getItem('remembered_pwd')
+if (rememberedPwd && lastPhone) {
+  try { password.value = atob(rememberedPwd) } catch {}
 }
 
 function switchAccount() {
   phone.value = ''
   password.value = ''
   localStorage.removeItem('last_login_phone')
+  localStorage.removeItem('remembered_pwd')
+  localStorage.removeItem('remembered_phone')
 }
 
 async function handleSubmit() {
@@ -57,6 +64,16 @@ async function handleSubmit() {
       : { phone: phone.value.trim(), password: password.value, role: 'user' }
     const res = await api.post(url, data)
     authStore.login(res.token, res.refresh_token, res.user)
+
+    // 记住密码
+    if (rememberPwd.value) {
+      localStorage.setItem('remembered_phone', phone.value.trim())
+      localStorage.setItem('remembered_pwd', btoa(password.value))
+    } else {
+      localStorage.removeItem('remembered_pwd')
+      localStorage.removeItem('remembered_phone')
+    }
+
     showToast({ message: isRegister.value ? '注册成功' : '登录成功', type: 'success' })
     const redirect = route.query.redirect || '/'
     setTimeout(() => router.replace(redirect), 500)
@@ -97,12 +114,19 @@ function toggleMode() {
         <van-field v-if="isRegister" v-model="confirmPwd" type="password" placeholder="请确认密码"
           left-icon="lock" />
       </van-cell-group>
+
+      <!-- 记住密码（仅登录模式） -->
+      <div v-if="!isRegister" style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px 0">
+        <van-checkbox v-model="rememberPwd" icon-size="16px" style="font-size:13px;color:#999">记住密码</van-checkbox>
+      </div>
+
       <div class="p-3">
         <van-button type="primary" block round :loading="loading" :disabled="!agreed"
           color="#ff6b35" @click="handleSubmit" style="height:44px">
           {{ isRegister ? '注册' : '登录' }}
         </van-button>
       </div>
+
       <div style="display:flex;align-items:center;justify-content:center;margin-top:16px;font-size:13px;color:#999">
         <van-checkbox v-model="agreed" style="margin-right:4px" />
         <span>已阅读并同意</span>

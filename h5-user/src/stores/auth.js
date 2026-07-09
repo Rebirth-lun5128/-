@@ -25,6 +25,7 @@ export const authStore = reactive({
     localStorage.removeItem('token')
     localStorage.removeItem('token_refresh')
     localStorage.removeItem('userInfo')
+    // 保留 last_login_phone 和 remembered_pwd，下次打开自动填充
   },
 
   updateUserInfo(info) {
