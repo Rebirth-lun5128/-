@@ -57,6 +57,7 @@ from routers.common.auth import router as auth_router
 from routers.common.pay import router as pay_router
 from routers.common.ws import router as ws_router
 from routers.common.upload import router as upload_router
+from routers.common.wechat_js import router as wechat_js_router
 from routers.user.address import router as user_address_router
 from routers.user.store import router as user_store_router
 from routers.user.order import router as user_order_router
@@ -73,6 +74,7 @@ app.include_router(auth_router)
 app.include_router(pay_router)
 app.include_router(ws_router)
 app.include_router(upload_router)
+app.include_router(wechat_js_router)
 app.include_router(user_address_router)
 app.include_router(user_store_router)
 app.include_router(user_order_router)

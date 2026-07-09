@@ -23,6 +23,10 @@ class Settings:
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(60 * 24 * 7))
     )  # 默认7天，生产建议15-60分钟 + refresh token
 
+    # 微信公众号 (JS-SDK 分享)
+    WECHAT_MP_APPID: str = os.getenv("WECHAT_MP_APPID", "")
+    WECHAT_MP_SECRET: str = os.getenv("WECHAT_MP_SECRET", "")
+
     # 微信小程序
     WECHAT_APPID: str = os.getenv("WECHAT_APPID", "")
     WECHAT_SECRET: str = os.getenv("WECHAT_SECRET", "")

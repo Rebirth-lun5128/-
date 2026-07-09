@@ -12,7 +12,10 @@ const deliveringCount = ref(0)
 const couponCount = ref(0)
 const loading = ref(false)
 
-onActivated(loadStats)
+onActivated(() => {
+  loadStats()
+  if (isWechat) initWxConfig()
+})
 
 async function loadStats() {
   loading.value = true
@@ -51,20 +54,60 @@ async function deleteAccount() {
   } catch { }
 }
 
+// ============ 分享 ============
 const showShare = ref(false)
 const shareText = '🔥 社区夜市外卖来啦！\n跨摊下单 · 一次配送 · 新鲜直达\n烧烤面食小吃一站购齐\n👉 https://yswm-1.cn/h5/'
 const isWechat = /MicroMessenger/i.test(navigator.userAgent)
+const wxReady = ref(false)
+
+// 微信 JS-SDK 初始化
+async function initWxConfig() {
+  if (!window.wx) return
+  try {
+    const url = location.href.split('#')[0]
+    const cfg = await api.get('/api/common/wechat/js-sdk-config', { url }, { silent: true })
+    if (!cfg?.appId) return
+
+    window.wx.config({
+      debug: false,
+      appId: cfg.appId,
+      timestamp: cfg.timestamp,
+      nonceStr: cfg.nonceStr,
+      signature: cfg.signature,
+      jsApiList: ['updateAppMessageShareData', 'updateTimelineShareData', 'onMenuShareAppMessage', 'onMenuShareTimeline'],
+    })
+
+    window.wx.ready(() => {
+      wxReady.value = true
+      const shareData = {
+        title: '社区夜市 - 家门口的夜市外卖',
+        desc: '跨摊下单、一次配送、新鲜直达！烧烤、面食、小吃一站购齐 🔥',
+        link: 'https://yswm-1.cn/h5/',
+        imgUrl: 'https://yswm-1.cn/h5/share-icon.png',
+      }
+      try {
+        window.wx.updateAppMessageShareData?.({ ...shareData, success: () => {} })
+        window.wx.updateTimelineShareData?.({ ...shareData, success: () => {} })
+      } catch {}
+      // 旧版兼容
+      window.wx.onMenuShareAppMessage?.(shareData)
+      window.wx.onMenuShareTimeline?.(shareData)
+    })
+
+    window.wx.error(() => {})
+  } catch {}
+}
 
 async function doShare() {
   const data = { title: '社区夜市外卖', text: '🔥 跨摊下单 · 一次配送 · 新鲜直达\n烧烤面食小吃一站购齐\n👉 https://yswm-1.cn/h5/', url: 'https://yswm-1.cn/h5/' }
 
-  // 微信内置浏览器：navigator.share 会直接关闭 WebView → 必须跳过
-  // 微信分享需 JS-SDK（服务号），没有则走自定义弹窗+复制链接
+  // 微信已配置 JS-SDK → 展示引导弹窗
   if (isWechat) {
     showShare.value = true
     return
   }
 
+  // 其他浏览器 → 原生分享
   try {
     if (navigator.share) {
       await navigator.share(data)
@@ -152,6 +195,17 @@ const userInfo = () => authStore.userInfo || { nickname: '食客', phone: '', av
     <!-- 分享弹窗 -->
     <van-popup v-model:show="showShare" round position="bottom" :style="{ padding: '24px 20px' }" :close-on-click-overlay="true">
       <h3 style="text-align:center;margin-bottom:16px">📤 分享给朋友</h3>
+
+      <!-- 微信已配置 JS-SDK：引导点击右上角 -->
+      <div v-if="isWechat && wxReady" style="text-align:center;margin-bottom:16px">
+        <div style="font-size:56px;margin-bottom:8px">👆</div>
+        <div style="font-size:16px;font-weight:bold;color:#333;margin-bottom:4px">点击右上角 <span style="background:#f0f0f0;padding:2px 8px;border-radius:4px">···</span></div>
+        <div style="font-size:14px;color:#666">选择「发送给朋友」或「分享到朋友圈」</div>
+        <div style="margin-top:12px;padding:12px;background:#FFF3E0;border-radius:8px;font-size:13px;color:#E65100">
+          分享卡片已自动设置，好友点开就能看到店铺信息
+        </div>
+      </div>
+
       <div style="background:linear-gradient(135deg,#ff6b35,#ff8f66);border-radius:12px;padding:20px;color:#fff;text-align:center;margin-bottom:16px">
         <div style="font-size:40px;margin-bottom:8px">🌙🔥</div>
         <div style="font-size:20px;font-weight:bold;margin-bottom:6px">社区夜市外卖</div>
@@ -161,8 +215,17 @@ const userInfo = () => authStore.userInfo || { nickname: '食客', phone: '', av
           yswm-1.cn/h5
         </div>
       </div>
-      <van-button round block type="primary" color="#ff6b35" @click="copyShare">📋 复制文案和链接</van-button>
-      <p style="text-align:center;color:#999;font-size:12px;margin-top:8px">复制后去微信粘贴发送即可</p>
+
+      <!-- 微信但 JS-SDK 未就绪：复制链接备用 -->
+      <div v-if="!isWechat || !wxReady">
+        <van-button round block type="primary" color="#ff6b35" @click="copyShare">📋 复制文案和链接</van-button>
+        <p style="text-align:center;color:#999;font-size:12px;margin-top:8px">复制后去微信粘贴发送即可</p>
+      </div>
+
+      <!-- 复制链接作为备用 -->
+      <div v-else style="text-align:center;margin-top:4px">
+        <van-button round plain type="default" size="small" @click="copyShare">📋 或者复制链接</van-button>
+      </div>
     </van-popup>
   </div>
 </template>
