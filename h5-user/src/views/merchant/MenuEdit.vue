@@ -55,9 +55,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { merchantApi } from '../../utils/api.js'
 import { showToast, showConfirmDialog } from 'vant'
+
+const router = useRouter()
 
 const route = useRoute()
 const isEdit = ref(!!route.params.id && route.params.id !== 'new')
@@ -168,9 +170,6 @@ const onDelete = async () => {
     setTimeout(() => router.push({ name: 'MerchantMenu' }), 300)
   } catch {}
 }
-
-import { useRouter } from 'vue-router'
-const router = useRouter()
 
 onMounted(async () => {
   if (!localStorage.getItem('merchant_token')) { window.location.hash = '#/m/login'; return }
