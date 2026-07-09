@@ -45,8 +45,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { merchantApi } from '../../utils/api.js'
 import { showToast } from 'vant'
+
+const router = useRouter()
 
 const categories = ref([])
 const allItems = ref([])
@@ -74,8 +77,11 @@ const load = async () => {
 
 const goEdit = (id) => {
   const cid = activeCatId.value || ''
-  const url = id ? `#/m/menu-edit/${id}` : `#/m/menu-edit/new?cat=${cid}`
-  window.location.hash = url
+  if (id) {
+    router.push({ name: 'MerchantMenuEdit', params: { id: String(id) } })
+  } else {
+    router.push({ name: 'MerchantMenuEdit', params: { id: 'new' }, query: { cat: cid } })
+  }
 }
 
 const saveCategory = async () => {
