@@ -14,7 +14,7 @@
 
       <div class="actions">
         <van-button v-if="order.status === 'pending'" round block type="primary" @click="acceptOrder">🛵 接单配送</van-button>
-        <van-button v-if="order.status === 'delivering'" round block type="success" @click="completeOrder">✅ 确认送达</van-button>
+        <van-button v-if="order.status === 'delivering'" round block type="success" @click="deliverOrder">✅ 确认送达</van-button>
       </div>
     </template>
   </div>
@@ -43,11 +43,11 @@ const load = async () => {
 
 const acceptOrder = async () => {
   try { await showConfirmDialog({ title: '接单确认', message: '确定接收此配送订单吗？' }) } catch { return }
-  try { await riderApi.put(`/api/rider/orders/${orderId.value}/accept`); showToast('已接单'); load(); } catch {}
+  try { await riderApi.post(`/api/rider/orders/${orderId.value}/accept`); showToast('已接单'); load(); } catch {}
 }
-const completeOrder = async () => {
+const deliverOrder = async () => {
   try { await showConfirmDialog({ title: '送达确认', message: '确认已送达该订单吗？' }) } catch { return }
-  try { await riderApi.put(`/api/rider/orders/${orderId.value}/complete`); showToast('已送达'); load(); } catch {}
+  try { await riderApi.put(`/api/rider/orders/${orderId.value}/deliver`); showToast('已送达'); load(); } catch {}
 }
 
 onMounted(load)

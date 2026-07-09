@@ -45,7 +45,7 @@ const loadOrders = async () => {
   if (loading.value) return
   loading.value = true
   try {
-    const res = await riderApi.get('/api/rider/orders', { page: page.value, page_size: 10 })
+    const res = await riderApi.get('/api/rider/orders/my', { page: page.value, page_size: 10 })
     const items = res.items || []
     orders.value = page.value === 1 ? items : [...orders.value, ...items]
     finished.value = items.length < 10

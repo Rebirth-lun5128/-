@@ -5,27 +5,25 @@
       <van-button size="small" plain type="primary" @click="doLogout">退出</van-button>
     </div>
 
-    <!-- 统计 -->
     <div class="stats">
       <div class="stat-item" @click="goMyOrders">
         <div class="stat-num" style="color:#1989fa">{{ myCount }}</div>
         <div class="stat-label">我的配送</div>
       </div>
       <div class="stat-item">
-        <div class="stat-num" style="color:#07c160">¥{{ todayEarnings }}</div>
+        <div class="stat-num" style="color:#07c160">¥{{ wallet.income || 0 }}</div>
         <div class="stat-label">今日收入</div>
       </div>
     </div>
 
-    <!-- 可抢订单 -->
     <van-cell-group inset title="可接订单">
-      <van-cell v-for="o in availableOrders" :key="o.id"
-        :title="`#${o.id} ${o.store_names || ''}`"
-        :label="`¥${o.total_price} · ${o.address_snapshot?.address || ''}`"
+      <van-cell v-for="o in pendingOrders" :key="o.id"
+        :title="'#' + o.id + ' ¥' + (o.total_price || 0)"
+        :label="'取餐: ' + (o.store_names || '夜市') + ' | 送: ' + (o.address_snapshot?.address || '')"
         is-link @click="goDetail(o.id)">
         <template #right-icon><van-tag type="danger" size="small">可接</van-tag></template>
       </van-cell>
-      <van-cell v-if="!availableOrders.length" title="暂无可接订单" label="下拉刷新试试" />
+      <van-cell v-if="!pendingOrders.length" title="暂无可接订单" />
     </van-cell-group>
 
     <div class="actions">
@@ -39,21 +37,26 @@ import { ref, onMounted } from 'vue'
 import { riderApi } from '../../utils/api.js'
 
 const myCount = ref(0)
-const todayEarnings = ref(0)
-const availableOrders = ref([])
+const pendingOrders = ref([])
+const wallet = ref({ income: 0 })
 
 const load = async () => {
   try {
-    // 获取可接订单
-    const res1 = await riderApi.get('/api/rider/orders/available', { page_size: 10 })
-    availableOrders.value = res1.items || []
-    // 获取我的订单
-    const res2 = await riderApi.get('/api/rider/orders', { status: 'delivering,completed', page_size: 20 })
-    myCount.value = res2.total || 0
-    // 估算今日收入
-    const today = new Date().toISOString().slice(0, 10)
-    const completed = (res2.items || []).filter(o => o.completed_at && o.completed_at.startsWith(today))
-    todayEarnings.value = completed.reduce((sum, o) => sum + (o.delivery_fee || 0), 0)
+    // 可接订单: /api/rider/orders/pending
+    const p = await riderApi.get('/api/rider/orders/pending', { page_size: 10 })
+    pendingOrders.value = (p.items || []).map(o => ({
+      ...o, store_names: (o.sub_orders || []).map(s => s.store_name).join('、')
+    }))
+  } catch {}
+  try {
+    // 我的订单: /api/rider/orders/my
+    const m = await riderApi.get('/api/rider/orders/my', { page_size: 20 })
+    myCount.value = m.total || 0
+  } catch {}
+  try {
+    // 钱包: /api/rider/orders/wallet
+    const w = await riderApi.get('/api/rider/orders/wallet')
+    wallet.value = w
   } catch {}
 }
 
