@@ -51,17 +51,13 @@ async function deleteAccount() {
   } catch { }
 }
 
-async function shareApp() {
+function shareApp() {
   const text = '🔥 社区夜市外卖来啦！\n跨摊下单 · 一次配送 · 新鲜直达\n烧烤面食小吃一站购齐\n👉 https://yswm-1.cn/h5/'
-  // 优先用系统分享（手机端原生分享面板）
-  if (navigator.share) {
-    try { await navigator.share({ title: '社区夜市外卖', text }) } catch {}
-    return
-  }
-  // 桌面端/微信内置浏览器 → 复制文案
-  try { await navigator.clipboard.writeText(text); showToast('已复制分享文案，去粘贴发送吧') } catch {
-    showToast({ message: '长按复制：\n' + text, duration: 5000 })
-  }
+  showDialog({
+    title: '分享给朋友',
+    message: '长按下方文字复制，粘贴发送给朋友：\n\n' + text,
+    confirmButtonText: '知道了',
+  })
 }
 
 function goOrders(status) {
