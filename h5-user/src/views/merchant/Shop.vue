@@ -21,7 +21,15 @@
     </van-cell-group>
 
     <van-cell-group inset title="营业执照（选填）" v-if="isRegister">
-      <van-field v-model="form.id_card_photo" label="证件照片URL" placeholder="可上传或粘贴图片链接" />
+      <van-field label="证件照片">
+        <template #input>
+          <div style="display:flex;align-items:center;gap:8px">
+            <van-image v-if="form.id_card_photo" :src="form.id_card_photo" width="60" height="40" fit="cover" radius="4" />
+            <span v-if="form.id_card_photo" @click="form.id_card_photo = ''" style="color:#ee0a24;font-size:12px;cursor:pointer">删除</span>
+            <input type="file" accept="image/*" @change="onUploadIdCard" style="font-size:12px" />
+          </div>
+        </template>
+      </van-field>
     </van-cell-group>
 
     <div style="padding:16px">
@@ -74,6 +82,19 @@ const load = async () => {
       min_price: shop.min_price ? String(shop.min_price) : '',
       delivery_time: shop.delivery_time || '30分钟', notice: shop.notice || '',
     }
+  } catch {}
+}
+
+const onUploadIdCard = async (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  const fd = new FormData()
+  fd.append('file', file)
+  const token = localStorage.getItem('merchant_token')
+  try {
+    const res = await fetch('/api/common/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd })
+    const data = await res.json()
+    if (data.url) form.value.id_card_photo = data.url
   } catch {}
 }
 
