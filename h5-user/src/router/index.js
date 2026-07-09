@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 const routes = [
+  // ===== 用户端 =====
   {
     path: '/',
     name: 'Home',
@@ -85,6 +86,58 @@ const routes = [
     component: () => import('../views/Privacy.vue'),
     meta: { title: '隐私政策' },
   },
+
+  // ===== 商家端 =====
+  {
+    path: '/m/login',
+    name: 'MerchantLogin',
+    component: () => import('../views/merchant/Login.vue'),
+    meta: { title: '商家登录' },
+  },
+  {
+    path: '/m/dashboard',
+    name: 'MerchantDashboard',
+    component: () => import('../views/merchant/Dashboard.vue'),
+    meta: { title: '商家中心' },
+  },
+  {
+    path: '/m/orders',
+    name: 'MerchantOrders',
+    component: () => import('../views/merchant/Orders.vue'),
+    meta: { title: '订单管理' },
+  },
+  {
+    path: '/m/order/:id',
+    name: 'MerchantOrderDetail',
+    component: () => import('../views/merchant/OrderDetail.vue'),
+    meta: { title: '订单详情' },
+  },
+
+  // ===== 骑手端 =====
+  {
+    path: '/r/login',
+    name: 'RiderLogin',
+    component: () => import('../views/rider/Login.vue'),
+    meta: { title: '骑手登录' },
+  },
+  {
+    path: '/r/dashboard',
+    name: 'RiderDashboard',
+    component: () => import('../views/rider/Dashboard.vue'),
+    meta: { title: '骑手中心' },
+  },
+  {
+    path: '/r/orders',
+    name: 'RiderOrders',
+    component: () => import('../views/rider/Orders.vue'),
+    meta: { title: '我的订单' },
+  },
+  {
+    path: '/r/order/:id',
+    name: 'RiderOrderDetail',
+    component: () => import('../views/rider/OrderDetail.vue'),
+    meta: { title: '订单详情' },
+  },
 ]
 
 const router = createRouter({
@@ -94,6 +147,7 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   document.title = to.meta.title || '社区夜市'
+  // 用户端需要登录的页面
   if (to.meta.needAuth && !localStorage.getItem('token')) {
     next({ name: 'Login', query: { redirect: to.fullPath } })
   } else {
