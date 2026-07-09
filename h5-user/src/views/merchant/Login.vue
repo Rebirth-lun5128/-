@@ -57,6 +57,7 @@ const doSubmit = async () => {
   try {
     const res = await merchantApi.post(url, body)
     localStorage.setItem('merchant_token', res.token)
+    localStorage.setItem('merchant_token_refresh', res.refresh_token || '')
     localStorage.setItem('merchant_phone', phone.value.trim())
     // 检查是否已入驻店铺（仅新注册时检查，登录直接进）
     if (isRegister.value) {

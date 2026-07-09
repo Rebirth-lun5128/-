@@ -57,6 +57,7 @@ const doSubmit = async () => {
   try {
     const res = await riderApi.post(url, body)
     localStorage.setItem('rider_token', res.token)
+    localStorage.setItem('rider_token_refresh', res.refresh_token || '')
     localStorage.setItem('rider_phone', phone.value.trim())
     showToast(isRegister.value ? '注册成功！' : '登录成功')
     setTimeout(() => {

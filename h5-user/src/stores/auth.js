@@ -9,17 +9,21 @@ export const authStore = reactive({
     return !!this.token
   },
 
-  login(token, userInfo) {
+  login(token, refreshToken, userInfo) {
     this.token = token
     this.userInfo = userInfo
     localStorage.setItem('token', token)
+    if (refreshToken) localStorage.setItem('token_refresh', refreshToken)
     localStorage.setItem('userInfo', JSON.stringify(userInfo))
+    // 记住上次登录手机号，方便下次自动填充
+    if (userInfo?.phone) localStorage.setItem('last_login_phone', userInfo.phone)
   },
 
   logout() {
     this.token = ''
     this.userInfo = null
     localStorage.removeItem('token')
+    localStorage.removeItem('token_refresh')
     localStorage.removeItem('userInfo')
   },
 

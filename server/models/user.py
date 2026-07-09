@@ -18,6 +18,8 @@ class User(Base):
     role = Column(SQLEnum("user", "merchant", "rider", "district_admin", "super_admin"), nullable=False, default="user")
     district_id = Column(Integer, ForeignKey("districts.id"), nullable=True)
     status = Column(Integer, default=1)
+    refresh_token = Column(String(200), default="")
+    refresh_token_expires = Column(DateTime, nullable=True)
     last_login = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

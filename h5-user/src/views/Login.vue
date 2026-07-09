@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast } from 'vant'
 import { api } from '../utils/api'
@@ -13,6 +13,24 @@ const confirmPwd = ref('')
 const loading = ref(false)
 const agreed = ref(false)
 const isRegister = ref(false)
+
+// 记住上次登录
+const lastPhone = localStorage.getItem('last_login_phone') || ''
+const lastInfo = (() => {
+  try { return JSON.parse(localStorage.getItem('userInfo') || 'null') } catch { return null }
+})()
+const showWelcome = computed(() => !isRegister.value && !!lastPhone)
+
+// 自动填充上次手机号
+if (lastPhone && !phone.value) {
+  phone.value = lastPhone
+}
+
+function switchAccount() {
+  phone.value = ''
+  password.value = ''
+  localStorage.removeItem('last_login_phone')
+}
 
 async function handleSubmit() {
   if (!agreed.value) {
@@ -38,7 +56,7 @@ async function handleSubmit() {
       ? { phone: phone.value.trim(), password: password.value, role: 'user' }
       : { phone: phone.value.trim(), password: password.value, role: 'user' }
     const res = await api.post(url, data)
-    authStore.login(res.token, res.user)
+    authStore.login(res.token, res.refresh_token, res.user)
     showToast({ message: isRegister.value ? '注册成功' : '登录成功', type: 'success' })
     const redirect = route.query.redirect || '/'
     setTimeout(() => router.replace(redirect), 500)
@@ -58,6 +76,19 @@ function toggleMode() {
     <div class="p-4" style="width:100%;max-width:360px">
       <h1 class="text-2xl font-bold text-center mb-4" style="color:#ff6b35">社区夜市</h1>
       <p class="text-center text-gray mb-4">{{ isRegister ? '注册账号' : '登录后开始点餐' }}</p>
+
+      <!-- 欢迎回来卡片 -->
+      <div v-if="showWelcome" class="mb-3"
+        style="background:#fff;border-radius:12px;padding:16px;display:flex;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+        <van-image v-if="lastInfo?.avatar" :src="lastInfo.avatar" width="48" height="48" fit="cover" round />
+        <div v-else style="width:48px;height:48px;border-radius:50%;background:#ff6b35;color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px">👋</div>
+        <div class="ml-3 flex-1">
+          <div class="font-bold" style="color:#333">{{ lastInfo?.nickname || '欢迎回来' }}</div>
+          <div class="text-sm" style="color:#999">{{ lastPhone.slice(0,3) }}****{{ lastPhone.slice(-4) }}</div>
+        </div>
+        <span style="color:#ff6b35;font-size:13px;cursor:pointer" @click="switchAccount">切换账号</span>
+      </div>
+
       <van-cell-group inset>
         <van-field v-model="phone" type="tel" maxlength="11" placeholder="请输入手机号"
           left-icon="phone-o" />

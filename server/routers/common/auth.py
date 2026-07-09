@@ -1,6 +1,7 @@
 import logging
 import random
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
@@ -11,18 +12,27 @@ from config import settings
 from database import get_db
 from models.user import User
 from ratelimit import strict_limiter
-from schemas.user import LoginOut, UserOut, UserUpdate, WechatLoginIn, PhoneLoginIn
+from schemas.user import LoginOut, UserOut, UserUpdate, WechatLoginIn, PhoneLoginIn, RefreshIn
 
 logger = logging.getLogger("app.auth")
 
 router = APIRouter(prefix="/api/common/auth", tags=["公共-认证"])
 
+REFRESH_TOKEN_DAYS = 30  # refresh_token 30天有效
 
-def _make_login_response(user: User) -> LoginOut:
-    """生成登录响应"""
+
+def _generate_refresh_token() -> str:
+    return secrets.token_urlsafe(32)
+
+
+def _make_login_response(user: User, db: Session) -> LoginOut:
+    """生成登录响应，同时生成 refresh_token 存入用户记录"""
     user.last_login = datetime.now(timezone.utc)
+    user.refresh_token = _generate_refresh_token()
+    user.refresh_token_expires = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_DAYS)
     token = create_access_token(data={"sub": user.id, "role": user.role})
-    return LoginOut(token=token, user=UserOut.model_validate(user))
+    db.commit()
+    return LoginOut(token=token, refresh_token=user.refresh_token, user=UserOut.model_validate(user))
 
 
 @router.post("/wechat", response_model=LoginOut)
@@ -70,7 +80,7 @@ def wechat_login(body: WechatLoginIn, db: Session = Depends(get_db), _rl=Depends
     else:
         logger.info("WeChat login | user_id=%d", user.id)
 
-    return _make_login_response(user)
+    return _make_login_response(user, db)
 
 
 @router.post("/phone", response_model=LoginOut)
@@ -83,7 +93,7 @@ def phone_login(body: PhoneLoginIn, db: Session = Depends(get_db), _rl=Depends(s
         raise HTTPException(status_code=400, detail="手机号未注册")
     if not verify_password(body.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="密码错误")
-    return _make_login_response(user)
+    return _make_login_response(user, db)
 
 
 @router.post("/register", response_model=LoginOut)
@@ -104,7 +114,7 @@ def phone_register(body: PhoneLoginIn, db: Session = Depends(get_db), _rl=Depend
     db.add(user)
     db.commit()
     db.refresh(user)
-    return _make_login_response(user)
+    return _make_login_response(user, db)
 
 
 @router.get("/me", response_model=UserOut)
@@ -143,3 +153,21 @@ def delete_account(
     user.phone = f"deleted_{user.id}_{user.phone}"  # 释放手机号供重新注册
     db.commit()
     return {"message": "账号已注销。如有未完成订单，请联系客服处理。"}
+
+
+@router.post("/refresh", response_model=LoginOut)
+def refresh_token(body: RefreshIn, db: Session = Depends(get_db)):
+    """
+    用 refresh_token 换取新的 access_token（自动续期）
+    每次 refresh 会轮换 refresh_token（旧 token 立即失效）
+    """
+    user = db.query(User).filter(User.refresh_token == body.refresh_token).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="refresh_token 无效")
+    if user.refresh_token_expires is None or user.refresh_token_expires < datetime.now(timezone.utc):
+        # 过期了，清除旧 token
+        user.refresh_token = ""
+        user.refresh_token_expires = None
+        db.commit()
+        raise HTTPException(status_code=401, detail="refresh_token 已过期，请重新登录")
+    return _make_login_response(user, db)

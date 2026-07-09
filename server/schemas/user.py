@@ -84,4 +84,9 @@ class PhoneLoginIn(BaseModel):
 
 class LoginOut(BaseModel):
     token: str
+    refresh_token: str
     user: UserOut
+
+
+class RefreshIn(BaseModel):
+    refresh_token: str
