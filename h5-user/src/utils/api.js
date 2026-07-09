@@ -36,12 +36,15 @@ export function createApi(tokenKey = 'token', redirectPath = '#/login') {
                 })
                 const { token, refresh_token: newRefresh } = res.data
                 localStorage.setItem(tokenKey, token)
-                localStorage.setItem(refreshTokenKey, newRefresh)
+                if (newRefresh) localStorage.setItem(refreshTokenKey, newRefresh)
                 return token
-              } catch {
-                // refresh 失败，清除所有 token
-                localStorage.removeItem(tokenKey)
-                localStorage.removeItem(refreshTokenKey)
+              } catch (e) {
+                // 只有 refresh 接口明确返回 401/403 才清除 token（refresh_token 确实无效）
+                // 网络错误等临时故障不清除，保留 token 下次再试
+                if (e.response?.status === 401 || e.response?.status === 403) {
+                  localStorage.removeItem(tokenKey)
+                  localStorage.removeItem(refreshTokenKey)
+                }
                 throw new Error('refresh_failed')
               } finally {
                 refreshPromise = null

@@ -55,7 +55,7 @@ async function loadStores() {
     const params = { page: page.value, page_size: 10 }
     if (activeType.value) params.store_type = activeType.value
     if (keyword.value) params.keyword = keyword.value
-    const res = await api.get('/api/user/stores', params)
+    const res = await api.get('/api/user/stores', params, { silent: true })
     if (page.value === 1) {
       stores.value = res.items
       featuredStores.value = [...res.items].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 6)
