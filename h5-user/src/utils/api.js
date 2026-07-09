@@ -18,7 +18,9 @@ export function createApi(tokenKey = 'token', redirectPath = '#/login') {
     (res) => res,
     async (err) => {
       const status = err.response?.status
-      const silent = !!err.config?.silent
+      const isGet = err.config?.method?.toLowerCase() === 'get'
+      // GET 请求自动 silent（查询类失败不踢人），显式 silent 也生效
+      const silent = !!err.config?.silent || isGet
       // 是否是 refresh 请求自身（避免死循环）
       const isRefreshRequest = err.config?.url?.includes('/api/common/auth/refresh')
 
@@ -58,7 +60,7 @@ export function createApi(tokenKey = 'token', redirectPath = '#/login') {
             err.config.headers.Authorization = `Bearer ${newToken}`
             return http.request(err.config)
           } catch {
-            // refresh 失败，静默 reject（silent 模式）或踢登录
+            // refresh 失败，非 silent（POST/PUT/DELETE）才踢登录
             if (!silent) {
               showToast({ message: '登录已过期，请重新登录', type: 'fail' })
               window.location.hash = redirectPath
@@ -67,7 +69,7 @@ export function createApi(tokenKey = 'token', redirectPath = '#/login') {
           }
         }
 
-        // 没有 refresh_token，按 silent 模式决定行为
+        // 没有 refresh_token，非 silent（POST/PUT/DELETE）才踢登录
         if (!silent) {
           localStorage.removeItem(tokenKey)
           showToast({ message: '登录已过期，请重新登录', type: 'fail' })
