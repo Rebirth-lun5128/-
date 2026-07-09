@@ -51,13 +51,11 @@ async function deleteAccount() {
   } catch { }
 }
 
-function shareApp() {
-  const text = '🔥 社区夜市外卖来啦！\n跨摊下单 · 一次配送 · 新鲜直达\n烧烤面食小吃一站购齐\n👉 https://yswm-1.cn/h5/'
-  showDialog({
-    title: '分享给朋友',
-    message: '长按下方文字复制，粘贴发送给朋友：\n\n' + text,
-    confirmButtonText: '知道了',
-  })
+const showShare = ref(false)
+const shareText = '🔥 社区夜市外卖来啦！\n跨摊下单 · 一次配送 · 新鲜直达\n烧烤面食小吃一站购齐\n👉 https://yswm-1.cn/h5/'
+
+function copyShare() {
+  navigator.clipboard.writeText(shareText).then(() => showToast('已复制，去粘贴发送吧')).catch(() => showToast('长按手动复制'))
 }
 
 function goOrders(status) {
@@ -110,7 +108,7 @@ const userInfo = () => authStore.userInfo || { nickname: '食客', phone: '', av
       <van-cell title="收货地址" icon="location-o" is-link @click="router.push('/address')" />
       <van-cell title="优惠券中心" icon="coupon-o" is-link @click="router.push('/coupons')" />
       <van-cell title="购物车" icon="cart-o" is-link @click="router.push('/cart')" />
-      <van-cell title="📤 分享给朋友" icon="share-o" is-link @click="shareApp" />
+      <van-cell title="分享给朋友" icon="share-o" is-link @click="showShare = true" />
       <van-cell title="联系客服" icon="service-o" is-link @click="showDialog({ title:'联系客服', message:'客服电话：138-0000-0000\n工作时间：17:00 - 00:00' })" />
     </div>
     <div class="bg-white mt-2">
@@ -125,5 +123,21 @@ const userInfo = () => authStore.userInfo || { nickname: '食客', phone: '', av
     </div>
 
     <div style="height:60px" />
+
+    <!-- 分享弹窗 -->
+    <van-popup v-model:show="showShare" round position="bottom" :style="{ padding: '24px 20px' }" :close-on-click-overlay="true">
+      <h3 style="text-align:center;margin-bottom:16px">📤 分享给朋友</h3>
+      <div style="background:linear-gradient(135deg,#ff6b35,#ff8f66);border-radius:12px;padding:20px;color:#fff;text-align:center;margin-bottom:16px">
+        <div style="font-size:40px;margin-bottom:8px">🌙🔥</div>
+        <div style="font-size:20px;font-weight:bold;margin-bottom:6px">社区夜市外卖</div>
+        <div style="font-size:13px;opacity:0.9;margin-bottom:4px">跨摊下单 · 一次配送 · 新鲜直达</div>
+        <div style="font-size:12px;opacity:0.7">烧烤 · 面食 · 小吃 · 一站购齐</div>
+        <div style="margin-top:12px;padding:8px 12px;background:rgba(255,255,255,0.2);border-radius:8px;font-size:12px;word-break:break-all">
+          yswm-1.cn/h5
+        </div>
+      </div>
+      <van-button round block type="primary" color="#ff6b35" @click="copyShare">📋 复制文案和链接</van-button>
+      <p style="text-align:center;color:#999;font-size:12px;margin-top:8px">复制后去微信粘贴发送即可</p>
+    </van-popup>
   </div>
 </template>
