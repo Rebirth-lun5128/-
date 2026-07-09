@@ -165,7 +165,7 @@ def refresh_token(body: RefreshIn, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="refresh_token 无效")
 
-    # 检查过期（SQLite 可能返回字符串，做类型安全处理）
+    # 检查过期（SQLite 不存时区，读出来是 naive datetime，需要类型安全处理）
     expires = user.refresh_token_expires
     if expires is None:
         user.refresh_token = ""
@@ -180,6 +180,9 @@ def refresh_token(body: RefreshIn, db: Session = Depends(get_db)):
             user.refresh_token_expires = None
             db.commit()
             raise HTTPException(status_code=401, detail="refresh_token 格式错误，请重新登录")
+    # SQLite 不存时区信息 → naive datetime → 补上 UTC
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
     if expires < datetime.now(timezone.utc):
         user.refresh_token = ""
         user.refresh_token_expires = None
