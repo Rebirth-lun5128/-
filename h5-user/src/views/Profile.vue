@@ -56,6 +56,11 @@ const shareText = '🔥 社区夜市外卖来啦！\n跨摊下单 · 一次配�
 const isWechat = /MicroMessenger/i.test(navigator.userAgent)
 
 async function doShare() {
+  // 微信内置浏览器：Web Share API 行为异常会跳转，直接弹自定义卡片
+  if (isWechat) {
+    showShare.value = true
+    return
+  }
   const data = { title: '社区夜市外卖', text: '🔥 跨摊下单 · 一次配送 · 新鲜直达\n烧烤面食小吃一站购齐\n👉 https://yswm-1.cn/h5/', url: 'https://yswm-1.cn/h5/' }
   try {
     if (navigator.share) {
@@ -67,7 +72,6 @@ async function doShare() {
       showShare.value = true
     }
   } catch (e) {
-    // 用户取消或分享失败 → 弹备选方案
     if (e?.name !== 'AbortError') showShare.value = true
   }
 }
