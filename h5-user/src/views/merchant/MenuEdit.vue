@@ -10,14 +10,18 @@
 
       <!-- 多图上传 -->
       <div class="img-section">
-        <div class="img-label">商品图片（最多5张）</div>
+        <div class="img-label">商品图片（最多5张，可左右调整顺序）</div>
         <div class="img-grid">
           <div v-for="(img, i) in images" :key="i" class="img-item">
             <van-image :src="img" width="72" height="72" fit="cover" radius="6" />
             <span class="img-del" @click="removeImg(i)">✕</span>
+            <div class="img-move">
+              <span v-if="i > 0" class="move-btn" @click="moveImg(i, -1)">◀</span>
+              <span v-if="i < images.length - 1" class="move-btn" @click="moveImg(i, 1)">▶</span>
+            </div>
           </div>
           <div v-if="images.length < 5" class="img-add">
-            <input type="file" accept="image/*" @change="onUploadImg" class="img-input" />
+            <input type="file" accept="image/*" multiple @change="onUploadImgs" class="img-input" />
             <span class="img-add-text">+</span>
           </div>
         </div>
@@ -78,19 +82,31 @@ const form = ref({
   category_id: null, stock: '-1', limit_per_order: '0',
 })
 
-const onUploadImg = async (e) => {
-  const file = e.target.files?.[0]
-  if (!file) return
-  const fd = new FormData()
-  fd.append('file', file)
+const onUploadImgs = async (e) => {
+  const files = e.target.files
+  if (!files || !files.length) return
   const token = localStorage.getItem('merchant_token')
-  try {
-    const res = await fetch('/api/common/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd })
-    const data = await res.json()
-    if (data.url) images.value.push(data.url)
-  } catch {}
+  const remaining = 5 - images.value.length
+  const toUpload = Math.min(files.length, remaining)
+  for (let i = 0; i < toUpload; i++) {
+    const fd = new FormData()
+    fd.append('file', files[i])
+    try {
+      const res = await fetch('/api/common/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd })
+      const data = await res.json()
+      if (data.url) images.value.push(data.url)
+    } catch {}
+  }
+  e.target.value = ''
 }
 const removeImg = (i) => { images.value.splice(i, 1) }
+const moveImg = (i, dir) => {
+  const arr = images.value
+  const j = i + dir
+  if (j < 0 || j >= arr.length) return
+  ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  images.value = [...arr]
+}
 
 const loadCats = async () => {
   try {
@@ -184,7 +200,9 @@ onMounted(async () => {
 .img-label { font-size: 14px; color: #323233; margin-bottom: 8px; }
 .img-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .img-item { position: relative; }
-.img-del { position: absolute; top: -8px; right: -8px; background: #ee0a24; color: #fff; border-radius: 50%; width: 18px; height: 18px; line-height: 18px; text-align: center; font-size: 10px; cursor: pointer; z-index: 1; }
+.img-del { position: absolute; top: -8px; right: -8px; background: #ee0a24; color: #fff; border-radius: 50%; width: 18px; height: 18px; line-height: 18px; text-align: center; font-size: 10px; cursor: pointer; z-index: 2; }
+.img-move { position: absolute; bottom: -4px; left: 0; right: 0; display: flex; justify-content: center; gap: 12px; }
+.move-btn { background: rgba(0,0,0,0.5); color: #fff; border-radius: 50%; width: 16px; height: 16px; line-height: 16px; text-align: center; font-size: 8px; cursor: pointer; }
 .img-add { width: 72px; height: 72px; border: 1px dashed #ccc; border-radius: 6px; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
 .img-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .img-add-text { font-size: 28px; color: #ccc; }

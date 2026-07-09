@@ -118,7 +118,7 @@ function goToConfirm() {
         <div class="px-3 py-2 font-bold text-lg bg-white mt-2">{{ c.name }}</div>
         <div v-for="p in (c.products || [])" :key="p.id"
           class="bg-white mx-2 mb-1 p-3 flex items-center rounded">
-          <van-image :src="p.image" width="64" height="64" fit="cover" round style="flex-shrink:0" lazy-load />
+          <van-image :src="(p.image || '').split(',')[0]" width="64" height="64" fit="cover" round style="flex-shrink:0" lazy-load />
           <div class="ml-3 flex-1" style="min-width:0">
             <div class="font-bold">{{ p.name }}</div>
             <div class="text-sm text-gray mt-1" style="line-clamp:1">{{ p.description || '' }}</div>
@@ -174,7 +174,7 @@ function goToConfirm() {
         <div v-for="item in storeItems" :key="item.productId"
           class="flex items-center justify-between py-2" style="border-bottom:1px solid #f5f5f5">
           <div class="flex items-center flex-1" style="min-width:0">
-            <van-image :src="item.image" width="40" height="40" fit="cover" round style="flex-shrink:0" lazy-load />
+            <van-image :src="(item.image || '').split(',')[0]" width="40" height="40" fit="cover" round style="flex-shrink:0" lazy-load />
             <span class="ml-2 text-sm" style="line-clamp:1">{{ item.name }}</span>
           </div>
           <div class="flex items-center ml-2">
