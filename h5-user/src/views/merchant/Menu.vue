@@ -94,7 +94,10 @@ const saveCategory = async () => {
   } catch {}
 }
 
-onMounted(load)
+onMounted(() => {
+  if (!localStorage.getItem('merchant_token')) { window.location.hash = '#/m/login'; return }
+  load()
+})
 </script>
 
 <style scoped>

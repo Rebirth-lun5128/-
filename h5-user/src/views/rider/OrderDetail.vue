@@ -50,7 +50,10 @@ const deliverOrder = async () => {
   try { await riderApi.put(`/api/rider/orders/${orderId.value}/deliver`); showToast('已送达'); load(); } catch {}
 }
 
-onMounted(load)
+onMounted(() => {
+  if (!localStorage.getItem('rider_token')) { window.location.hash = '#/r/login'; return }
+  load()
+})
 </script>
 
 <style scoped>

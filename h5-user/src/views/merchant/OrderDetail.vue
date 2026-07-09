@@ -52,7 +52,10 @@ const markReady = async () => {
   try { await merchantApi.put(`/api/merchant/orders/${orderId.value}/ready`); showToast('已出餐'); load(); } catch {}
 }
 
-onMounted(load)
+onMounted(() => {
+  if (!localStorage.getItem('merchant_token')) { window.location.hash = '#/m/login'; return }
+  load()
+})
 </script>
 
 <style scoped>

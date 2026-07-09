@@ -81,6 +81,7 @@ const onRefresh = async () => {
 const goDetail = (id) => window.location.hash = `#/m/order/${id}`
 
 onMounted(() => {
+  if (!localStorage.getItem('merchant_token')) { window.location.hash = '#/m/login'; return }
   if (route.query.status) activeTab.value = parseInt(route.query.status) || 0
   loadOrders()
 })

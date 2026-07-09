@@ -109,7 +109,10 @@ const onSubmit = async () => {
   } catch {} finally { loading.value = false }
 }
 
-onMounted(load)
+onMounted(() => {
+  if (!isRegister.value && !localStorage.getItem('merchant_token')) { window.location.hash = '#/m/login'; return }
+  load()
+})
 </script>
 
 <style scoped>

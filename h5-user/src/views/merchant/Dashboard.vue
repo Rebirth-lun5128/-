@@ -66,7 +66,11 @@ const doLogout = () => {
   window.location.hash = '#/m/login'
 }
 
-onMounted(load)
+onMounted(() => {
+  const token = localStorage.getItem('merchant_token')
+  if (!token) { window.location.hash = '#/m/login'; return }
+  load()
+})
 </script>
 
 <style scoped>

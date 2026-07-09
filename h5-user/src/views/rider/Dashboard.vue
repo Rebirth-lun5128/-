@@ -67,7 +67,10 @@ const doLogout = () => {
   window.location.hash = '#/r/login'
 }
 
-onMounted(load)
+onMounted(() => {
+  if (!localStorage.getItem('rider_token')) { window.location.hash = '#/r/login'; return }
+  load()
+})
 </script>
 
 <style scoped>

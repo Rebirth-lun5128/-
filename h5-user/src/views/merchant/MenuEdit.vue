@@ -9,9 +9,10 @@
       <van-field v-model="form.description" label="描述" placeholder="选填" />
       <van-field label="商品图片">
         <template #input>
-          <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <van-image v-if="form.image" :src="form.image" width="48" height="48" fit="cover" radius="4" />
-            <input type="file" accept="image/*" @change="onUploadImg" style="font-size:12px" />
+            <div v-if="form.image" @click="form.image = ''" style="position:relative;top:-16px;left:-8px;background:#ee0a24;color:#fff;border-radius:50%;width:16px;height:16px;line-height:16px;text-align:center;font-size:10px;cursor:pointer">✕</div>
+            <input type="file" accept="image/*" @change="onUploadImg" style="font-size:12px;max-width:120px" />
           </div>
         </template>
       </van-field>
@@ -165,6 +166,7 @@ const onDelete = async () => {
 }
 
 onMounted(async () => {
+  if (!localStorage.getItem('merchant_token')) { window.location.hash = '#/m/login'; return }
   await loadCats()
   await loadItem()
 })

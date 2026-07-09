@@ -64,7 +64,10 @@ const onRefresh = async () => {
 }
 const goDetail = (id) => window.location.hash = `#/r/order/${id}`
 
-onMounted(loadOrders)
+onMounted(() => {
+  if (!localStorage.getItem('rider_token')) { window.location.hash = '#/r/login'; return }
+  loadOrders()
+})
 </script>
 
 <style scoped>
