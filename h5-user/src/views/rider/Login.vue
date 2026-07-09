@@ -4,18 +4,16 @@
       <h1>🛵 骑手中心</h1>
       <p>社区夜市配送平台</p>
     </div>
-    <van-form @submit="doSubmit">
-      <van-cell-group inset>
-        <van-field v-model="phone" type="tel" label="手机号" placeholder="请输入手机号" maxlength="11" />
-        <van-field v-model="password" type="password" label="密码" placeholder="请输入密码" />
-        <van-field v-if="isRegister" v-model="confirmPwd" type="password" label="确认密码" placeholder="请确认密码" />
-      </van-cell-group>
-      <div style="margin: 16px">
-        <van-button round block type="primary" native-type="submit" :loading="loading">{{ isRegister ? '注册' : '登录' }}</van-button>
-      </div>
-    </van-form>
+    <van-cell-group inset>
+      <van-field v-model="phone" type="tel" label="手机号" placeholder="请输入手机号" maxlength="11" />
+      <van-field v-model="password" type="password" label="密码" placeholder="请输入密码" />
+      <van-field v-if="isRegister" v-model="confirmPwd" type="password" label="确认密码" placeholder="请确认密码" />
+    </van-cell-group>
+    <div style="margin: 16px">
+      <van-button round block type="primary" :loading="loading" @click="doSubmit">{{ isRegister ? '注册' : '登录' }}</van-button>
+    </div>
     <div class="agreement">
-      <van-checkbox v-model="agreed" shape="square" icon-size="14px">
+      <van-checkbox v-model="agreed" shape="square" icon-size="14px" @click.stop>
         已阅读并同意 <router-link to="/agreement">《用户服务协议》</router-link> 和 <router-link to="/privacy">《隐私政策》</router-link>
       </van-checkbox>
     </div>
@@ -47,19 +45,28 @@ const toggleMode = () => {
 
 const doSubmit = async () => {
   if (!agreed.value) { showToast('请先阅读并同意协议'); return }
-  if (!phone.value || !password.value) { showToast('请填写信息'); return }
-  if (!/^1\d{10}$/.test(phone.value.trim())) { showToast('请输入正确的手机号'); return }
+  if (!phone.value || !password.value) { showToast('请填写手机号和密码'); return }
+  if (!/^1\d{10}$/.test(phone.value.trim())) { showToast('请输入正确的11位手机号'); return }
+  if (password.value.length < 6) { showToast('密码至少6位'); return }
   if (isRegister.value && password.value !== confirmPwd.value) { showToast('两次密码不一致'); return }
+
   loading.value = true
+  const url = isRegister.value ? '/api/common/auth/register' : '/api/common/auth/phone'
+  const body = { phone: phone.value.trim(), password: password.value, role: 'rider' }
+
   try {
-    const url = isRegister.value ? '/api/common/auth/register' : '/api/common/auth/phone'
-    const data = { phone: phone.value.trim(), password: password.value, role: 'rider' }
-    const res = await riderApi.post(url, data)
+    const res = await riderApi.post(url, body)
     localStorage.setItem('rider_token', res.token)
-    localStorage.setItem('rider_phone', phone.value)
-    showToast(isRegister.value ? '注册成功' : '登录成功')
-    window.location.hash = '#/r/dashboard'
-  } catch {} finally { loading.value = false }
+    localStorage.setItem('rider_phone', phone.value.trim())
+    showToast(isRegister.value ? '注册成功！' : '登录成功')
+    setTimeout(() => {
+      window.location.hash = '#/r/dashboard'
+    }, 500)
+  } catch (err) {
+    // 错误信息由 API 拦截器统一展示
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
