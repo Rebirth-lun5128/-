@@ -7,7 +7,14 @@
       <van-field v-model="form.price" type="number" label="售价(元)" placeholder="0.00" required />
       <van-field v-model="form.original_price" type="number" label="原价(元)" placeholder="选填" />
       <van-field v-model="form.description" label="描述" placeholder="选填" />
-      <van-field v-model="form.image" label="图片URL" placeholder="可粘贴图片链接" />
+      <van-field label="商品图片">
+        <template #input>
+          <div style="display:flex;align-items:center;gap:8px">
+            <van-image v-if="form.image" :src="form.image" width="48" height="48" fit="cover" radius="4" />
+            <input type="file" accept="image/*" @change="onUploadImg" style="font-size:12px" />
+          </div>
+        </template>
+      </van-field>
     </van-cell-group>
 
     <van-cell-group inset title="分类">
@@ -100,6 +107,19 @@ const loadItem = async () => {
       stock: stockUnlimited.value ? '-1' : String(item.stock),
       limit_per_order: limitUnlimited.value ? '0' : String(item.limit_per_order),
     }
+  } catch {}
+}
+
+const onUploadImg = async (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  const fd = new FormData()
+  fd.append('file', file)
+  const token = localStorage.getItem('merchant_token')
+  try {
+    const res = await fetch('/api/common/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd })
+    const data = await res.json()
+    if (data.url) form.value.image = data.url
   } catch {}
 }
 
