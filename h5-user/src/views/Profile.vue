@@ -56,12 +56,16 @@ const shareText = '🔥 社区夜市外卖来啦！\n跨摊下单 · 一次配�
 const isWechat = /MicroMessenger/i.test(navigator.userAgent)
 
 async function doShare() {
-  // 微信内置浏览器：Web Share API 行为异常会跳转，直接弹自定义卡片
-  if (isWechat) {
-    showShare.value = true
-    return
-  }
   const data = { title: '社区夜市外卖', text: '🔥 跨摊下单 · 一次配送 · 新鲜直达\n烧烤面食小吃一站购齐\n👉 https://yswm-1.cn/h5/', url: 'https://yswm-1.cn/h5/' }
+
+  // 微信浏览器可能因分享导致 localStorage 被清 → 提前备份
+  const tokenBak = localStorage.getItem('token')
+  const refreshBak = localStorage.getItem('token_refresh')
+  if (isWechat && tokenBak) {
+    sessionStorage.setItem('_bak_token', tokenBak)
+    if (refreshBak) sessionStorage.setItem('_bak_refresh', refreshBak)
+  }
+
   try {
     if (navigator.share) {
       await navigator.share(data)
@@ -73,6 +77,17 @@ async function doShare() {
     }
   } catch (e) {
     if (e?.name !== 'AbortError') showShare.value = true
+  }
+
+  // 分享完成后检查 token 是否被微信清除，是则从备份恢复
+  if (isWechat && !localStorage.getItem('token')) {
+    const t = sessionStorage.getItem('_bak_token')
+    const r = sessionStorage.getItem('_bak_refresh')
+    if (t) {
+      localStorage.setItem('token', t)
+      if (r) localStorage.setItem('token_refresh', r)
+      authStore.token = t
+    }
   }
 }
 
