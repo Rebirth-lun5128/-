@@ -51,6 +51,19 @@ async function deleteAccount() {
   } catch { }
 }
 
+async function shareApp() {
+  const text = '🔥 社区夜市外卖来啦！\n跨摊下单 · 一次配送 · 新鲜直达\n烧烤面食小吃一站购齐\n👉 https://yswm-1.cn/h5/'
+  // 优先用系统分享（手机端原生分享面板）
+  if (navigator.share) {
+    try { await navigator.share({ title: '社区夜市外卖', text }) } catch {}
+    return
+  }
+  // 桌面端/微信内置浏览器 → 复制文案
+  try { await navigator.clipboard.writeText(text); showToast('已复制分享文案，去粘贴发送吧') } catch {
+    showToast({ message: '长按复制：\n' + text, duration: 5000 })
+  }
+}
+
 function goOrders(status) {
   router.replace('/orders')
   sessionStorage.setItem('orderFilter', status || '')
@@ -101,6 +114,7 @@ const userInfo = () => authStore.userInfo || { nickname: '食客', phone: '', av
       <van-cell title="收货地址" icon="location-o" is-link @click="router.push('/address')" />
       <van-cell title="优惠券中心" icon="coupon-o" is-link @click="router.push('/coupons')" />
       <van-cell title="购物车" icon="cart-o" is-link @click="router.push('/cart')" />
+      <van-cell title="📤 分享给朋友" icon="share-o" is-link @click="shareApp" />
       <van-cell title="联系客服" icon="service-o" is-link @click="showDialog({ title:'联系客服', message:'客服电话：138-0000-0000\n工作时间：17:00 - 00:00' })" />
     </div>
     <div class="bg-white mt-2">
