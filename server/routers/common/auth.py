@@ -164,10 +164,26 @@ def refresh_token(body: RefreshIn, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.refresh_token == body.refresh_token).first()
     if not user:
         raise HTTPException(status_code=401, detail="refresh_token 无效")
-    if user.refresh_token_expires is None or user.refresh_token_expires < datetime.now(timezone.utc):
-        # 过期了，清除旧 token
+
+    # 检查过期（SQLite 可能返回字符串，做类型安全处理）
+    expires = user.refresh_token_expires
+    if expires is None:
         user.refresh_token = ""
         user.refresh_token_expires = None
         db.commit()
         raise HTTPException(status_code=401, detail="refresh_token 已过期，请重新登录")
+    if isinstance(expires, str):
+        try:
+            expires = datetime.fromisoformat(expires)
+        except (ValueError, TypeError):
+            user.refresh_token = ""
+            user.refresh_token_expires = None
+            db.commit()
+            raise HTTPException(status_code=401, detail="refresh_token 格式错误，请重新登录")
+    if expires < datetime.now(timezone.utc):
+        user.refresh_token = ""
+        user.refresh_token_expires = None
+        db.commit()
+        raise HTTPException(status_code=401, detail="refresh_token 已过期，请重新登录")
+
     return _make_login_response(user, db)
