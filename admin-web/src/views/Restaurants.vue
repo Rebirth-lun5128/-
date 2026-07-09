@@ -198,12 +198,24 @@
           <div class="form-hint">留空 = 仅本区合单；勾选后可与所选分区的店铺合并下单</div>
         </el-form-item>
         <el-form-item label="店铺评分">
-          <el-input-number v-model="editForm.rating" :min="1" :max="5" :step="0.1" :precision="1" />
-          <span class="form-hint">⭐ 用户端显示的星级（1.0 - 5.0）</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="color:#999;font-size:13px">当前 {{ editRow.rating || 5.0 }} ⭐</span>
+            <span style="color:#999">→</span>
+            <el-input-number v-model="editForm.rating" :min="1" :max="5" :step="0.1" :precision="1" size="small" />
+            <span v-if="editForm.rating !== (editRow.rating || 5.0)" style="font-size:12px" :style="{ color: editForm.rating > (editRow.rating || 5.0) ? '#07c160' : '#ee0a24' }">
+              {{ editForm.rating > (editRow.rating || 5.0) ? '+' : '' }}{{ (editForm.rating - (editRow.rating || 5.0)).toFixed(1) }}
+            </span>
+          </div>
         </el-form-item>
         <el-form-item label="月售数量">
-          <el-input-number v-model="editForm.monthly_sales" :min="0" :step="1" />
-          <span class="form-hint">用户端显示的月售数字</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="color:#999;font-size:13px">当前 {{ editRow.monthly_sales || 0 }} 单</span>
+            <span style="color:#999">→</span>
+            <el-input-number v-model="editForm.monthly_sales" :min="0" :step="1" size="small" />
+            <span v-if="editForm.monthly_sales !== (editRow.monthly_sales || 0)" style="font-size:12px" :style="{ color: editForm.monthly_sales > (editRow.monthly_sales || 0) ? '#07c160' : '#ee0a24' }">
+              {{ editForm.monthly_sales > (editRow.monthly_sales || 0) ? '+' : '' }}{{ editForm.monthly_sales - (editRow.monthly_sales || 0) }} 单
+            </span>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
