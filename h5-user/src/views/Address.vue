@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onActivated } from 'vue'
+import { ref, onMounted, onActivated } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showDialog, showToast } from 'vant'
 import { api } from '../utils/api'
@@ -9,6 +9,7 @@ const route = useRoute()
 const addresses = ref([])
 const selectMode = route.query.select === '1'
 
+onMounted(loadAddresses)
 onActivated(loadAddresses)
 
 async function loadAddresses() {
