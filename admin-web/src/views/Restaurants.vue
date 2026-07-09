@@ -141,6 +141,13 @@
               >
                 {{ row.status === 'open' ? '强制关店' : '恢复营业' }}
               </el-button>
+              <el-popconfirm title="确定删除该店铺？" @confirm="deleteStore(row.id)">
+                <template #reference>
+                  <el-button size="small" type="danger" round plain>
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </template>
+              </el-popconfirm>
             </template>
           </template>
         </el-table-column>
@@ -314,6 +321,14 @@ async function toggleStatus(id, status) {
   try {
     await http.put(`/admin/stores/${id}/toggle-status?status=${status}`)
     ElMessage.success('已更新')
+    loadData()
+  } catch (e) { /* ignore */ }
+}
+
+async function deleteStore(id) {
+  try {
+    await http.delete(`/admin/stores/${id}`)
+    ElMessage.success('已删除')
     loadData()
   } catch (e) { /* ignore */ }
 }

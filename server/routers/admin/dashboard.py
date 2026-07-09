@@ -162,6 +162,23 @@ def verify_store(
     return {"message": f"核验{verify_status}", "method": verify_method}
 
 
+@router.delete("/stores/{store_id}")
+def delete_store(
+    store_id: int,
+    user: User = Depends(require_any_admin),
+    db: Session = Depends(get_db),
+):
+    """删除店铺（仅超级管理员）"""
+    if user.role != "super_admin":
+        raise HTTPException(status_code=403, detail="仅超级管理员可删除店铺")
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="店铺不存在")
+    db.delete(store)
+    db.commit()
+    return {"message": "已删除"}
+
+
 @router.put("/stores/{store_id}")
 def update_store(
     store_id: int,
