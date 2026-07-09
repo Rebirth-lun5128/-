@@ -33,15 +33,15 @@
     </van-cell-group>
 
     <van-cell-group inset title="库存">
-      <van-cell title="不限库存">
-        <template #right-icon><van-switch v-model="stockUnlimited" size="22" /></template>
+      <van-cell title="不限库存" clickable @click="stockUnlimited = !stockUnlimited">
+        <template #right-icon><van-switch v-model="stockUnlimited" size="22" @click.stop /></template>
       </van-cell>
       <van-field v-if="!stockUnlimited" v-model="form.stock" type="number" label="库存数量" placeholder="0" />
     </van-cell-group>
 
     <van-cell-group inset title="限购">
-      <van-cell title="不限购">
-        <template #right-icon><van-switch v-model="limitUnlimited" size="22" /></template>
+      <van-cell title="不限购" clickable @click="limitUnlimited = !limitUnlimited">
+        <template #right-icon><van-switch v-model="limitUnlimited" size="22" @click.stop /></template>
       </van-cell>
       <van-field v-if="!limitUnlimited" v-model="form.limit_per_order" type="number" label="每人限购" placeholder="0" />
     </van-cell-group>
