@@ -18,7 +18,7 @@ export function createApi(tokenKey = 'token', redirectPath = '#/login') {
         const msg = err.response?.data?.detail || err.message || '网络错误'
         showToast({ message: msg, type: 'fail' })
       }
-      if (err.response?.status === 401) {
+      if (err.response?.status === 401 || err.response?.status === 403) {
         localStorage.removeItem(tokenKey)
         window.location.hash = redirectPath
       }
