@@ -53,6 +53,20 @@ async function deleteAccount() {
 
 const showShare = ref(false)
 const shareText = '🔥 社区夜市外卖来啦！\n跨摊下单 · 一次配送 · 新鲜直达\n烧烤面食小吃一站购齐\n👉 https://yswm-1.cn/h5/'
+const isWechat = /MicroMessenger/i.test(navigator.userAgent)
+
+function doShare() {
+  if (isWechat) {
+    // 微信内置浏览器：引导用右上角菜单分享（微信自动用OG标签生成好看卡片）
+    showDialog({
+      title: '分享给微信好友',
+      message: '请点击右上角「···」→「分享给朋友」\n微信会自动生成好看的名片卡片',
+      confirmButtonText: '好的',
+    })
+  } else {
+    showShare.value = true
+  }
+}
 
 function copyShare() {
   navigator.clipboard.writeText(shareText).then(() => showToast('已复制，去粘贴发送吧')).catch(() => showToast('长按手动复制'))
@@ -108,7 +122,7 @@ const userInfo = () => authStore.userInfo || { nickname: '食客', phone: '', av
       <van-cell title="收货地址" icon="location-o" is-link @click="router.push('/address')" />
       <van-cell title="优惠券中心" icon="coupon-o" is-link @click="router.push('/coupons')" />
       <van-cell title="购物车" icon="cart-o" is-link @click="router.push('/cart')" />
-      <van-cell title="分享给朋友" icon="share-o" is-link @click="showShare = true" />
+      <van-cell title="分享给朋友" icon="share-o" is-link @click="doShare" />
       <van-cell title="联系客服" icon="service-o" is-link @click="showDialog({ title:'联系客服', message:'客服电话：138-0000-0000\n工作时间：17:00 - 00:00' })" />
     </div>
     <div class="bg-white mt-2">
