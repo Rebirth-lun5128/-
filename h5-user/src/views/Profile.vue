@@ -55,16 +55,20 @@ const showShare = ref(false)
 const shareText = '🔥 社区夜市外卖来啦！\n跨摊下单 · 一次配送 · 新鲜直达\n烧烤面食小吃一站购齐\n👉 https://yswm-1.cn/h5/'
 const isWechat = /MicroMessenger/i.test(navigator.userAgent)
 
-function doShare() {
-  if (isWechat) {
-    // 微信内置浏览器：引导用右上角菜单分享（微信自动用OG标签生成好看卡片）
-    showDialog({
-      title: '分享给微信好友',
-      message: '请点击右上角「···」→「分享给朋友」\n微信会自动生成好看的名片卡片',
-      confirmButtonText: '好的',
-    })
-  } else {
-    showShare.value = true
+async function doShare() {
+  const data = { title: '社区夜市外卖', text: '🔥 跨摊下单 · 一次配送 · 新鲜直达\n烧烤面食小吃一站购齐\n👉 https://yswm-1.cn/h5/', url: 'https://yswm-1.cn/h5/' }
+  try {
+    if (navigator.share) {
+      await navigator.share(data)
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(data.text)
+      showToast('链接已复制，去粘贴分享吧')
+    } else {
+      showShare.value = true
+    }
+  } catch (e) {
+    // 用户取消或分享失败 → 弹备选方案
+    if (e?.name !== 'AbortError') showShare.value = true
   }
 }
 
