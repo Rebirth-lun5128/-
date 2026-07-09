@@ -47,13 +47,15 @@ async function onSubmit() {
   }
   try {
     if (isEdit.value) {
-      await api.put(`/api/user/addresses/${f.id}`, f)
+      await api.put(`/api/user/addresses/${f.id}`, f, { silent: true })
     } else {
-      await api.post('/api/user/addresses', f)
+      await api.post('/api/user/addresses', f, { silent: true })
     }
     showToast({ message: '保存成功', type: 'success' })
     setTimeout(() => router.back(), 500)
-  } catch { }
+  } catch {
+    showToast({ message: '保存失败，请重试', type: 'fail' })
+  }
 }
 </script>
 
