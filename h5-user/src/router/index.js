@@ -112,6 +112,12 @@ const routes = [
     component: () => import('../views/merchant/OrderDetail.vue'),
     meta: { title: '订单详情' },
   },
+  {
+    path: '/m/menu',
+    name: 'MerchantMenu',
+    component: () => import('../views/merchant/Menu.vue'),
+    meta: { title: '菜品管理' },
+  },
 
   // ===== 骑手端 =====
   {
