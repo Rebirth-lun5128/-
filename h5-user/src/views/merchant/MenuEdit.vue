@@ -7,15 +7,21 @@
       <van-field v-model="form.price" type="number" label="售价(元)" placeholder="0.00" required />
       <van-field v-model="form.original_price" type="number" label="原价(元)" placeholder="选填" />
       <van-field v-model="form.description" label="描述" placeholder="选填" />
-      <van-field label="商品图片">
-        <template #input>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <van-image v-if="form.image" :src="form.image" width="48" height="48" fit="cover" radius="4" />
-            <div v-if="form.image" @click="form.image = ''" style="position:relative;top:-16px;left:-8px;background:#ee0a24;color:#fff;border-radius:50%;width:16px;height:16px;line-height:16px;text-align:center;font-size:10px;cursor:pointer">✕</div>
-            <input type="file" accept="image/*" @change="onUploadImg" style="font-size:12px;max-width:120px" />
+
+      <!-- 多图上传 -->
+      <div class="img-section">
+        <div class="img-label">商品图片（最多5张）</div>
+        <div class="img-grid">
+          <div v-for="(img, i) in images" :key="i" class="img-item">
+            <van-image :src="img" width="72" height="72" fit="cover" radius="6" />
+            <span class="img-del" @click="removeImg(i)">✕</span>
           </div>
-        </template>
-      </van-field>
+          <div v-if="images.length < 5" class="img-add">
+            <input type="file" accept="image/*" @change="onUploadImg" class="img-input" />
+            <span class="img-add-text">+</span>
+          </div>
+        </div>
+      </div>
     </van-cell-group>
 
     <van-cell-group inset title="分类">
@@ -41,7 +47,6 @@
       <van-button v-if="isEdit" round block type="danger" style="margin-top:12px" @click="onDelete">删除商品</van-button>
     </div>
 
-    <!-- 分类选择器 -->
     <van-popup v-model:show="showCatPicker" position="bottom">
       <van-picker :columns="catNames" @confirm="onCatConfirm" @cancel="showCatPicker = false" />
     </van-popup>
@@ -59,57 +64,17 @@ const isEdit = ref(!!route.params.id && route.params.id !== 'new')
 const itemId = ref(isEdit.value ? route.params.id : null)
 const loading = ref(false)
 const showCatPicker = ref(false)
-
 const categories = ref([])
 const catNames = ref([])
 const selectedCatName = ref('')
-
 const stockUnlimited = ref(true)
 const limitUnlimited = ref(true)
+const images = ref([])
 
 const form = ref({
   name: '', price: '', original_price: '', description: '',
-  image: '', category_id: null, stock: '-1', limit_per_order: '0',
+  category_id: null, stock: '-1', limit_per_order: '0',
 })
-
-const loadCats = async () => {
-  try {
-    const cats = await merchantApi.get('/api/merchant/menu/categories')
-    categories.value = cats || []
-    catNames.value = (cats || []).map(c => c.name)
-    // 从URL参数获取分类
-    if (!isEdit.value && route.query.cat) {
-      const cid = parseInt(route.query.cat)
-      const cat = cats.find(c => c.id === cid)
-      if (cat) {
-        form.value.category_id = cat.id
-        selectedCatName.value = cat.name
-      }
-    }
-  } catch {}
-}
-
-const loadItem = async () => {
-  if (!isEdit.value) return
-  try {
-    const items = await merchantApi.get('/api/merchant/menu/items')
-    const item = items.find(i => i.id == itemId.value)
-    if (!item) return
-    const cats = categories.value
-    const cat = cats.find(c => c.id === item.category_id)
-    selectedCatName.value = cat?.name || ''
-    stockUnlimited.value = (item.stock ?? -1) === -1
-    limitUnlimited.value = (item.limit_per_order ?? 0) === 0
-    form.value = {
-      name: item.name, price: String(item.price || ''),
-      original_price: item.original_price ? String(item.original_price) : '',
-      description: item.description || '',
-      image: item.image || '', category_id: item.category_id,
-      stock: stockUnlimited.value ? '-1' : String(item.stock),
-      limit_per_order: limitUnlimited.value ? '0' : String(item.limit_per_order),
-    }
-  } catch {}
-}
 
 const onUploadImg = async (e) => {
   const file = e.target.files?.[0]
@@ -120,7 +85,45 @@ const onUploadImg = async (e) => {
   try {
     const res = await fetch('/api/common/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd })
     const data = await res.json()
-    if (data.url) form.value.image = data.url
+    if (data.url) images.value.push(data.url)
+  } catch {}
+}
+const removeImg = (i) => { images.value.splice(i, 1) }
+
+const loadCats = async () => {
+  try {
+    const cats = await merchantApi.get('/api/merchant/menu/categories')
+    categories.value = cats || []
+    catNames.value = (cats || []).map(c => c.name)
+    if (!isEdit.value && route.query.cat) {
+      const cid = parseInt(route.query.cat)
+      const cat = cats.find(c => c.id === cid)
+      if (cat) { form.value.category_id = cat.id; selectedCatName.value = cat.name }
+    }
+  } catch {}
+}
+
+const loadItem = async () => {
+  if (!isEdit.value) return
+  try {
+    const items = await merchantApi.get('/api/merchant/menu/items')
+    const item = items.find(i => i.id == itemId.value)
+    if (!item) return
+    const cat = categories.value.find(c => c.id === item.category_id)
+    selectedCatName.value = cat?.name || ''
+    stockUnlimited.value = (item.stock ?? -1) === -1
+    limitUnlimited.value = (item.limit_per_order ?? 0) === 0
+    // 加载已有图片
+    const imgStr = item.image || ''
+    images.value = imgStr ? imgStr.split(',').filter(Boolean) : []
+    form.value = {
+      name: item.name, price: String(item.price || ''),
+      original_price: item.original_price ? String(item.original_price) : '',
+      description: item.description || '',
+      category_id: item.category_id,
+      stock: stockUnlimited.value ? '-1' : String(item.stock),
+      limit_per_order: limitUnlimited.value ? '0' : String(item.limit_per_order),
+    }
   } catch {}
 }
 
@@ -140,7 +143,8 @@ const onSubmit = async () => {
   const data = {
     name: form.value.name, price: parseFloat(form.value.price),
     original_price: form.value.original_price ? parseFloat(form.value.original_price) : null,
-    description: form.value.description, image: form.value.image,
+    description: form.value.description,
+    image: images.value.join(','),
     category_id: form.value.category_id,
     stock: stockUnlimited.value ? -1 : (parseInt(form.value.stock) || -1),
     limit_per_order: limitUnlimited.value ? 0 : (parseInt(form.value.limit_per_order) || 0),
@@ -152,7 +156,7 @@ const onSubmit = async () => {
       await merchantApi.post('/api/merchant/menu/items', data)
     }
     showToast('保存成功')
-    setTimeout(() => window.location.hash = '#/m/menu', 300)
+    setTimeout(() => router.push({ name: 'MerchantMenu' }), 300)
   } catch {} finally { loading.value = false }
 }
 
@@ -161,9 +165,12 @@ const onDelete = async () => {
   try {
     await merchantApi.del(`/api/merchant/menu/items/${itemId.value}`)
     showToast('已删除')
-    setTimeout(() => window.location.hash = '#/m/menu', 300)
+    setTimeout(() => router.push({ name: 'MerchantMenu' }), 300)
   } catch {}
 }
+
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
 onMounted(async () => {
   if (!localStorage.getItem('merchant_token')) { window.location.hash = '#/m/login'; return }
@@ -174,4 +181,12 @@ onMounted(async () => {
 
 <style scoped>
 .page { min-height: 100vh; background: #f7f8fa; padding-bottom: 20px; }
+.img-section { padding: 12px 16px; }
+.img-label { font-size: 14px; color: #323233; margin-bottom: 8px; }
+.img-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.img-item { position: relative; }
+.img-del { position: absolute; top: -8px; right: -8px; background: #ee0a24; color: #fff; border-radius: 50%; width: 18px; height: 18px; line-height: 18px; text-align: center; font-size: 10px; cursor: pointer; z-index: 1; }
+.img-add { width: 72px; height: 72px; border: 1px dashed #ccc; border-radius: 6px; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
+.img-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.img-add-text { font-size: 28px; color: #ccc; }
 </style>
