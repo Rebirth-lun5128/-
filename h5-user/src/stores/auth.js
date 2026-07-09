@@ -30,7 +30,7 @@ export const authStore = reactive({
 
   async refreshUser() {
     try {
-      const info = await api.get('/api/common/auth/me')
+      const info = await api.get('/api/common/auth/me', {}, { silent: true })
       this.userInfo = info
       localStorage.setItem('userInfo', JSON.stringify(info))
     } catch {}
