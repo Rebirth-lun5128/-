@@ -58,11 +58,9 @@ const doSubmit = async () => {
     const res = await merchantApi.post(url, body)
     localStorage.setItem('merchant_token', res.token)
     localStorage.setItem('merchant_phone', phone.value.trim())
-    // 检查是否已入驻店铺
-    let hasShop = false
-    try { await merchantApi.get('/api/merchant/shop'); hasShop = true } catch {}
-    if (!hasShop || isRegister.value) {
-      showToast(isRegister.value ? '注册成功！请入驻店铺' : '请先入驻店铺')
+    // 检查是否已入驻店铺（仅新注册时检查，登录直接进）
+    if (isRegister.value) {
+      showToast('注册成功！请入驻店铺')
       setTimeout(() => window.location.hash = '#/m/shop?register=1', 500)
       return
     }
