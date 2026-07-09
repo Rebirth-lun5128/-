@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onActivated } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast, showDialog } from 'vant'
 import { api } from '../utils/api'
@@ -12,7 +12,7 @@ const deliveringCount = ref(0)
 const couponCount = ref(0)
 const loading = ref(false)
 
-onActivated(loadStats)
+onMounted(loadStats)
 
 async function loadStats() {
   loading.value = true
